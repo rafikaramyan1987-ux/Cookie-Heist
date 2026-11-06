@@ -99,8 +99,16 @@ export function buildHouse(level: LevelDef, theme: HouseTheme, opts: { outside?:
 
   // ---------------------------------------------------------------- grid
   const grid: number[][] = Array.from({ length: W }, () => Array(D).fill(-1));
+  const groupKeys: string[] = [];
+  const groupOf = level.rooms.map((r, i) => {
+    const k = r.group ?? '#' + i;
+    let g = groupKeys.indexOf(k);
+    if (g < 0) g = groupKeys.push(k) - 1;
+    return g;
+  });
+  const groupRoom = groupKeys.map((_, g) => level.rooms[groupOf.indexOf(g)]);
   level.rooms.forEach((r, i) => {
-    for (let x = r.x; x < r.x + r.w; x++) for (let z = r.z; z < r.z + r.d; z++) if (x >= 0 && x < W && z >= 0 && z < D) grid[x][z] = i;
+    for (let x = r.x; x < r.x + r.w; x++) for (let z = r.z; z < r.z + r.d; z++) if (x >= 0 && x < W && z >= 0 && z < D) grid[x][z] = groupOf[i];
   });
   const cell = (x: number, z: number) => (x >= 0 && x < W && z >= 0 && z < D ? grid[x][z] : -1);
   const doorSet = new Set(level.doors.map(edgeKey));
@@ -149,7 +157,7 @@ export function buildHouse(level: LevelDef, theme: HouseTheme, opts: { outside?:
   }
 
   // ---------------------------------------------------------------- materials
-  const wallMats = level.rooms.map((r) => toon(0xffffff, { map: wallTexture(r.wall), key: 'wall-' + r.wall, rim: 0.15 }));
+  const wallMats = groupRoom.map((r) => toon(0xffffff, { map: wallTexture(r.wall), key: 'wall-' + r.wall, rim: 0.15 }));
   const extMat = toon(theme.exterior, { rim: 0.2 });
   const capMat = toon(theme.cap, { rim: 0.3 });
   const baseMat = toon(theme.baseboard, { rim: 0.1 });

@@ -82,7 +82,7 @@ export function lineupView(): View {
     const cols = wide ? 9 : 3;
     const rows = Math.ceil(entries.length / cols);
     const gx = wide ? 1.75 : 1.9,
-      gz = wide ? 2.2 : 3.1;
+      gz = wide ? 2.2 : 4.0;
     peds.forEach((ped, i) => {
       const c = i % cols,
         r = Math.floor(i / cols);
@@ -91,7 +91,7 @@ export function lineupView(): View {
     const hw = ((cols - 1) / 2) * gx + 0.75,
       hd = ((rows - 1) / 2) * gz + 0.9;
     fitDiorama(camera, new THREE.Vector3(-hw, 0, -hd), new THREE.Vector3(hw, 0, hd + 0.5), aspect, {
-      pitchDeg: wide ? 20 : 34,
+      pitchDeg: wide ? 20 : 40,
       fov: wide ? 26 : 30,
       height: 1.75,
       margin: wide ? [0.03, 0.03, 0.2, 0.2] : [0.02, 0.02, 0.1, 0.16],

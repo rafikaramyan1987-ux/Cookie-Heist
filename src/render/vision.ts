@@ -51,16 +51,20 @@ const floorFS = /* glsl */ `
     float a = atan(d.y, d.x) - uDir;
     a = atan(sin(a), cos(a));
     float e = abs(a) / uHalf;
-    float body = (1.0 - smoothstep(0.78, 1.0, dist)) * (1.0 - smoothstep(0.7, 1.0, e));
-    body *= smoothstep(0.0, 0.12, dist);
-    // brighter rim lines for readability
-    float edge = smoothstep(0.72, 0.9, e) * (1.0 - smoothstep(0.9, 1.0, e)) * (1.0 - smoothstep(0.85, 1.0, dist));
-    float arc = smoothstep(0.86, 0.95, dist) * (1.0 - smoothstep(0.95, 1.0, dist)) * (1.0 - smoothstep(0.75, 1.0, e));
-    // falloff + gentle shimmer
-    float fall = mix(1.0, 0.55, dist);
-    float shimmer = 0.92 + 0.08 * sin(dist * 18.0 - uTime * 3.0);
-    float alpha = (body * fall * shimmer * 0.62 + (edge + arc) * 0.3) * uIntensity;
-    gl_FragColor = vec4(uColor * alpha, alpha);
+    // soft inner body: bright pool, gently fading towards the tip of the cone
+    float inside = (1.0 - smoothstep(0.9, 1.0, dist)) * (1.0 - smoothstep(0.86, 1.0, e));
+    float pool = inside * mix(1.0, 0.55, dist) * smoothstep(0.0, 0.1, dist);
+    // hot centre (where the beam lands)
+    float hot = exp(-pow((dist - 0.45) * 2.6, 2.0)) * (1.0 - smoothstep(0.0, 0.6, e)) * 0.45;
+    // clear soft outline on the sides and the far arc
+    float sideEdge = smoothstep(0.78, 0.92, e) * (1.0 - smoothstep(0.94, 1.02, e)) * (1.0 - smoothstep(0.92, 1.0, dist)) * smoothstep(0.05, 0.15, dist);
+    float arcEdge = smoothstep(0.84, 0.93, dist) * (1.0 - smoothstep(0.95, 1.02, dist)) * (1.0 - smoothstep(0.9, 1.02, e));
+    float edge = max(sideEdge, arcEdge);
+    // slow "sweep" stripes so the danger zone reads even on busy floors
+    float stripes = 0.9 + 0.1 * sin(dist * 22.0 - uTime * 4.0);
+    float alpha = (pool * 0.62 * stripes + hot + edge * 0.95) * uIntensity;
+    vec3 col = mix(uColor, vec3(1.0), edge * 0.35 + hot * 0.3);
+    gl_FragColor = vec4(col * alpha, alpha);
   }`;
 
 const volVS = /* glsl */ `
@@ -80,7 +84,7 @@ const volFS = /* glsl */ `
     float soft = mix(0.25, 1.0, pow(facing, 1.4));
     float len = 1.0 - vLen; // 0 at apex (uv.y = 1 at tip for ConeGeometry)
     float fade = smoothstep(0.0, 0.08, 1.0 - len) * pow(1.0 - len, 0.8);
-    float a = soft * fade * 0.5 * uIntensity;
+    float a = soft * fade * 0.6 * uIntensity;
     gl_FragColor = vec4(uColor * a, a);
   }`;
 
@@ -145,7 +149,7 @@ export class VisionCone {
     this.volume.renderOrder = 3;
     this.group.add(this.volume);
 
-    this.spot = new THREE.SpotLight(0xffe2a0, 9, range * 1.5, halfAngle * 1.05, 0.65, 1.3);
+    this.spot = new THREE.SpotLight(0xffe2a0, 16, range * 1.6, halfAngle * 1.05, 0.5, 1.1);
     this.spot.visible = opts.spot ?? true;
     this.group.add(this.spot, this.spot.target);
   }

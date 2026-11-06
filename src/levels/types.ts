@@ -39,6 +39,8 @@ export interface RoomDef {
   floor: FloorKind;
   wall: WallKind;
   dark?: boolean;
+  /** rects sharing a group form one room (no walls between them) */
+  group?: string;
 }
 
 /** An edge of cell (x,z) on the given side. */
