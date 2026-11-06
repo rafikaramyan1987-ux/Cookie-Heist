@@ -354,7 +354,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
     w,
     d,
     rooms,
-    doors: doors.filter((e) => !e.locked).map(({ x, z, side }) => ({ x, z, side })),
+    doors: doors.map(({ x, z, side }) => ({ x, z, side })),
     windows: windows.map(({ x, z, side }) => ({ x, z, side })),
     props: props.filter((p) => p.type !== 'bed'),
     bed: (() => {

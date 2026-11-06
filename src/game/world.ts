@@ -274,8 +274,8 @@ export class World {
       if (L.creaky[ci]) this.noise(p.x, p.z, run ? NOISE.creakRun : NOISE.creakTiptoe, 'creak', true);
       if (L.floorToy[ci]) this.noise(p.x, p.z, run ? NOISE.toyRun : NOISE.toyTiptoe, 'squeak', true);
       for (const sw of L.switches)
-        if (Math.floor(sw.x) + Math.floor(sw.z) * L.w === ci) {
-          this.roomDark[sw.room] = !this.roomDark[sw.room];
+        if (Math.floor(sw.x) + Math.floor(sw.z) * L.w === ci && !this.roomDark[sw.room]) {
+          this.roomDark[sw.room] = true;
           this.events.push({ type: 'switch', room: sw.room, dark: this.roomDark[sw.room] });
           this.noise(p.x, p.z, NOISE.switch, 'click', true);
         }
@@ -291,7 +291,7 @@ export class World {
     // pickups
     L.cookies.forEach((c, i) => {
       if (this.cookies[i]) return;
-      const r = c.onSolid ? 1.0 : 0.6;
+      const r = c.onSolid ? 1.2 : 0.6;
       if (Math.hypot(c.x - p.x, c.z - p.z) < r) {
         this.cookies[i] = true;
         this.events.push({ type: 'cookie', i, x: c.x, z: c.z });
@@ -471,7 +471,7 @@ export class World {
       g.x += (dx / d) * stepLen;
       g.z += (dz / d) * stepLen;
       const td = Math.atan2(dz, dx);
-      g.dir += angleDiff(td, g.dir) * Math.min(1, dt * 7);
+      g.dir += angleDiff(td, g.dir) * Math.min(1, dt * 4.5);
       g.moving = Math.min(1, g.moving + dt * 6);
       return false;
     }

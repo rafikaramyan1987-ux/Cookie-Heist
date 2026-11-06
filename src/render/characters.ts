@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ball, cone, cyl, mesh, pill, rbox, sphereGeo, torusGeo, latheGeo, capsuleGeo, planeGeo } from './geom';
 import { toon, glowBasic } from './toon';
 import { blobTex, fabricTex, radialTex } from './textures';
@@ -27,6 +28,18 @@ export const SKINS: PyjamaSkin[] = [
   { id: 'starry', name: { en: 'Starry Night', fr: 'Nuit étoilée' }, fabric: 'stars', a: 0x3346a8, b: 0xffd45c, cap: 0x3346a8, capTrim: 0xfff4dc },
   { id: 'candy', name: { en: 'Candy Stripe', fr: 'Sucre d’orge' }, fabric: 'stripes', a: 0xff8fb3, b: 0xfff1f4, cap: 0xf0507e, capTrim: 0xffffff },
   { id: 'dino', name: { en: 'Little Dino', fr: 'Petit dino' }, fabric: 'dino', a: 0x5cc46a, b: 0x3e9a55, cap: 0x5cc46a, capTrim: 0xfff2b0, hood: 'dino' },
+  { id: 'astro', name: { en: 'Space Cadet', fr: 'Petit astronaute' }, fabric: 'dots', a: 0x1f2a5c, b: 0xffd45c, cap: 0x1f2a5c, capTrim: 0xff8a3d },
+  { id: 'mint', name: { en: 'Mint Check', fr: 'Carreaux menthe' }, fabric: 'check', a: 0x7fdcc0, b: 0x2f9a80, cap: 0x2f9a80, capTrim: 0xffffff },
+  { id: 'sunny', name: { en: 'Sunny Stripes', fr: 'Rayures soleil' }, fabric: 'stripes', a: 0xffc23d, b: 0xff7a3d, cap: 0xff7a3d, capTrim: 0xfff4dc },
+];
+
+export type CapId = 'classic' | 'crown' | 'bunny' | 'propeller' | 'chef';
+export const CAPS: { id: CapId; name: { en: string; fr: string } }[] = [
+  { id: 'classic', name: { en: 'Nightcap', fr: 'Bonnet de nuit' } },
+  { id: 'bunny', name: { en: 'Bunny ears', fr: 'Oreilles de lapin' } },
+  { id: 'crown', name: { en: 'Paper crown', fr: 'Couronne en papier' } },
+  { id: 'propeller', name: { en: 'Propeller cap', fr: 'Casquette hélice' } },
+  { id: 'chef', name: { en: 'Cookie chef', fr: 'Toque de chef' } },
 ];
 
 export interface Rig {
@@ -173,7 +186,7 @@ function newRig(kind: CharKind, height: number): Rig {
 }
 
 // ------------------------------------------------------------------ kid
-export function makeKid(skin: PyjamaSkin = SKINS[0]): Rig {
+export function makeKid(skin: PyjamaSkin = SKINS[0], capId: CapId = 'classic'): Rig {
   const rig = newRig('kid', 0.95);
   rig.root.scale.setScalar(1.15);
   rig.root.add(blob(0.62));
@@ -221,7 +234,11 @@ export function makeKid(skin: PyjamaSkin = SKINS[0]): Rig {
   face.add(ball(0.07, hair, { pos: [-0.08, hr * 0.62, hr * 0.68], scale: [1.2, 0.6, 0.7] }));
   face.add(ball(0.06, hair, { pos: [0.04, hr * 0.66, hr * 0.68], scale: [1.2, 0.6, 0.7] }));
 
-  if (skin.hood === 'dino') {
+  if (capId !== 'classic') {
+    const cap = makeCap(capId, hr);
+    rig.head.add(cap);
+    rig.extra.hat = cap;
+  } else if (skin.hood === 'dino') {
     const hood = mesh(sphereGeo(hr * 1.08, 22, 16, ), plain, { pos: [0, hr * 0.98, -0.03], scale: [1, 1, 1] });
     hood.name = 'hood';
     // cut the face opening by pushing a skin-coloured disc? keep simple: hood behind + rim
@@ -257,6 +274,86 @@ export function makeKid(skin: PyjamaSkin = SKINS[0]): Rig {
     rig.extra.cap = cap;
   }
   return rig;
+}
+
+function makeCap(id: CapId, hr: number): THREE.Group {
+  const g = new THREE.Group();
+  g.position.set(0, hr * 1.7, 0);
+  if (id === 'crown') {
+    const gold = toon(0xffd25e, { emissive: 0x6a4a00, emissiveIntensity: 0.3 });
+    g.add(mesh(new THREE.CylinderGeometry(hr * 0.78, hr * 0.8, 0.12, 20, 1, true), toon(0xffd25e, { side: THREE.DoubleSide })));
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      g.add(cone(0.045, 0.1, gold, { pos: [Math.cos(a) * hr * 0.78, 0.1, Math.sin(a) * hr * 0.78] }));
+      g.add(ball(0.022, [0xff5c7a, 0x5ec8ff, 0x69db7c][i % 3], { pos: [Math.cos(a) * hr * 0.8, 0.0, Math.sin(a) * hr * 0.8], cast: false }));
+    }
+  } else if (id === 'bunny') {
+    for (const s of [-1, 1]) {
+      g.add(pill(0.05, 0.22, 0xffffff, { pos: [s * 0.08, 0.14, -0.02], rot: [0, 0, s * 0.25], scale: [1, 1, 0.6] }));
+      g.add(pill(0.028, 0.18, 0xffb3c6, { pos: [s * 0.08, 0.14, 0.01], rot: [0, 0, s * 0.25], scale: [1, 1, 0.4], cast: false }));
+    }
+    g.add(mesh(torusGeo(hr * 0.9, 0.025, 6, 24, Math.PI), toon(0xffb3c6), { pos: [0, -0.04, 0], rot: [0, Math.PI / 2, 0] }));
+  } else if (id === 'propeller') {
+    g.add(mesh(new THREE.SphereGeometry(hr * 0.95, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(0xff5c7a)));
+    g.add(rbox(0.16, 0.02, 0.12, 0x5ec8ff, { pos: [0, -0.01, hr * 0.95], r: 0.008 }));
+    g.add(cyl(0.012, 0.012, 0.1, 0xffd25e, { pos: [0, hr * 0.95, 0] }));
+    const prop = new THREE.Group();
+    prop.position.y = hr * 0.95 + 0.05;
+    prop.add(rbox(0.3, 0.012, 0.05, 0x5ec8ff, { r: 0.005 }));
+    prop.add(rbox(0.05, 0.012, 0.3, 0xffd25e, { r: 0.005 }));
+    prop.name = 'propeller';
+    g.add(prop);
+  } else if (id === 'chef') {
+    g.add(cyl(hr * 0.75, hr * 0.7, 0.14, 0xffffff, { pos: [0, 0.02, 0] }));
+    g.add(ball(0.13, 0xffffff, { pos: [0, 0.19, 0], scale: [1.2, 0.85, 1.2] }));
+    g.add(ball(0.08, 0xffffff, { pos: [0.1, 0.17, 0.04] }));
+    g.add(ball(0.08, 0xffffff, { pos: [-0.1, 0.17, -0.03] }));
+    g.add(cyl(hr * 0.76, hr * 0.76, 0.03, 0xe9a55a, { pos: [0, -0.02, 0] }));
+  }
+  return g;
+}
+
+/** Merge each group's static meshes per material to cut draw calls (animated parts stay separate). */
+export function optimizeRig(rig: Rig) {
+  const keep = new Set<THREE.Object3D>();
+  const mark = (o: THREE.Object3D | undefined) => o && o.traverse((c) => keep.add(c));
+  if (rig.mouth) keep.add(rig.mouth);
+  for (const v of Object.values(rig.extra)) if (v !== rig.extra.flashlight && v !== rig.extra.hat && v !== rig.extra.cap) mark(v);
+  rig.root.traverse((o) => {
+    if (o.name === 'pom' || o.name === 'blob' || o.name === 'propeller' || o.name === 'lightTip') mark(o);
+  });
+  const groups: THREE.Object3D[] = [];
+  rig.root.traverse((o) => {
+    if (!(o as THREE.Mesh).isMesh && !(o as THREE.Sprite).isSprite) groups.push(o);
+  });
+  for (const grp of groups) {
+    const buckets = new Map<THREE.Material, THREE.Mesh[]>();
+    for (const c of grp.children) {
+      const m = c as THREE.Mesh;
+      if (!m.isMesh || keep.has(m) || m.children.length || Array.isArray(m.material)) continue;
+      const mat = m.material as THREE.Material;
+      if (!buckets.has(mat)) buckets.set(mat, []);
+      buckets.get(mat)!.push(m);
+    }
+    for (const [mat, list] of buckets) {
+      if (list.length < 2) continue;
+      const geos = list.map((m) => {
+        m.updateMatrix();
+        let g = m.geometry.clone().applyMatrix4(m.matrix);
+        if (g.index) g = g.toNonIndexed();
+        for (const n of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(n)) g.deleteAttribute(n);
+        if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+        return g;
+      });
+      const merged = mergeGeometries(geos, false);
+      if (!merged) continue;
+      const mm = new THREE.Mesh(merged, mat);
+      mm.castShadow = list.some((m) => m.castShadow);
+      mm.receiveShadow = true;
+      for (const m of list) grp.remove(m);
+      grp.add(mm);
+    }
+  }
 }
 
 // ------------------------------------------------------------------ helpers for adults
@@ -618,10 +715,10 @@ export function makeVacuum(): Rig {
   return rig;
 }
 
-export function makeCharacter(kind: CharKind, skin?: PyjamaSkin): Rig {
+export function makeCharacter(kind: CharKind, skin?: PyjamaSkin, cap?: CapId): Rig {
   switch (kind) {
     case 'kid':
-      return makeKid(skin);
+      return makeKid(skin, cap);
     case 'mum':
       return makeMum();
     case 'dad':
@@ -764,6 +861,11 @@ export function animateRig(rig: Rig, dt: number, t: number) {
     cap.rotation.x = -0.25 + (moving ? Math.sin(p * 2) * 0.05 : 0);
   }
   if (rig.tail) rig.tail.rotation.y = Math.sin(tt * 3 + p) * 0.4;
+  const hat = rig.extra.hat;
+  if (hat) {
+    const pr = hat.getObjectByName('propeller');
+    if (pr) pr.rotation.y += dt * (moving ? 22 : 6);
+  }
 }
 
 /** Floating "?" "!" "Zzz" speech bubbles. */

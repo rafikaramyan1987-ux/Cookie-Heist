@@ -290,6 +290,8 @@ export const PROPS: Record<string, PropMeta> = {
       g.add(cyl(0.05, 0.04, 0.12, 0x9ad6ff, { pos: [-0.35, 0.86, -0.15], opacity: 0.8, transparent: true }));
       g.add(ball(0.09, 0xff7043, { pos: [0.3, 0.88, 0.1] }));
       g.add(ball(0.07, 0xffd43b, { pos: [0.4, 0.86, 0.18] }));
+      const st = o.scaleTo as [number, number] | undefined;
+      if (st) g.scale.set((st[0] * 0.92) / 1.84, 1, (st[1] * 0.88) / 1.14);
       return g;
     },
   },

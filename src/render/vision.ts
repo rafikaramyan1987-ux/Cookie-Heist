@@ -10,9 +10,10 @@ import * as THREE from 'three';
 
 export type Seg = [number, number, number, number];
 export type Alert = 'calm' | 'suspicious' | 'chase';
+export type RayFn = (angle: number, range: number) => number;
 
 export const ALERT_COLORS: Record<Alert, THREE.Color> = {
-  calm: new THREE.Color(0xffe2a0),
+  calm: new THREE.Color(0xffc861),
   suspicious: new THREE.Color(0xffa040),
   chase: new THREE.Color(0xff3d4f),
 };
@@ -63,7 +64,7 @@ const floorFS = /* glsl */ `
     // slow "sweep" stripes so the danger zone reads even on busy floors
     float stripes = 0.9 + 0.1 * sin(dist * 22.0 - uTime * 4.0);
     float alpha = (pool * 0.62 * stripes + hot + edge * 0.95) * uIntensity;
-    vec3 col = mix(uColor, vec3(1.0), edge * 0.35 + hot * 0.3);
+    vec3 col = mix(uColor, vec3(1.0, 0.95, 0.85), edge * 0.25 + hot * 0.15);
     gl_FragColor = vec4(col * alpha, alpha);
   }`;
 
@@ -84,7 +85,7 @@ const volFS = /* glsl */ `
     float soft = mix(0.25, 1.0, pow(facing, 1.4));
     float len = 1.0 - vLen; // 0 at apex (uv.y = 1 at tip for ConeGeometry)
     float fade = smoothstep(0.0, 0.08, 1.0 - len) * pow(1.0 - len, 0.8);
-    float a = soft * fade * 0.6 * uIntensity;
+    float a = soft * fade * 0.42 * uIntensity;
     gl_FragColor = vec4(uColor * a, a);
   }`;
 
@@ -149,9 +150,13 @@ export class VisionCone {
     this.volume.renderOrder = 3;
     this.group.add(this.volume);
 
-    this.spot = new THREE.SpotLight(0xffe2a0, 16, range * 1.6, halfAngle * 1.05, 0.5, 1.1);
+    this.spot = new THREE.SpotLight(0xffe2a0, 11, range * 1.6, halfAngle * 1.05, 0.5, 1.1);
     this.spot.visible = opts.spot ?? true;
     this.group.add(this.spot, this.spot.target);
+  }
+
+  setVisible(v: boolean) {
+    this.group.visible = v;
   }
 
   setAlert(a: Alert) {
@@ -163,8 +168,13 @@ export class VisionCone {
    * @param dir facing angle (radians, atan2(dz, dx))
    * @param tip world position of the lamp
    */
-  update(ox: number, oz: number, dir: number, tip: THREE.Vector3, walls: Seg[], dt: number, t: number) {
-    this.color.lerp(ALERT_COLORS[this.alert], Math.min(1, dt * 6) || 1);
+  /** base (calm) colour; alert colours override */
+  base: THREE.Color | null = null;
+
+  update(ox: number, oz: number, dir: number, tip: THREE.Vector3, walls: Seg[] | RayFn, dt: number, t: number) {
+    const want = this.alert === 'calm' && this.base ? this.base : ALERT_COLORS[this.alert];
+    this.color.lerp(want, Math.min(1, dt * 6) || 1);
+    const ray: RayFn = typeof walls === 'function' ? walls : (a, r) => castRay(ox, oz, Math.cos(a), Math.sin(a), r, walls);
     const p = this.pos;
     p[0] = ox;
     p[1] = 0.025;
@@ -173,7 +183,7 @@ export class VisionCone {
       const a = dir - this.halfAngle * 1.02 + (i / RAYS) * this.halfAngle * 2.04;
       const dx = Math.cos(a),
         dz = Math.sin(a);
-      const d = castRay(ox, oz, dx, dz, this.range, walls);
+      const d = ray(a, this.range);
       p[(i + 1) * 3] = ox + dx * d;
       p[(i + 1) * 3 + 1] = 0.025;
       p[(i + 1) * 3 + 2] = oz + dz * d;
@@ -188,7 +198,7 @@ export class VisionCone {
     u.uTime.value = t;
 
     // volume: from lamp tip to a floor point ~55% down the cone, clipped by walls
-    const reach = Math.min(this.range * 0.6, castRay(ox, oz, Math.cos(dir), Math.sin(dir), this.range, walls) * 0.95);
+    const reach = Math.min(this.range * 0.6, ray(dir, this.range) * 0.95);
     const target = new THREE.Vector3(ox + Math.cos(dir) * reach, 0, oz + Math.sin(dir) * reach);
     const len = tip.distanceTo(target);
     this.volume.position.copy(tip);
@@ -199,7 +209,7 @@ export class VisionCone {
     this.spot.position.copy(tip);
     this.spot.target.position.set(ox + Math.cos(dir) * this.range * 0.6, 0, oz + Math.sin(dir) * this.range * 0.6);
     this.spot.color.copy(this.color);
-    this.spot.angle = this.halfAngle * 1.05;
+    this.spot.angle = Math.min(1.2, this.halfAngle * 1.05);
     this.spot.distance = this.range * 1.5;
   }
 }

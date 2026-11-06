@@ -142,3 +142,91 @@ export class Drift {
     p.needsUpdate = true;
   }
 }
+
+/** CPU particle bursts on an InstancedMesh (crumbs, confetti, trails, dust puffs). */
+export class Particles {
+  readonly mesh: THREE.InstancedMesh;
+  private pos: Float32Array;
+  private vel: Float32Array;
+  private rot: Float32Array;
+  private spin: Float32Array;
+  private life: Float32Array;
+  private maxLife: Float32Array;
+  private size: Float32Array;
+  private grav: Float32Array;
+  private next = 0;
+  private m = new THREE.Matrix4();
+  private q = new THREE.Quaternion();
+  private e = new THREE.Euler();
+  private s = new THREE.Vector3();
+  private v = new THREE.Vector3();
+  private col = new THREE.Color();
+
+  constructor(
+    private max = 300,
+    geo: THREE.BufferGeometry = new THREE.BoxGeometry(1, 1, 1),
+  ) {
+    const mat = new THREE.MeshBasicMaterial({ vertexColors: false, toneMapped: false, transparent: true });
+    this.mesh = new THREE.InstancedMesh(geo, mat, max);
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 7;
+    this.pos = new Float32Array(max * 3);
+    this.vel = new Float32Array(max * 3);
+    this.rot = new Float32Array(max * 3);
+    this.spin = new Float32Array(max * 3);
+    this.life = new Float32Array(max);
+    this.maxLife = new Float32Array(max);
+    this.size = new Float32Array(max);
+    this.grav = new Float32Array(max);
+    for (let i = 0; i < max; i++) {
+      this.mesh.setColorAt(i, this.col.set(0xffffff));
+      this.m.makeScale(0, 0, 0);
+      this.mesh.setMatrixAt(i, this.m);
+    }
+  }
+
+  emit(x: number, y: number, z: number, o: { vx?: number; vy?: number; vz?: number; spread?: number; up?: number; color: number; size: number; life: number; gravity?: number; spin?: number }) {
+    const i = this.next;
+    this.next = (this.next + 1) % this.max;
+    const sp = o.spread ?? 1;
+    this.pos.set([x, y, z], i * 3);
+    this.vel.set([(o.vx ?? 0) + (Math.random() - 0.5) * sp, (o.vy ?? 0) + (o.up ?? 0) * (0.6 + Math.random() * 0.6), (o.vz ?? 0) + (Math.random() - 0.5) * sp], i * 3);
+    this.rot.set([Math.random() * 6, Math.random() * 6, Math.random() * 6], i * 3);
+    const s = o.spin ?? 8;
+    this.spin.set([(Math.random() - 0.5) * s, (Math.random() - 0.5) * s, (Math.random() - 0.5) * s], i * 3);
+    this.life[i] = o.life;
+    this.maxLife[i] = o.life;
+    this.size[i] = o.size;
+    this.grav[i] = o.gravity ?? 9;
+    this.mesh.setColorAt(i, this.col.set(o.color));
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+  }
+
+  update(dt: number) {
+    for (let i = 0; i < this.max; i++) {
+      if (this.life[i] <= 0) continue;
+      this.life[i] -= dt;
+      const k = i * 3;
+      this.vel[k + 1] -= this.grav[i] * dt;
+      this.pos[k] += this.vel[k] * dt;
+      this.pos[k + 1] += this.vel[k + 1] * dt;
+      this.pos[k + 2] += this.vel[k + 2] * dt;
+      if (this.pos[k + 1] < 0.02) {
+        this.pos[k + 1] = 0.02;
+        this.vel[k + 1] *= -0.3;
+        this.vel[k] *= 0.6;
+        this.vel[k + 2] *= 0.6;
+      }
+      this.rot[k] += this.spin[k] * dt;
+      this.rot[k + 1] += this.spin[k + 1] * dt;
+      this.rot[k + 2] += this.spin[k + 2] * dt;
+      const a = Math.max(0, this.life[i] / this.maxLife[i]);
+      const sz = this.life[i] <= 0 ? 0 : this.size[i] * Math.min(1, a * 3);
+      this.q.setFromEuler(this.e.set(this.rot[k], this.rot[k + 1], this.rot[k + 2]));
+      this.m.compose(this.v.set(this.pos[k], this.pos[k + 1], this.pos[k + 2]), this.q, this.s.set(sz, sz, sz));
+      this.mesh.setMatrixAt(i, this.m);
+    }
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
