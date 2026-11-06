@@ -1,0 +1,108 @@
+import type { HouseId, LevelDef } from './types';
+
+/** Small corner dioramas showing each house's look (art test). */
+const base = (house: HouseId, name: string, fr: string): Pick<LevelDef, 'id' | 'house' | 'name' | 'bed' | 'start' | 'creaky' | 'guards' | 'open' | 'cookies'> => ({
+  id: 'preview-' + house,
+  house,
+  name: { en: name, fr },
+  bed: { x: -1, z: -1 },
+  start: [1, 1],
+  creaky: [],
+  guards: [],
+  cookies: [],
+  open: ['s', 'e'],
+});
+
+export const PREVIEWS: Record<HouseId, LevelDef> = {
+  apartment: {
+    ...base('apartment', 'City Apartment', 'Appartement en ville'),
+    w: 5,
+    d: 4,
+    rooms: [{ id: 'living', x: 0, z: 0, w: 5, d: 4, floor: 'parquet', wall: 'paintGrey' }],
+    doors: [],
+    windows: [
+      { x: 1, z: 0, side: 'n' },
+      { x: 2, z: 0, side: 'n' },
+      { x: 3, z: 0, side: 'n' },
+    ],
+    props: [
+      { type: 'rug', x: 2.4, z: 2.3, opts: { w: 2.6, d: 1.6, color: 0x5a6ad6, inner: 0x8f9cff } },
+      { type: 'sofa', x: 2.4, z: 3.2, rot: 2, opts: { color: 0xff8f6b } },
+      { type: 'tv', x: 2.4, z: 0.5, opts: { light: true, lightColor: 0x6f8cff, lightPower: 1.6, lightY: 0.7 } },
+      { type: 'plant', x: 0.45, z: 0.45, opts: { pot: 0xf4f1fb } },
+      { type: 'bookshelf', x: 0.25, z: 2.2, rot: 3 },
+      { type: 'plant', x: 4.5, z: 0.5, opts: { pot: 0x2e3446 } },
+    ],
+  },
+  family: {
+    ...base('family', 'Family House', 'Maison familiale'),
+    w: 5,
+    d: 4,
+    rooms: [{ id: 'kitchen', x: 0, z: 0, w: 5, d: 4, floor: 'checker', wall: 'stripesCream' }],
+    doors: [],
+    windows: [{ x: 0, z: 2, side: 'w' }],
+    props: [
+      { type: 'counter', x: 0.5, z: 0.4 },
+      { type: 'sink', x: 1.5, z: 0.4 },
+      { type: 'counter', x: 2.5, z: 0.4 },
+      { type: 'stove', x: 3.5, z: 0.4 },
+      { type: 'cookieJar', x: 2.5, z: 0.45, y: 0.885 },
+      { type: 'fridge', x: 4.5, z: 0.5 },
+      { type: 'table', x: 2.6, z: 2.5 },
+      { type: 'chair', x: 2.1, z: 1.65 },
+      { type: 'chair', x: 3.1, z: 1.65 },
+    ],
+  },
+  cottage: {
+    ...base('cottage', "Grandma's Cottage", 'La chaumière de Mamie'),
+    w: 5,
+    d: 4,
+    rooms: [{ id: 'parlour', x: 0, z: 0, w: 5, d: 4, floor: 'pine', wall: 'floral' }],
+    doors: [],
+    windows: [{ x: 0, z: 2, side: 'w' }],
+    props: [
+      { type: 'fireplace', x: 2.5, z: 0.35, opts: { light: true, lightColor: 0xff8a3d, lightPower: 3, lightY: 0.5, color: 0xc9b8a0 } },
+      { type: 'rug', x: 2.5, z: 1.9, opts: { round: true, w: 2.0, color: 0xd9435e, inner: 0xffd166 } },
+      { type: 'rockingChair', x: 3.6, z: 1.7, rot: 3 },
+      { type: 'clock', x: 0.4, z: 0.35 },
+      { type: 'plant', x: 4.5, z: 0.45, opts: { pot: 0xd9a35e } },
+      { type: 'armchair', x: 1.2, z: 2.1, rot: 1, opts: { color: 0x6aa58e } },
+    ],
+  },
+  chalet: {
+    ...base('chalet', 'Snowy Chalet', 'Chalet enneigé'),
+    w: 5,
+    d: 4,
+    rooms: [{ id: 'lodge', x: 0, z: 0, w: 5, d: 4, floor: 'oak', wall: 'logs' }],
+    doors: [],
+    windows: [
+      { x: 1, z: 0, side: 'n' },
+      { x: 0, z: 2, side: 'w' },
+    ],
+    props: [
+      { type: 'fireplace', x: 3.3, z: 0.35, opts: { light: true, lightColor: 0xff8a3d, lightPower: 3, lightY: 0.5, color: 0x9a9aa8 } },
+      { type: 'rug', x: 2.6, z: 2.2, opts: { w: 2.2, d: 1.5, color: 0xd9435e, inner: 0xffffff } },
+      { type: 'skis', x: 4.6, z: 0.3 },
+      { type: 'boots', x: 0.4, z: 3.4, rot: 1 },
+      { type: 'bench', x: 0.4, z: 1.0, rot: 1 },
+      { type: 'armchair', x: 2.2, z: 2.6, rot: 2, opts: { color: 0x3f8a6f } },
+    ],
+  },
+  mansion: {
+    ...base('mansion', 'Grand Mansion', 'Le grand manoir'),
+    w: 5,
+    d: 4,
+    rooms: [{ id: 'hall', x: 0, z: 0, w: 5, d: 4, floor: 'marble', wall: 'damask' }],
+    doors: [],
+    windows: [{ x: 2, z: 0, side: 'n' }],
+    props: [
+      { type: 'rug', x: 2.5, z: 2.2, opts: { w: 1.4, d: 3.4, color: 0xb0213a, inner: 0xe6b84a } },
+      { type: 'pillar', x: 1.1, z: 1.1 },
+      { type: 'pillar', x: 3.9, z: 1.1 },
+      { type: 'candelabra', x: 1.0, z: 0.4, opts: { light: true, lightColor: 0xffb85c, lightPower: 2.2, lightY: 1.4 } },
+      { type: 'piano', x: 3.6, z: 0.45 },
+      { type: 'armor', x: 0.4, z: 2.6, rot: 1 },
+      { type: 'plant', x: 4.5, z: 3.5, opts: { pot: 0xe6b84a } },
+    ],
+  },
+};
