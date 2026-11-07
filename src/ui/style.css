@@ -57,7 +57,7 @@ body { font-family: Fredoka, 'Arial Rounded MT Bold', system-ui, sans-serif; col
 .alert-vignette.suspicious { opacity: 1; background: radial-gradient(ellipse at center, transparent 55%, rgba(255, 130, 40, .28) 100%); }
 .alert-vignette.chase { opacity: 1; background: radial-gradient(ellipse at center, transparent 50%, rgba(255, 40, 70, .4) 100%); }
 
-.tip-card { position: absolute; left: 50%; bottom: calc(26px + var(--safe-b)); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 10px; background: linear-gradient(#fff8e8, #f6e2bd); color: var(--ink); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); max-width: 400px; animation: tipIn .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+.tip-card { position: absolute; left: 50%; bottom: calc(26px + var(--safe-b)); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 10px; background: linear-gradient(#fff8e8, #f6e2bd); color: var(--ink); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); max-width: 400px; animation: tipIn .6s cubic-bezier(.2, 1.6, .4, 1) backwards; }
 .tip-icon { width: 58px; height: 58px; border-radius: 14px; background: var(--night2); display: grid; place-items: center; flex: none; animation: wobble 1.4s ease-in-out infinite; }
 .tip-icon svg { width: 50px; height: 50px; }
 .tip-text small { display: inline-block; background: var(--pink); color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 99px; letter-spacing: .5px; }
@@ -322,7 +322,7 @@ input:checked + .sw::after { transform: translateX(22px); }
 .big-stars { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
 .bs { display: flex; flex-direction: column; align-items: center; width: 110px; }
 .bs svg { width: 70px; height: 70px; }
-.bs.on svg { animation: starIn .5s cubic-bezier(.2, 1.8, .4, 1) both; animation-delay: var(--d); filter: drop-shadow(0 0 12px rgba(255, 210, 94, .8)); }
+.bs.on svg { animation: starIn .5s cubic-bezier(.2, 1.8, .4, 1) backwards; animation-delay: var(--d); filter: drop-shadow(0 0 12px rgba(255, 210, 94, .8)); }
 .bs:nth-child(2) svg { margin-top: -14px; width: 84px; height: 84px; }
 .bs small { font-size: 13px; color: #cdd4ff; }
 .reward { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 30px; margin: 4px 0; }
