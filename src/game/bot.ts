@@ -27,7 +27,7 @@ export interface BotProfile {
 
 export const PROFILES: Record<BotProfile['name'], BotProfile> = {
   beginner: { name: 'beginner', replan: 0.5, horizon: 2.4, margin: 0.0, react: 0.35, runChance: 0.035, noiseCare: 0.6, useToys: false, greedy: false, slip: 0.05 },
-  average: { name: 'average', replan: 0.32, horizon: 4.8, margin: 0.2, react: 0.15, runChance: 0.0, noiseCare: 2, useToys: true, greedy: false, slip: 0.012 },
+  average: { name: 'average', replan: 0.35, horizon: 4.2, margin: 0.15, react: 0.22, runChance: 0.01, noiseCare: 2, useToys: true, greedy: false, slip: 0.025 },
   good: { name: 'good', replan: 0.2, horizon: 9, margin: 0.35, react: 0.05, runChance: 0.0, noiseCare: 4, useToys: true, greedy: true, slip: 0 },
 };
 

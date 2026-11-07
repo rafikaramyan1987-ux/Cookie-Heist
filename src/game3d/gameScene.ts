@@ -567,8 +567,19 @@ export class GameScene {
     } else if (e.type === 'cookie') {
       for (let k = 0; k < 18; k++) this.particles.emit(e.x, 0.45, e.z, { color: k % 3 ? 0xc98b4a : 0x5a2e1a, size: 0.05 + Math.random() * 0.04, life: 0.9, spread: 2.4, up: 3, gravity: 9 });
       for (let k = 0; k < 10; k++) this.particles.emit(e.x, 0.5, e.z, { color: 0xffe066, size: 0.05, life: 0.7, spread: 1.6, up: 2.5, gravity: 2 });
-    } else if (e.type === 'key' || e.type === 'pillow' || e.type === 'toyPickup' || e.type === 'unlock') {
-      for (let k = 0; k < 14; k++) this.particles.emit(e.x, 0.5, e.z, { color: e.type === 'pillow' ? 0xdfe6ff : 0xffe066, size: 0.05, life: 0.8, spread: 1.8, up: 2.6, gravity: 3 });
+    } else if (e.type === 'pillow') {
+      // a pillow "kid" appears under the blanket, nightcap and all
+      const b = this.level.bed;
+      const decoy = new THREE.Group();
+      decoy.add(rbox(0.5, 0.2, 0.9, 0xfff1da, { pos: [0, 0.58, 0.1], r: 0.1 }));
+      decoy.add(ball(0.16, 0xfff1da, { pos: [0, 0.62, -0.5] }));
+      decoy.add(mesh(new THREE.ConeGeometry(0.15, 0.32, 14), toon(this.opts.skin.cap), { pos: [0.02, 0.78, -0.6], rot: [-0.9, 0, 0] }));
+      decoy.position.set((b.x0 + b.x1) / 2, 0, (b.z0 + b.z1) / 2);
+      if (b.x1 - b.x0 > b.z1 - b.z0) decoy.rotation.y = Math.PI / 2;
+      this.scene.add(decoy);
+      for (let k = 0; k < 14; k++) this.particles.emit(e.x, 0.5, e.z, { color: 0xdfe6ff, size: 0.05, life: 0.8, spread: 1.8, up: 2.6, gravity: 3 });
+    } else if (e.type === 'key' || e.type === 'toyPickup' || e.type === 'unlock') {
+      for (let k = 0; k < 14; k++) this.particles.emit(e.x, 0.5, e.z, { color: 0xffe066, size: 0.05, life: 0.8, spread: 1.8, up: 2.6, gravity: 3 });
     } else if (e.type === 'caught') {
       this.camera.shake(0.3, 0.5);
       const gv = this.guards[e.g];

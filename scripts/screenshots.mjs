@@ -1,5 +1,6 @@
 // Renders art-test screenshots with Playwright (headless Chromium, SwiftShader WebGL).
 // usage: node scripts/screenshots.mjs [baseUrl] [views...]
+import { chromium as _c } from './pw.mjs';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 let pw;

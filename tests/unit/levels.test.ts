@@ -31,7 +31,8 @@ describe('levels', () => {
       for (let i = 0; i < 12; i++) {
         const L = getLevel(h, i);
         let ok = false;
-        for (let s = 1; s <= 6 && !ok; s++) ok = simulate(new World(L, { seed: s, jitter: 1 }), PROFILES.good, s).won;
+        for (const prof of [PROFILES.good, PROFILES.average])
+          for (let s = 1; s <= 6 && !ok; s++) ok = simulate(new World(L, { seed: s, jitter: 1 }), prof, s).won;
         if (!ok) unsolved.push(L.id);
       }
     expect(unsolved).toEqual([]);

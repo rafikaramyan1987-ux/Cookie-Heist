@@ -51,13 +51,14 @@ export const FAMILY: LevelSrc[] = [
   night(F2, {
     name: ["Dad's Rounds", 'La ronde de Papa'],
     put: 'j 2,0; c 8,1',
-    guards: [{ k: 'dad', p: '5,5 9,5', w: 3, speed: 0.6 }],
+    guards: [{ k: 'dad', p: '6,5 9,5', w: 3, speed: 0.55 }],
     par: 35,
     tip: 'dad',
   }),
   night(F2, {
     name: ['Dinner Leftovers', 'Les restes du dîner'],
-    put: 'j 1,0; c 9,3',
+    boost: 1.4,
+    put: 'j 1,0; c 9,3; c 7,3',
     guards: [
       { k: 'mum', p: '5,1 8,1 8,3 5,3 5,1', w: 1, speed: 0.75 },
       { k: 'cat', p: '6,10', face: 270 },
@@ -66,6 +67,7 @@ export const FAMILY: LevelSrc[] = [
   }),
   night(F2, {
     name: ['The Locked Pantry', 'Le garde-manger fermé'],
+    boost: 1.3,
     put: 'j 2,0; k 6,10; c 3,3',
     doors: '1,4nL 4,1wL',
     guards: [{ k: 'mum', p: '0,5 9,5', w: 2, speed: 0.75 }],
@@ -74,6 +76,7 @@ export const FAMILY: LevelSrc[] = [
   }),
   night(F2, {
     name: ['Movie Night', 'Soirée film'],
+    boost: 1.3,
     put: 'j 2,0; c 4,11; Q 9,4',
     guards: [
       { k: 'teen', p: '5,9', face: 270 },
@@ -83,6 +86,7 @@ export const FAMILY: LevelSrc[] = [
   }),
   night(F1, {
     name: ['Full House', 'Maison pleine'],
+    boost: 1.3,
     put: 'j 2,0; c 8,4; ~ 2,6 6,5',
     guards: [
       { k: 'mum', p: '0,6 8,6', w: 1.8, speed: 0.75 },
@@ -94,6 +98,7 @@ export const FAMILY: LevelSrc[] = [
   }),
   night(F1, {
     name: ['Dark Hallway', 'Couloir sombre'],
+    boost: 1.3,
     put: 'j 1,0; c 7,4; s 3,4; P 4,4',
     dark: 'H',
     guards: [
@@ -120,7 +125,7 @@ export const FAMILY: LevelSrc[] = [
     doors: '1,4nL',
     guards: [
       { k: 'mum', p: '4,5 9,5', w: 2.5, speed: 0.65 },
-      { k: 'dad', p: '5,3 9,1', w: 2.5, speed: 0.6 },
+      { k: 'dad', p: '7,1 9,3', w: 2.5, speed: 0.55 },
       { k: 'cat', p: '6,10', face: 270 },
     ],
     par: 60,

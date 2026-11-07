@@ -77,6 +77,8 @@ const EN = {
   m_toys: 'Throw {n} toys',
   m_hide: 'Hide {n} times',
   reward: 'Reward',
+  newTip: 'NEW!',
+  kbHint: 'WASD / arrows = move · Shift = run · Space = toy · hold Map = overview',
 } as const;
 
 export type Key = keyof typeof EN;
@@ -157,6 +159,8 @@ const FR: Record<Key, string> = {
   m_toys: 'Lance {n} jouets',
   m_hide: 'Cache-toi {n} fois',
   reward: 'Récompense',
+  newTip: 'NOUVEAU !',
+  kbHint: 'ZQSD / flèches = bouger · Maj = courir · Espace = jouet · Carte = vue d’ensemble',
 };
 
 let lang: Lang = 'en';

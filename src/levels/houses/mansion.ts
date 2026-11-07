@@ -55,6 +55,7 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M1, {
     name: ['The Butler’s Night Off', 'Le soir de congé du majordome'],
+    boost: 1.3,
     put: 'j 0,0; c 7,1; Q 3,5',
     guards: [
       { k: 'mum', p: '0,5 10,5', w: 2, speed: 0.75 },
@@ -64,7 +65,8 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M1, {
     name: ['Library Shadows', 'Ombres de la bibliothèque'],
-    put: 'j 0,0; c 3,8; s 5,6',
+    boost: 1.3,
+    put: 'j 0,0; c 3,8; s 5,6; c 8,5',
     guards: [
       { k: 'grandma', p: '5,7 6,11', w: 2.5, speed: 0.7 },
       { k: 'teen', p: '6,1', face: 180 },
@@ -83,6 +85,7 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M2, {
     name: ['Grand Gallery', 'La grande galerie'],
+    boost: 1.3,
     put: 'j 1,0; c 11,1; Q 6,3',
     guards: [
       { k: 'dad', p: '0,4 11,4', w: 2.5, speed: 0.6 },
@@ -92,6 +95,7 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M2, {
     name: ['The Silver Key', "La clé d'argent"],
+    boost: 1.3,
     put: 'j 1,0; k 10,7; c 3,2',
     doors: '2,3nL 5,1wL',
     guards: [
@@ -113,7 +117,8 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M2, {
     name: ['Chandelier Glow', 'La lueur du lustre'],
-    put: 'j 1,0; c 11,1; s 3,4; Q 9,4',
+    boost: 1.4,
+    put: 'j 1,0; c 11,1; s 3,4; Q 9,4; c 6,4',
     guards: [
       { k: 'dad', p: '5,1 11,2', w: 2, speed: 0.7 },
       { k: 'mum', p: '0,4 11,4', w: 2.2, speed: 0.7 },
@@ -146,6 +151,7 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M2, {
     name: ['Masquerade', 'Bal masqué'],
+    boost: 1.3,
     put: 'j 1,0; k 10,7; c 11,2; p 0,6; Q 6,4',
     doors: '5,1wL',
     bedCheck: 60,

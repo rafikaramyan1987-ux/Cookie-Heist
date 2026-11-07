@@ -6,10 +6,10 @@ const ctx = await browser.newContext({ viewport: { width: +W, height: +H }, devi
 const page = await ctx.newPage();
 page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
 page.on('console', (m) => { if (m.type() === 'error') console.log('console', m.text()); });
-await page.goto(`${base}?capture&nosdk&${query}`);
+await page.goto(`${base}?capture&nosdk&notips&${query}`);
 await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 });
 const steps = Math.round(+secs * 30);
-for (let i = 0; i < steps; i += 30) await page.evaluate((n) => { for (let k = 0; k < n; k++) window.__game.tick(1 / 30); }, Math.min(30, steps - i));
+for (let i = 0; i < steps; i += 30) await page.evaluate((n) => { for (let k = 0; k < n; k++) (window.__game.simOnly ?? window.__game.tick).call(window.__game, 1 / 30); }, Math.min(30, steps - i));
 await page.evaluate(() => window.__game.tick(1 / 30));
 await page.screenshot({ path: out });
 console.log('saved', out);

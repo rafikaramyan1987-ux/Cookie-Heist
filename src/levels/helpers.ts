@@ -22,6 +22,8 @@ export interface NightOpts {
   tip?: TipId;
   dark?: string;
   bedCheck?: number;
+  /** difficulty tweak: guards move this much faster and wait less */
+  boost?: number;
 }
 
 export function night(plan: Plan, o: NightOpts): LevelSrc {
@@ -48,7 +50,7 @@ export function night(plan: Plan, o: NightOpts): LevelSrc {
     doors: finalDoors,
     windows: plan.windows,
     styles: plan.styles,
-    guards: o.guards,
+    guards: o.boost ? o.guards.map((g) => ({ ...g, speed: (g.speed ?? 1) * o.boost!, w: (g.w ?? 1.2) / o.boost! })) : o.guards,
     par: o.par,
     toys: o.toys,
     tip: o.tip,

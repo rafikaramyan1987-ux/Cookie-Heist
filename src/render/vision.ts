@@ -63,7 +63,7 @@ const floorFS = /* glsl */ `
     float edge = max(sideEdge, arcEdge);
     // slow "sweep" stripes so the danger zone reads even on busy floors
     float stripes = 0.9 + 0.1 * sin(dist * 22.0 - uTime * 4.0);
-    float alpha = (pool * 0.62 * stripes + hot + edge * 0.95) * uIntensity;
+    float alpha = (pool * 0.85 * stripes + hot + edge * 1.15) * uIntensity;
     vec3 col = mix(uColor, vec3(1.0, 0.95, 0.85), edge * 0.25 + hot * 0.15);
     gl_FragColor = vec4(col * alpha, alpha);
   }`;

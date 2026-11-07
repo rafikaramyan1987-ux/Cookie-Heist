@@ -72,14 +72,14 @@ export class GameHud {
         <div class="chip key-chip hidden-chip">🔑<b>${t('key')}</b></div>
         <div class="chip bed-chip ${o.bedCheck ? '' : 'hidden-chip'}">⏰<b></b></div>
       </div>
-      <div class="tip-card hidden-tip"><div class="tip-icon"></div><div class="tip-text"><small>NEW!</small><b></b><span></span></div></div>
+      <div class="tip-card hidden-tip"><div class="tip-icon"></div><div class="tip-text"><small>${t('newTip')}</small><b></b><span></span></div></div>
       <div class="toast"></div>
       <div class="shout"></div>
       <div class="aim-hint">${t('aim')}</div>
       <div class="joystick hidden-joy"><div class="joy-run"></div><div class="joy-tip"></div><div class="joy-knob"></div><div class="joy-label">${t('tiptoe')}</div></div>
       <button class="round-btn zoom" aria-label="Map">${ICONS.map}</button>
       <button class="toy-btn ${o.toys > 0 || o.toyPickups ? '' : 'no-toys'}" aria-label="Throw toy"><div class="toy-ring"></div>${ICONS.duck}<span class="toy-count">×0</span></button>
-      ${o.touch ? '' : `<div class="kb-hint">WASD / ← ↑ → ↓ · Shift = run · Space = toy</div>`}
+      ${o.touch ? '' : `<div class="kb-hint">${t('kbHint')}</div>`}
     `;
     this.slots = [...el.querySelectorAll<HTMLElement>('.cookie-bar .slot')];
     this.timerEl = el.querySelector('.timer b')!;

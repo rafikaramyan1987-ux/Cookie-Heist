@@ -30,6 +30,9 @@ async function artView(name: string) {
     case 'houses':
       view = (await import('./art/houses')).housesView();
       break;
+    case 'cover':
+      view = (await import('./art/coverView')).coverView();
+      break;
     case 'level':
     case 'hud':
       view = (await import('./art/levelView')).levelView(name === 'hud');
@@ -44,6 +47,12 @@ async function artView(name: string) {
     const w = window.innerWidth,
       h = window.innerHeight;
     document.body.classList.toggle('portrait', h > w);
+    const cl = document.querySelector('.cover-logo');
+    if (cl) {
+      cl.classList.toggle('square', Math.abs(w / h - 1) < 0.1);
+      cl.classList.toggle('tall', w / h < 0.9);
+      cl.classList.toggle('small', w < 1200 && w / h > 1.1);
+    }
     stage.resize(w, h);
     view.resize(w, h);
   };

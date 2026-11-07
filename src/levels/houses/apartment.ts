@@ -65,7 +65,7 @@ export const APARTMENT: LevelSrc[] = [
   }),
   night(A2, {
     name: ['Hide and Peek', 'Cache-cache'],
-    put: 'j 0,0; c 7,2; Q 5,4',
+    put: 'j 0,0; c 7,2; Q 5,4; c 3,4',
     guards: [{ k: 'mum', p: '0,5 7,5', w: 1.2 }],
     par: 30,
     tip: 'hide',
@@ -87,8 +87,8 @@ export const APARTMENT: LevelSrc[] = [
   }),
   night(A2, {
     name: ['Kitchen Loop', 'La ronde de la cuisine'],
-    put: 'j 0,0; c 7,2; c 7,9; Q 0,4',
-    guards: [{ k: 'mum', p: '2,1 6,1 6,5 2,5 2,1', w: 1.6, speed: 0.75 }],
+    put: 'j 0,0; c 7,2; c 7,9; Q 0,4; Q 5,4',
+    guards: [{ k: 'mum', p: '2,1 6,1 6,5 2,5 2,1', w: 2.2, speed: 0.6 }],
     par: 40,
     toys: 1,
   }),
@@ -113,7 +113,7 @@ export const APARTMENT: LevelSrc[] = [
     name: ['Double Trouble', 'Double ennui'],
     put: 'j 1,0; c 4,9; c 6,11; Q 8,4',
     guards: [
-      { k: 'teen', p: '0,5 8,5', speed: 0.5, w: 2.5 },
+      { k: 'teen', p: '4,5 8,5', speed: 0.5, w: 2.5 },
       { k: 'mum', p: '5,2 8,2', w: 2.5 },
     ],
     par: 45,

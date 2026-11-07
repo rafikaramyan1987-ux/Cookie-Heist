@@ -248,7 +248,8 @@ export class App {
     this.disposeRun();
     this.clearUi();
     const level = getLevel(h, i);
-    const world = new World(level, { seed: (Date.now() & 0xffff) + 1, jitter: this.autoplay || this.capture ? 0.6 : 0, extraToys });
+    const seed = params.has('seed') ? +params.get('seed')! : (Date.now() & 0xffff) + 1;
+    const world = new World(level, { seed, jitter: this.autoplay || this.capture ? 0.6 : 0, extraToys });
     const skin = SKINS.find((s) => s.id === this.save.skin) ?? SKINS[0];
     const scene = new GameScene(level, world, { skin, cap: this.save.cap as CapId, trail: this.save.trail as TrailId });
     const theme = THEMES[level.house];
@@ -293,7 +294,7 @@ export class App {
       this.input.clear();
       sdk.gameplayStart();
       const tip = level.tip;
-      if (tip && (!this.save.tips.includes(tip) || this.autoplay)) {
+      if (tip && !params.has('notips') && (!this.save.tips.includes(tip) || this.autoplay)) {
         hud.showTip(tip);
         this.save.tips.push(tip);
         this.persist();
@@ -307,7 +308,7 @@ export class App {
     this.canvas.addEventListener('pointerdown', startPlay, { once: true });
     window.addEventListener('keydown', keyStart);
     audio.startMusic(h);
-    if (this.autoplay || this.capture) setTimeout(startPlay, this.capture ? 0 : 1200);
+    if ((this.autoplay || this.capture) && !params.has('introhold')) setTimeout(startPlay, this.capture ? 0 : 1200);
   }
 
   private disposeRun() {
@@ -349,6 +350,13 @@ export class App {
     this.tick(dt);
     requestAnimationFrame(this.frame);
   };
+
+  /** advance without rendering (capture tool: skip to a moment quickly) */
+  simOnly(dt: number) {
+    this.t += dt;
+    if (this.mode === 'title' && this.title) this.title.update(dt, this.t, this.w, this.h);
+    else if (this.run) this.updateRun(dt);
+  }
 
   /** advance and render one frame (also used by the capture tool) */
   tick(dt: number) {

@@ -1,15 +1,16 @@
 # Credits & licences
 
-All 3D models, textures, icons and effects in Cookie Heist are **original and procedural**:
-they are generated in code at runtime (rounded primitives, canvas-drawn textures, inline SVG icons).
-No third-party models, images or sounds are used.
+Everything in Cookie Heist is **original** and generated in code — no third-party models, images or sounds.
 
 | Asset | Source | Licence |
 | --- | --- | --- |
-| Characters, furniture, houses, effects | Procedural (this repository) | Project licence |
-| Textures (wood, tiles, wallpapers, fabrics) | Procedural canvas drawing (this repository) | Project licence |
-| UI icons | Hand-written inline SVG (this repository) | Project licence |
-| Font: **Fredoka** (via `@fontsource/fredoka`) | Milena Brandão / Google Fonts | SIL Open Font License 1.1 |
+| Characters, furniture, houses, effects (3D) | Procedural, built from primitives in `src/render/*` | Project licence |
+| Textures (wood, tiles, wallpapers, fabrics, sky) | Procedural canvas drawing (`src/render/textures.ts`) | Project licence |
+| UI icons | Hand-written inline SVG (`src/ui/icons.ts`) | Project licence |
+| Sound effects & lullabies | Synthesised at runtime with the Web Audio API (`src/app/audio.ts`) | Project licence |
+| Levels (60) | Hand-designed data (`src/levels/houses/*`) | Project licence |
+| Font: **Fredoka** (`@fontsource/fredoka`) | Milena Brandão / Google Fonts | SIL Open Font License 1.1 |
 | Engine: **three.js** | mrdoob & contributors | MIT |
+| CrazyGames SDK v3 | Loaded at runtime from `sdk.crazygames.com` (only on CrazyGames) | CrazyGames terms |
 
-Sounds (step 2) will be synthesised at runtime with the Web Audio API — no audio files.
+No CC0 asset packs were needed: all models are procedural.

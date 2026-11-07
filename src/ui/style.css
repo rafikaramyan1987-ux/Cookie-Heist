@@ -352,3 +352,20 @@ input:checked + .sw::after { transform: translateX(22px); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
 }
+
+/* ---------- store cover ---------- */
+.cover-logo { position: absolute; inset: 0; pointer-events: none !important; }
+.cover-logo .logo { left: auto; right: 5%; top: auto; bottom: 8%; }
+.cover-logo .logo-line span:not(.cookie-o) { font-size: 150px; animation: none; }
+.cover-logo .logo-line.l2 span:not(.cookie-o) { font-size: 176px; }
+.cover-logo .cookie-o { width: 140px; height: 140px; animation: none; }
+.cover-logo.square .logo, .cover-logo.tall .logo { right: 50%; transform: translateX(50%) rotate(-4deg); bottom: 6%; }
+.cover-logo.square .logo-line span:not(.cookie-o) { font-size: 92px; -webkit-text-stroke: 11px #5a2e1a; }
+.cover-logo.square .logo-line.l2 span:not(.cookie-o) { font-size: 110px; }
+.cover-logo.square .cookie-o { width: 86px; height: 86px; }
+.cover-logo.tall .logo-line span:not(.cookie-o) { font-size: 104px; -webkit-text-stroke: 12px #5a2e1a; }
+.cover-logo.tall .logo-line.l2 span:not(.cookie-o) { font-size: 124px; }
+.cover-logo.tall .cookie-o { width: 96px; height: 96px; }
+.cover-logo.small .logo-line span:not(.cookie-o) { font-size: 92px; }
+.cover-logo.small .logo-line.l2 span:not(.cookie-o) { font-size: 108px; }
+.cover-logo.small .cookie-o { width: 86px; height: 86px; }

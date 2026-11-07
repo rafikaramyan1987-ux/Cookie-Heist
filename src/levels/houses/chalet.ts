@@ -27,6 +27,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H1, {
     name: ['Snowed In', 'Bloqués par la neige'],
+    boost: 1.5,
     put: 'j 0,0; c 8,3; Q 4,4',
     guards: [
       { k: 'dad', p: '4,1', face: 0, look: [0, 330, 30] },
@@ -36,10 +37,12 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H1, {
     name: ['Fireside Teen', 'Ado au coin du feu'],
+    boost: 1.3,
     put: 'j 1,0; c 8,1',
     guards: [
       { k: 'teen', p: '5,1', face: 90 },
       { k: 'vacuum', p: '0,4 8,4', w: 1.5 },
+      { k: 'mum', p: '0,5 8,5', w: 2.5, speed: 0.6 },
     ],
     par: 35,
   }),
@@ -53,6 +56,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H2, {
     name: ['Ski Lodge', 'Le refuge'],
+    boost: 1.3,
     put: 'j 1,0; c 9,1',
     guards: [
       { k: 'dad', p: '0,4 9,4', w: 2, speed: 0.75 },
@@ -83,6 +87,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H2, {
     name: ['Pillow Fort', 'Le fort d’oreillers'],
+    boost: 1.4,
     put: 'j 1,0; c 9,2; p 1,7; Q 5,4',
     bedCheck: 40,
     guards: [
@@ -94,6 +99,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H1, {
     name: ['Avalanche of Noise', 'Avalanche de bruit'],
+    boost: 1.3,
     put: 'j 0,0; c 8,1; ~ 2,4 5,5 6,4; Q 3,5',
     guards: [
       { k: 'dad', p: '0,4 8,5', w: 2, speed: 0.75 },
@@ -115,7 +121,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H2, {
     name: ['Chalet Shuffle', 'Valse du chalet'],
-    put: 'j 1,0; k 0,7; c 9,1; Q 5,3',
+    put: 'j 1,0; k 0,7; c 9,1; Q 5,3; c 5,4',
     doors: '4,1wL',
     guards: [
       { k: 'dad', p: '0,3 9,4', w: 2, speed: 0.7 },
