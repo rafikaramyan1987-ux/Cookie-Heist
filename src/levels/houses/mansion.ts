@@ -98,7 +98,6 @@ export const MANSION: LevelSrc[] = [
     pace: 1.32,
     sight: 1.15,
     toys: 1,
-    sight: 1.15,
     name: ['The Silver Key', "La clé d'argent"],
     boost: 1.3,
     put: 'j 1,0; k 10,7; c 3,2',
