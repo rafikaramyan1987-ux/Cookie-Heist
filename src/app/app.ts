@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createStage, Stage } from '../render/stage';
 import { getLevel, levelId, HOUSE_COUNT, LEVELS_PER_HOUSE } from '../levels/index';
-import { World, GameEvent } from '../game/world';
+import { World, GameEvent, Input } from '../game/world';
 import { Bot, PROFILES } from '../game/bot';
 import { GameScene, TrailId } from '../game3d/gameScene';
 import { SKINS, CapId } from '../render/characters';
@@ -17,10 +17,14 @@ import { audio } from './audio';
 import { sdk } from './sdk';
 import { loadSave, saveSoon, SaveData } from './save';
 import { t, setLang, detectLang, getLang } from './i18n';
-import { buy, levelCoins, claimDaily, dailyAvailable, ensureMissions, progressMission, claimMission } from './meta';
+import { buy, levelCoins, claimDaily, dailyAvailable, ensureMissions, progressMission, claimMission, useBoost, buyBoost, BoostId } from './meta';
+import { findHint, HintFollower } from '../game/hint';
+import { ICONS } from '../ui/icons';
+import { sharedPreview } from '../ui/pipPreview';
+import type { IntroBoost } from '../ui/intro';
 import type { Level } from '../game/types';
 
-type Mode = 'title' | 'intro' | 'play' | 'paused' | 'result' | 'cinematic';
+type Mode = 'title' | 'intro-wait' | 'intro' | 'play' | 'paused' | 'result' | 'cinematic';
 
 interface Run {
   h: number;
@@ -29,11 +33,13 @@ interface Run {
   world: World;
   scene: GameScene;
   hud: GameHud;
-  bot: Bot | null;
+  bot: { update(dt: number): Input } | null;
   acc: number;
   endT: number;
   stepT: number;
   snoreT: number;
+  /** this attempt is played with a hint */
+  hinted: boolean;
 }
 
 const DT = 1 / 60;
@@ -54,7 +60,7 @@ export class App {
   h = 1;
   t = 0;
   touch = matchMedia('(pointer: coarse)').matches;
-  autoplay = params.get('autoplay') as 'beginner' | 'average' | 'good' | null;
+  autoplay = params.get('autoplay') as 'beginner' | 'average' | 'good' | 'hint' | null;
   capture = params.has('capture');
   private last = performance.now();
 
@@ -90,7 +96,7 @@ export class App {
     const lv = params.get('level');
     if (lv) {
       const [h, i] = lv.split('-').map(Number);
-      this.openLevel(h, i);
+      this.openLevel(h, i, { hint: params.has('hint') });
     } else this.showTitle();
     this.resize();
     sdk.loadingStop();
@@ -181,6 +187,11 @@ export class App {
               if (ok) audio.play('coin');
               return ok;
             },
+            (id) => {
+              const ok = buyBoost(this.save, id);
+              if (ok) audio.play('coin');
+              return ok;
+            },
           ),
         );
         break;
@@ -244,14 +255,30 @@ export class App {
   }
 
   // ------------------------------------------------------------------ level lifecycle
-  openLevel(h: number, i: number, extraToys = 0) {
+  openLevel(h: number, i: number, opts: { extraToys?: number; hint?: boolean } = {}) {
+    if (opts.hint && this.mode !== 'intro-wait') {
+      // finding a hint takes a moment: show a card first, then compute
+      this.disposeRun();
+      this.clearUi();
+      this.mode = 'intro-wait';
+      const card = document.createElement('div');
+      card.className = 'finding-hint';
+      card.innerHTML = `${ICONS.bulb}<span>${t('findingHint')}</span>`;
+      this.ui.appendChild(card);
+      setTimeout(() => this.openLevel(h, i, opts), 40);
+      return;
+    }
     this.disposeRun();
     this.clearUi();
     const level = getLevel(h, i);
-    const seed = params.has('seed') ? +params.get('seed')! : (Date.now() & 0xffff) + 1;
-    const world = new World(level, { seed, jitter: this.autoplay || this.capture ? 0.6 : 0, extraToys });
+    let seed = params.has('seed') ? +params.get('seed')! : (Date.now() & 0xffff) + 1;
+    // hint: a safe route for this exact attempt (the attempt is played on the hint's seed)
+    const hint = opts.hint ? findHint(level, seed, 6, 3) : null;
+    if (hint) seed = hint.seed;
+    const world = new World(level, { seed, jitter: this.autoplay || this.capture ? 0.6 : 0, extraToys: opts.extraToys ?? 0 });
     const skin = SKINS.find((s) => s.id === this.save.skin) ?? SKINS[0];
     const scene = new GameScene(level, world, { skin, cap: this.save.cap as CapId, trail: this.save.trail as TrailId });
+    if (hint) scene.setHint(hint, { wait: t('hintWait'), go: t('hintGoLabel') });
     const theme = THEMES[level.house];
     const hud = new GameHud({
       houseName: theme.name[getLang()],
@@ -266,21 +293,85 @@ export class App {
       toyPickups: level.toyPickups.length,
       bonus: level.bonus,
       touch: this.touch,
+      peeks: this.autoplay || this.capture ? 0 : this.save.items.peek,
     });
     hud.onPause = () => this.pause();
     hud.onToy = () => {
       if (world.toys > 0) this.input.aiming = !this.input.aiming;
     };
     hud.onZoom = (on) => (scene.camera.overview = on);
-    this.run = { h, i, level, world, scene, hud, bot: null, acc: 0, endT: 0, stepT: 0, snoreT: 2 };
-    if (this.autoplay) this.run.bot = new Bot(world, PROFILES[this.autoplay], 7);
+    hud.onPeek = () => {
+      // peek boost: 2 s map view with the grown-ups' routes
+      if (this.mode !== 'play' || !useBoost(this.save, 'peek')) return;
+      this.persist();
+      hud.setPeeks(this.save.items.peek);
+      scene.camera.overview = true;
+      scene.setRoutes(true);
+      setTimeout(() => {
+        scene.setRoutes(false);
+        if (!hud.zoomOn) scene.camera.overview = false;
+      }, 2000);
+    };
+    this.run = { h, i, level, world, scene, hud, bot: null, acc: 0, endT: 0, stepT: 0, snoreT: 2, hinted: !!hint };
+    // ?autoplay=hint: Pip follows the hint like a person would (demo / capture)
+    if (this.autoplay === 'hint') this.run.bot = hint ? new HintFollower(world, hint, 1) : new Bot(world, PROFILES.good, 7);
+    else if (this.autoplay) this.run.bot = new Bot(world, PROFILES[this.autoplay], 7);
+    if (hint && scene.hint)
+      scene.hint.onGo = (_k, x, z) => {
+        // the safe window opens: pulse; a "Go!" for the marker the kid is waiting at
+        const p = world.player;
+        hud.goPulse();
+        if (Math.hypot(p.x - x, p.z - z) < 1.6) {
+          hud.toast(t('hintGo'));
+          audio.play('ui');
+          try {
+            navigator.vibrate?.(35);
+          } catch {
+            /* no vibration */
+          }
+        }
+      };
     this.stage.setScene(scene.scene, scene.camera.cam);
     scene.resize(this.w, this.h);
     hud.layout(this.w, this.h);
-    // intro: whole-level overview + goals card
+    // intro: whole-level overview + goals card (+ the hint replay and boosts)
     this.mode = 'intro';
     scene.camera.overview = true;
-    const intro = buildIntro({ house: theme.name[getLang()], night: i + 1, name: level.name[getLang() === 'fr' ? 1 : 0], cookies: level.need, bonus: level.bonus >= 0, par: level.par, touch: this.touch });
+    scene.hintReplay = !!hint;
+    const chosen = new Set<string>();
+    const boosts: IntroBoost[] = [];
+    if (!this.autoplay && !this.capture) {
+      const prev = sharedPreview();
+      const img = (id: BoostId) => prev?.boostThumb(id, 96) ?? '';
+      if (this.save.items.toy > 0) boosts.push({ id: 'toy', name: t('b_toy'), count: this.save.items.toy, img: img('toy'), on: false });
+      if (this.save.items.pillow > 0 && level.bedCheck > 0) boosts.push({ id: 'pillow', name: t('b_pillow'), count: this.save.items.pillow, img: img('pillow'), on: false });
+      if (this.save.items.hint > 0 && !hint) boosts.push({ id: 'hint', name: t('b_hint'), count: this.save.items.hint, img: img('hint'), on: false });
+    }
+    const intro = buildIntro({
+      house: theme.name[getLang()],
+      night: i + 1,
+      name: level.name[getLang() === 'fr' ? 1 : 0],
+      cookies: level.need,
+      bonus: level.bonus >= 0,
+      par: level.par,
+      touch: this.touch,
+      hint: !!hint,
+      boosts,
+      onBoost: (id, chip) => {
+        if (id === 'hint') {
+          // a bought hint: replay this night with a safe route
+          if (useBoost(this.save, 'hint')) {
+            this.persist();
+            this.openLevel(h, i, { hint: true });
+          }
+          return;
+        }
+        if (chosen.has(id)) chosen.delete(id);
+        else chosen.add(id);
+        chip.classList.toggle('on', chosen.has(id));
+      },
+    });
+    if (opts.hint && !hint) hud.toast(t('noHint'));
     intro.classList.add('live-intro');
     this.overlay = intro;
     this.ui.appendChild(intro);
@@ -289,13 +380,21 @@ export class App {
       audio.unlock();
       intro.remove();
       this.overlay = null;
+      // boosts picked on the intro card are used now
+      if (chosen.has('toy') && useBoost(this.save, 'toy')) world.toys++;
+      if (chosen.has('pillow') && useBoost(this.save, 'pillow')) {
+        world.decoy = true;
+        hud.toast(t('pillowOn'));
+      }
+      if (chosen.size) this.persist();
       this.ui.appendChild(hud.el);
       scene.camera.overview = false;
+      scene.hintReplay = false;
       this.mode = 'play';
       this.input.clear();
       sdk.gameplayStart();
       const tip = level.tip;
-      if (tip && !params.has('notips') && (!this.save.tips.includes(tip) || this.autoplay)) {
+      if (tip && !params.has('notips') && !hint && (!this.save.tips.includes(tip) || this.autoplay)) {
         hud.showTip(tip);
         this.save.tips.push(tip);
         this.persist();
@@ -337,7 +436,7 @@ export class App {
           this.mode = 'play';
           sdk.gameplayStart();
         },
-        () => this.openLevel(r.h, r.i),
+        () => this.openLevel(r.h, r.i, { hint: r.hinted }),
         () => this.showTitle(),
         () => this.applySettings(),
       ),
@@ -572,6 +671,8 @@ export class App {
       this.save.stars[id] = Math.max(n, this.save.stars[id] ?? 0);
       this.save.best[id] = Math.min(w.t, prevBest ?? Infinity);
       this.save.fails[id] = 0;
+      // wins with a hint are tracked silently (stars are not affected)
+      if (r.hinted) this.save.hinted[id] = true;
       const coins = levelCoins(n, first, w.cookieCount);
       this.save.coins += coins;
       this.save.totals.cookies += w.cookieCount;
@@ -611,8 +712,8 @@ export class App {
       const fails = this.save.fails[id];
       this.ui.appendChild(
         failScreen(
-          { bedcheck: w.status === 'bedcheck', fails, canSkip: fails >= 3 },
-          (extra) => this.between(() => this.openLevel(r.h, r.i, extra ? 1 : 0)),
+          { bedcheck: w.status === 'bedcheck', fails, canSkip: fails >= 5, freeHint: fails >= 3 },
+          (extra, hintOn) => this.between(() => this.openLevel(r.h, r.i, { extraToys: extra ? 1 : 0, hint: hintOn })),
           async () => {
             const ok = await sdk.rewarded();
             if (ok) {

@@ -52,6 +52,30 @@ export function equip(save: SaveData, item: ShopItem) {
   else save.trail = item.key;
 }
 
+// ------------------------------------------------------------------ boosts (fair: they help, never required)
+export type BoostId = 'toy' | 'peek' | 'hint' | 'pillow';
+export const BOOSTS: { id: BoostId; price: number }[] = [
+  { id: 'toy', price: 30 },
+  { id: 'peek', price: 40 },
+  { id: 'hint', price: 60 },
+  { id: 'pillow', price: 50 },
+];
+
+export function buyBoost(save: SaveData, id: BoostId): boolean {
+  const b = BOOSTS.find((x) => x.id === id);
+  if (!b || save.coins < b.price) return false;
+  save.coins -= b.price;
+  save.items[id]++;
+  return true;
+}
+
+/** use one boost from the inventory */
+export function useBoost(save: SaveData, id: BoostId): boolean {
+  if (save.items[id] <= 0) return false;
+  save.items[id]--;
+  return true;
+}
+
 export function levelCoins(stars: number, firstTime: boolean, cookies: number): number {
   const base = 20 + stars * 10 + cookies * 5;
   return firstTime ? base : Math.round(base / 2);

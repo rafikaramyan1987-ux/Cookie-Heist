@@ -90,7 +90,7 @@ export function recordHint(level: Level, seed: number, maxTime = 120): Hint | nu
       const t0 = (i - 1) * HINT_SAMPLE,
         t1 = j * HINT_SAMPLE;
       const prev = waits[waits.length - 1];
-      if (prev && Math.hypot(prev.x - q.x, prev.z - q.z) < 0.5 && t0 - prev.t1 < 1) {
+      if (prev && Math.hypot(prev.x - q.x, prev.z - q.z) < 0.7 && t0 - prev.t1 < 3) {
         prev.t1 = t1;
         for (const v of waitAt.values()) if (v.x === prev.x && v.z === prev.z) v.wait = t1;
       } else {

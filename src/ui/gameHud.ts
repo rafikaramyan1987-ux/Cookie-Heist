@@ -16,6 +16,8 @@ export interface HudInit {
   toyPickups?: number;
   /** index of the golden bonus cookie, -1 if none */
   bonus: number;
+  /** peek boosts owned */
+  peeks?: number;
 }
 
 export interface HudFrame {
@@ -65,6 +67,7 @@ export class GameHud {
     el.className = 'hud live';
     el.innerHTML = `
       <div class="alert-vignette"></div>
+      <div class="go-glow"></div>
       <div class="hud-top">
         <div class="chip level-chip">${ICONS.moon}<div><small>${o.houseName}</small><b>${t('night')} ${o.night}</b></div></div>
         <div class="cookie-bar">${Array.from({ length: o.need }, () => `<div class="slot">${ICONS.cookie(false)}</div>`).join('')}${o.bonus >= 0 ? `<div class="slot bonus-slot">${ICONS.goldCookie(false)}</div>` : ''}</div>
@@ -83,6 +86,7 @@ export class GameHud {
       <div class="aim-hint">${t('aim')}</div>
       <div class="joystick hidden-joy"><div class="joy-run"></div><div class="joy-tip"></div><div class="joy-knob"></div><div class="joy-label">${t('tiptoe')}</div></div>
       <button class="round-btn zoom" aria-label="Map">${ICONS.map}</button>
+      <button class="round-btn peek ${o.peeks ? '' : 'hidden-chip'}" aria-label="Peek">${ICONS.binoculars}<span class="peek-count">×${o.peeks ?? 0}</span></button>
       <button class="toy-btn ${o.toys > 0 || o.toyPickups ? '' : 'no-toys'}" aria-label="Throw toy"><div class="toy-ring"></div>${ICONS.duck}<span class="toy-count">×0</span></button>
       ${o.touch ? '' : `<div class="kb-hint">${t('kbHint')}</div>`}
     `;
@@ -105,6 +109,7 @@ export class GameHud {
     for (const b of el.querySelectorAll('button')) b.addEventListener('pointerdown', stop);
     el.querySelector('.pause')!.addEventListener('click', () => this.onPause());
     this.toyBtn.addEventListener('click', () => this.onToy());
+    el.querySelector('.peek')!.addEventListener('click', () => this.onPeek());
     const zoom = el.querySelector<HTMLButtonElement>('.zoom')!;
     // tap = toggle the overview, press & hold = peek while held
     let downAt = 0,
@@ -181,6 +186,19 @@ export class GameHud {
   }
 
   zoomOn = false;
+  onPeek: () => void = () => {};
+  /** on-screen pulse when a hint's safe window opens */
+  goPulse() {
+    const v = this.el.querySelector<HTMLElement>('.go-glow')!;
+    v.classList.remove('on');
+    void v.offsetWidth;
+    v.classList.add('on');
+  }
+  setPeeks(n: number) {
+    const b = this.el.querySelector<HTMLElement>('.peek')!;
+    b.classList.toggle('hidden-chip', n <= 0);
+    b.querySelector('.peek-count')!.textContent = `×${n}`;
+  }
   setZoom(on: boolean) {
     this.zoomOn = on;
     this.el.querySelector('.zoom')?.classList.toggle('on', on);
