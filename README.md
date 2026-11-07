@@ -33,7 +33,8 @@ npm run dev            # http://localhost:5173  (?level=0-0 jumps to a night, ?a
 npm run build          # dist/index.html — single file, no extra requests (~1 MB)
 npm run lint && npm run typecheck && npm test
 npm run test:e2e       # Playwright smoke tests (desktop + 390×844 portrait)
-npm run playtest       # bot plays all 60 levels → docs/playtest.md
+npm run playtest       # bot plays all 60 levels (strict audit) → docs/playtest.md
+npm run check:audit    # static level audit: no parked guards, safe starts, every patrol cycle opens a path
 npm run check:levels   # static reachability checks
 ```
 
