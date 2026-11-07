@@ -17,7 +17,7 @@ const CLIPS = [
   { q: 'level=0-4&autoplay=good&seed=3', from: 3.0, dur: 3.4 },
   { q: 'level=1-11&autoplay=good&seed=7', from: 26.6, dur: 6.0 },
   { q: 'level=3-1&autoplay=good&seed=2', from: 4.0, dur: 3.0 },
-  { q: 'level=1-11&autoplay=good&seed=7', from: 41.2, dur: 3.3 },
+  { q: 'level=1-11&autoplay=good&seed=7', from: 41.2, dur: 2.6 },
   { q: 'view=cover&t=9', still: true, dur: 1.0 },
 ];
 
