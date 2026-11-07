@@ -124,8 +124,8 @@ export const FAMILY: LevelSrc[] = [
     put: 'j 1,0; k 9,8; c 0,2; c 5,11; Q 4,5; Q 0,4; ~ 7,5',
     doors: '1,4nL',
     guards: [
-      { k: 'mum', p: '4,5 9,5', w: 2.5, speed: 0.65 },
-      { k: 'dad', p: '7,1 9,3', w: 2.5, speed: 0.55 },
+      { k: 'mum', p: '5,5 9,5', w: 3, speed: 0.55 },
+      { k: 'dad', p: '7,1 9,3', w: 3, speed: 0.5 },
       { k: 'cat', p: '6,10', face: 270 },
     ],
     par: 60,

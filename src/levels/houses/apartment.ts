@@ -88,7 +88,7 @@ export const APARTMENT: LevelSrc[] = [
   night(A2, {
     name: ['Kitchen Loop', 'La ronde de la cuisine'],
     put: 'j 0,0; c 7,2; c 7,9; Q 0,4; Q 5,4',
-    guards: [{ k: 'mum', p: '2,1 6,1 6,5 2,5 2,1', w: 2.2, speed: 0.6 }],
+    guards: [{ k: 'mum', p: '2,1 6,1 6,5 2,5 2,1', w: 2.8, speed: 0.5 }],
     par: 40,
     toys: 1,
   }),
