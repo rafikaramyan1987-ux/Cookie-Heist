@@ -42,6 +42,7 @@ export const FAMILY: LevelSrc[] = [
     par: 35,
   }),
   night(F1, {
+    sight: 1.3,
     name: ['Lights Out', 'Extinction des feux'],
     put: 's 3,4; P 4,4; j 1,0; c 8,3',
     guards: [
@@ -85,9 +86,10 @@ export const FAMILY: LevelSrc[] = [
   }),
   night(F2, {
     linger: 0.7,
+    sight: 1.15,
     name: ['Movie Night', 'Soirée film'],
     boost: 1.3,
-    put: 'j 2,0; c 4,11; Q 9,4',
+    put: 'j 2,0; c 4,11; Q 9,4; c 8,8',
     guards: [
       { k: 'teen', p: '5,9 6,9', w: 2.5, speed: 0.5, face: 270 },
       { k: 'dad', p: '5,2 9,2', w: 2, speed: 0.7 },
@@ -108,6 +110,9 @@ export const FAMILY: LevelSrc[] = [
     toys: 1,
   }),
   night(F1, {
+    pace: 1.3,
+    linger: 0.7,
+    sight: 1.3,
     name: ['Dark Hallway', 'Couloir sombre'],
     boost: 1.3,
     put: 'j 1,0; c 7,4; s 3,4; P 4,4',
@@ -128,7 +133,8 @@ export const FAMILY: LevelSrc[] = [
   }),
   night(F2, {
     pace: 1.3,
-    linger: 1.3,
+    linger: 0.91,
+    sight: 1.15,
     name: ['Key Trouble', 'Histoire de clé'],
     put: 'j 2,0; k 9,7; g 6,1; Q 4,5',
     doors: '1,4nL',

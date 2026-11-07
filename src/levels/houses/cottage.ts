@@ -44,8 +44,9 @@ export const COTTAGE: LevelSrc[] = [
     par: 35,
   }),
   night(C1, {
-    pace: 1.5,
-    linger: 0.7,
+    pace: 1.95,
+    linger: 0.49,
+    sight: 1.3,
     name: ['Moonlit Parlour', 'Salon au clair de lune'],
     boost: 1.3,
     put: 'j 0,0; c 7,3; s 5,3',
@@ -56,7 +57,7 @@ export const COTTAGE: LevelSrc[] = [
   }),
   night(C2, {
     pace: 1.5,
-    linger: 0.7,
+    linger: 0.91,
     name: ["Nana's Pantry Key", 'La clé du garde-manger'],
     boost: 1.6,
     put: 'j 1,0; k 3,7; c 3,2; c 8,3',
@@ -115,8 +116,10 @@ export const COTTAGE: LevelSrc[] = [
     toys: 1,
   }),
   night(C1, {
+    linger: 0.7,
+    sight: 1.3,
     name: ['Two Lamps', 'Deux lampes'],
-    put: 'j 2,0; c 4,1; Q 7,4',
+    put: 'j 2,0; c 4,1; Q 7,4; c 4,5',
     guards: [
       { k: 'grandma', p: '3,6 7,5', w: 2.5, speed: 0.6 },
       { k: 'mum', p: '5,1 7,3', w: 2, speed: 0.75 },
@@ -138,6 +141,7 @@ export const COTTAGE: LevelSrc[] = [
   }),
   night(C2, {
     linger: 1.3,
+    sight: 1.15,
     name: ['Cottage Finale', 'Finale de la chaumière'],
     put: 'j 1,0; k 0,7; g 9,2; c 4,11; s 2,5; Q 4,3; Q 0,3',
     doors: '2,3nL',

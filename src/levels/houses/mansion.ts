@@ -87,7 +87,7 @@ export const MANSION: LevelSrc[] = [
   night(M2, {
     name: ['Grand Gallery', 'La grande galerie'],
     boost: 1.3,
-    put: 'j 1,0; c 11,1; Q 6,3',
+    put: 'j 1,0; c 11,1; Q 6,3; c 7,4',
     guards: [
       { k: 'dad', p: '0,4 11,4', w: 2.5, speed: 0.6 },
       { k: 'vacuum', p: '1,6 5,7', w: 1 },
@@ -95,6 +95,8 @@ export const MANSION: LevelSrc[] = [
     par: 50,
   }),
   night(M2, {
+    pace: 1.15,
+    sight: 1.15,
     name: ['The Silver Key', "La clé d'argent"],
     boost: 1.3,
     put: 'j 1,0; k 10,7; c 3,2',

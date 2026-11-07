@@ -85,8 +85,9 @@ export const APARTMENT: LevelSrc[] = [
     tip: 'run',
   }),
   night(A2, {
-    pace: 1.3,
-    linger: 0.7,
+    pace: 1.49,
+    linger: 0.49,
+    sight: 1.15,
     name: ['Rubber Duck', 'Le canard en caoutchouc'],
     put: 'j 1,0; c 2,1; Q 4,4',
     guards: [{ k: 'mum', p: '6,5 7,4', w: 2, speed: 0.5, face: 180 }],
@@ -132,6 +133,7 @@ export const APARTMENT: LevelSrc[] = [
     toys: 2,
   }),
   night(A3, {
+    pace: 1.15,
     name: ['Apartment Finale', 'Finale de l’appartement'],
     put: 'j 0,0; c 8,0; c 6,11; ~ 3,5 5,4 6,5; Q 0,4; t 2,2; Q 7,1',
     guards: [

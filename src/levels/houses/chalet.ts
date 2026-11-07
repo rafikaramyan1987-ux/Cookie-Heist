@@ -55,6 +55,8 @@ export const CHALET: LevelSrc[] = [
     tip: 'pillow',
   }),
   night(H2, {
+    pace: 1.3,
+    sight: 1.3,
     name: ['Ski Lodge', 'Le refuge'],
     boost: 1.3,
     put: 'j 1,0; c 9,1',
@@ -66,7 +68,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H2, {
     name: ['Hot Chocolate', 'Chocolat chaud'],
-    put: 'j 1,0; c 6,2; Q 5,3',
+    put: 'j 1,0; c 6,2; Q 5,3; c 8,3',
     guards: [
       { k: 'mum', p: '5,1 9,1', w: 1.8, speed: 0.75 },
       { k: 'teen', p: '8,7 8,8', w: 2.5, speed: 0.5, face: 180 },
@@ -102,7 +104,7 @@ export const CHALET: LevelSrc[] = [
   night(H1, {
     name: ['Avalanche of Noise', 'Avalanche de bruit'],
     boost: 1.3,
-    put: 'j 0,0; c 8,1; ~ 2,4 5,5 6,4; Q 3,5',
+    put: 'j 0,0; c 8,1; ~ 2,4 5,5 6,4; Q 3,5; c 7,3',
     guards: [
       { k: 'dad', p: '8,5 0,4', w: 2, speed: 0.75 },
       { k: 'vacuum', p: '4,1 7,3', w: 1 },
@@ -112,7 +114,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H1, {
     name: ['Late Movie', 'Film tardif'],
-    put: 'j 0,0; c 8,3; p 5,10; Q 4,5',
+    put: 'j 0,0; c 8,3; p 5,10; Q 4,5; c 5,4',
     bedCheck: 45,
     guards: [
       { k: 'teen', p: '6,2 7,2', w: 2.5, speed: 0.58, face: 180 },
@@ -136,6 +138,7 @@ export const CHALET: LevelSrc[] = [
     toys: 2,
   }),
   night(H2, {
+    pace: 1.15,
     name: ['Chalet Finale', 'Finale du chalet'],
     put: 'j 1,0; c 9,2; g 0,8; p 8,7; Q 5,3; ~ 3,4 6,3',
     bedCheck: 60,
