@@ -16,6 +16,7 @@ const RUNS = +arg('--runs', '24');
 const onlyHouse = arg('--house', '');
 const onlyLevel = arg('--level', '');
 const md = arg('--md', '');
+const strict = args.includes('--strict');
 
 export interface Row {
   id: string;
@@ -61,6 +62,15 @@ for (let h = 0; h < LEVEL_SRC.length; h++) {
     };
     console.log(`${row.id.padEnd(13)} ${row.solvable ? 'OK ' : 'NO!'} ${f('beginner')} | ${f('average')} | ${f('good')}`);
   }
+}
+
+if (strict) {
+  const bad = rows.filter((r) => !r.solvable).map((r) => r.id);
+  if (bad.length) {
+    console.error('UNSOLVABLE:', bad.join(', '));
+    process.exit(1);
+  }
+  console.log(`all ${rows.length} levels solvable`);
 }
 
 if (md) {

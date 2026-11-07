@@ -46,10 +46,10 @@ export interface Stage {
   render(t: number): void;
 }
 
-export function createStage(canvas: HTMLCanvasElement, opts: { bloom?: boolean } = {}): Stage {
+export function createStage(canvas: HTMLCanvasElement, opts: { bloom?: boolean; low?: boolean } = {}): Stage {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.shadowMap.enabled = true;
+  renderer.setPixelRatio(opts.low ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = !opts.low;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -59,7 +59,7 @@ export function createStage(canvas: HTMLCanvasElement, opts: { bloom?: boolean }
   const renderPass = new RenderPass(new THREE.Scene(), new THREE.PerspectiveCamera());
   composer.addPass(renderPass);
   const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.42, 0.5, 0.86);
-  bloom.enabled = opts.bloom ?? true;
+  bloom.enabled = opts.low ? false : (opts.bloom ?? true);
   composer.addPass(bloom);
   const output = new OutputPass();
   composer.addPass(output);

@@ -80,7 +80,7 @@ export class App {
       if (p && this.mode === 'play') this.pause();
     };
     await document.fonts.ready;
-    this.stage = createStage(this.canvas);
+    this.stage = createStage(this.canvas, { low: params.has('low') });
     this.input.onAnyInput = () => audio.unlock();
     window.addEventListener('resize', () => this.resize());
     document.addEventListener('visibilitychange', () => {
@@ -95,6 +95,7 @@ export class App {
     this.resize();
     sdk.loadingStop();
     loading.style.opacity = '0';
+    loading.style.pointerEvents = 'none';
     setTimeout(() => loading.remove(), 400);
     if (!this.capture) requestAnimationFrame(this.frame);
     (window as unknown as { __ready: boolean }).__ready = true;

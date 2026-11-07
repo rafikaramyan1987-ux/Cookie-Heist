@@ -80,9 +80,9 @@ export const APARTMENT: LevelSrc[] = [
   night(A2, {
     name: ['Rubber Duck', 'Le canard en caoutchouc'],
     put: 'j 1,0; c 2,1',
-    guards: [{ k: 'mum', p: '5,5', face: 180, look: [180, 200, 165] }],
+    guards: [{ k: 'mum', p: '5,5', face: 180, look: [180, 192, 170] }],
     par: 28,
-    toys: 2,
+    toys: 3,
     tip: 'toys',
   }),
   night(A2, {
@@ -103,7 +103,7 @@ export const APARTMENT: LevelSrc[] = [
     name: ['Busy Hallway', 'Couloir animé'],
     put: 'j 0,0; c 7,2; ~ 2,5 3,4; Q 0,4',
     guards: [
-      { k: 'mum', p: '5,1 7,5 1,5', w: 1.6, speed: 0.8 },
+      { k: 'mum', p: '5,1 7,5 1,5', w: 2, speed: 0.7 },
       { k: 'teen', p: '4,8', face: 270 },
     ],
     par: 40,
@@ -113,8 +113,8 @@ export const APARTMENT: LevelSrc[] = [
     name: ['Double Trouble', 'Double ennui'],
     put: 'j 1,0; c 4,9; c 6,11; Q 8,4',
     guards: [
-      { k: 'teen', p: '0,5 8,5', speed: 0.6, w: 2.5 },
-      { k: 'mum', p: '5,2 8,2', w: 2 },
+      { k: 'teen', p: '0,5 8,5', speed: 0.5, w: 2.5 },
+      { k: 'mum', p: '5,2 8,2', w: 2.5 },
     ],
     par: 45,
     toys: 2,

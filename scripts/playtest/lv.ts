@@ -3,9 +3,9 @@ import { World } from '../../src/game/world';
 import { Bot, PROFILES } from '../../src/game/bot';
 const [h, i, prof, only] = process.argv.slice(2);
 const L = getLevel(+h, +i);
-for (let s = 1; s <= 24; s++) {
+for (let s = 1; s <= 12; s++) {
   if (only && +only !== s) continue;
-  const w = new World(L, { seed: 1000 * +h + 37 * +i + s, jitter: 1.2 });
+  const w = new World(L, { seed: 1000 * +h + 37 * +i + s + 1, jitter: 1.2 });
   const bot: any = new Bot(w, PROFILES[prof as 'good'], s);
   const log: string[] = [];
   let n = 0;

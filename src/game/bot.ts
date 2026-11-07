@@ -38,6 +38,8 @@ export class Bot {
   private plan: number[] = []; // cell indices, one per STEP
   private planStart = 0;
   private giveUp = false;
+  private banned = new Map<number, number>(); // cookie index → time until which it is avoided
+  private goalCookie = -1;
   private assumeDark = new Set<number>();
   private blockedT = 0;
   private planT = 0;
@@ -74,7 +76,15 @@ export class Bot {
         this.plan = r.plan;
         if (r.blocked) this.blockedT += this.profile.replan;
         else this.blockedT = Math.max(0, this.blockedT - this.profile.replan * 0.5);
-        if (this.blockedT > 8 && w.cookieCount >= w.L.need) this.giveUp = true;
+        if (this.blockedT > 6 && w.cookieCount >= w.L.need && !this.giveUp) {
+          this.giveUp = true;
+          this.blockedT = 0;
+        }
+        // stuck on one cookie for a long time: try another one for a while
+        if (this.blockedT > 6 && this.goalCookie >= 0) {
+          this.banned.set(this.goalCookie, w.t + 25);
+          this.blockedT = 0;
+        }
         if (r.blocked) this.stuckT += this.profile.replan;
         else this.stuckT = Math.max(0, this.stuckT - this.profile.replan);
         if (this.profile.useToys && w.toys > 0 && this.stuckT > 2.2 && this.throwCd <= 0) {
@@ -143,12 +153,16 @@ export class Bot {
     if (needMore) {
       let best: Vec2 | null = null,
         bd = Infinity;
+      this.goalCookie = -1;
+      const avail = L.cookies.filter((_, i) => !w.cookies[i] && (this.banned.get(i) ?? 0) < w.t).length;
       L.cookies.forEach((c, i) => {
         if (w.cookies[i]) return;
+        if (avail > 0 && (this.banned.get(i) ?? 0) >= w.t) return;
         const d = reach(c, c.onSolid);
         if (d < bd) {
           bd = d;
           best = c.onSolid ? this.standCell(c, field) : c;
+          this.goalCookie = i;
         }
       });
       if (best && bd < Infinity) return best;
@@ -243,7 +257,7 @@ export class Bot {
     // body
     const bx = Math.floor(g.x),
       bz = Math.floor(g.z);
-    if (g.adult) for (let z = bz - 1; z <= bz + 1; z++) for (let x = bx - 1; x <= bx + 1; x++) if (x >= 0 && z >= 0 && x < L.w && z < L.d && Math.hypot(x + 0.5 - g.x, z + 0.5 - g.z) < 1.25) D[z * L.w + x] = 1;
+    if (g.adult) for (let z = bz - 2; z <= bz + 2; z++) for (let x = bx - 2; x <= bx + 2; x++) if (x >= 0 && z >= 0 && x < L.w && z < L.d && Math.hypot(x + 0.5 - g.x, z + 0.5 - g.z) < 1.6) D[z * L.w + x] = 1;
     if (!g.on) return;
     const R = Math.ceil(g.range + 1);
     for (let z = Math.max(0, bz - R); z <= Math.min(L.d - 1, bz + R); z++)
@@ -362,6 +376,11 @@ export class Bot {
   private escapePlan(): number[] {
     const w = this.w,
       L = w.L;
+    // already tucked away: stay put until they give up
+    if (w.player.hidden && this.profile.name !== 'beginner') {
+      const ci = Math.floor(w.player.z) * L.w + Math.floor(w.player.x);
+      return [ci, ci, ci];
+    }
     const here = { x: w.player.x, z: w.player.z };
     const field = distanceField(L, w.E, this.passP, here);
     const chasers = w.guards.filter((g) => g.state === 'chase');
@@ -467,7 +486,8 @@ export class Bot {
       dz = tz - p.z;
     const d = Math.hypot(dx, dz);
     if (target === ci) {
-      if (d < 0.12) return { mx: 0, mz: 0 };
+      // waiting in a hiding spot: keep perfectly still so we stay hidden
+      if (d < 0.12 || L.hide[ci]) return { mx: 0, mz: 0 };
       return { mx: (dx / d) * 0.3, mz: (dz / d) * 0.3 };
     }
     const run = chased || this.sprint;

@@ -313,7 +313,29 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
         const [a, c] = t.split(',').map(Number);
         return { x: a + 0.5, z: c + 0.5 };
       });
-    for (const p of path) if (R(Math.floor(p.x), Math.floor(p.z)) < 0) throw new Error(`${id}: guard path outside at ${p.x},${p.z}`);
+    for (const p of path) {
+      if (R(Math.floor(p.x), Math.floor(p.z)) < 0) throw new Error(`${id}: guard path outside at ${p.x},${p.z}`);
+      // patrol points on furniture are nudged to the nearest free cell
+      const c = Math.floor(p.z) * w + Math.floor(p.x);
+      if (!g.sleep && (solid[c] || hide[c])) {
+        let best: [number, number] | null = null,
+          bd = Infinity;
+        for (let zz = 0; zz < d; zz++)
+          for (let xx = 0; xx < w; xx++) {
+            const k = zz * w + xx;
+            if (R(xx, zz) !== R(Math.floor(p.x), Math.floor(p.z)) || solid[k] || hide[k]) continue;
+            const dd = Math.hypot(xx + 0.5 - p.x, zz + 0.5 - p.z);
+            if (dd < bd) {
+              bd = dd;
+              best = [xx + 0.5, zz + 0.5];
+            }
+          }
+        if (best) {
+          p.x = best[0];
+          p.z = best[1];
+        }
+      }
+    }
     return {
       kind: g.k,
       path,

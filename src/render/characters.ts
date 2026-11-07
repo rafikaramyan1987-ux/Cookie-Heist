@@ -748,15 +748,14 @@ export function animateRig(rig: Rig, dt: number, t: number) {
   const tt = t + rig.seed;
 
   if (rig.kind === 'vacuum') {
-    rig.extra.brush1 && (rig.extra.brush1.rotation.y += dt * 18);
-    rig.extra['brush-1'] && (rig.extra['brush-1'].rotation.y -= dt * 18);
+    if (rig.extra.brush1) rig.extra.brush1.rotation.y += dt * 18;
+    if (rig.extra['brush-1']) rig.extra['brush-1'].rotation.y -= dt * 18;
     rig.body.position.y = Math.sin(tt * 30) * 0.002;
     const blink = Math.sin(tt * 1.3) > 0.97 ? 0.2 : 1;
-    for (const k of ['eye1', 'eye-1']) rig.extra[k] && (rig.extra[k].scale.y = blink);
+    for (const k of ['eye1', 'eye-1']) if (rig.extra[k]) rig.extra[k].scale.y = blink;
     return;
   }
   if (rig.kind === 'cat') {
-    rig.tail && rig.tail.children.forEach(() => 0);
     let seg: THREE.Object3D | undefined = rig.tail?.children[0];
     let i = 0;
     while (seg) {
@@ -772,8 +771,8 @@ export function animateRig(rig: Rig, dt: number, t: number) {
 
   // legs / arms swing
   const legAmp = m === 'run' ? 0.9 : m === 'tiptoe' ? 0.45 : moving ? 0.6 : 0;
-  rig.legL && (rig.legL.rotation.x = lerp(rig.legL.rotation.x, s * legAmp, 0.4));
-  rig.legR && (rig.legR.rotation.x = lerp(rig.legR.rotation.x, -s * legAmp, 0.4));
+  if (rig.legL) rig.legL.rotation.x = lerp(rig.legL.rotation.x, s * legAmp, 0.4);
+  if (rig.legR) rig.legR.rotation.x = lerp(rig.legR.rotation.x, -s * legAmp, 0.4);
 
   let armLx = 0,
     armRx = 0,
