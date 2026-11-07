@@ -501,7 +501,7 @@ export class World {
   // ------------------------------------------------------------------ vision
   /** Effective vision of a guard right now (range shrinks in dark rooms / when distracted). */
   visionOf(g: Guard): { range: number; half: number; on: boolean } {
-    let range = g.cfg.range,
+    let range = g.cfg.range * g.spec.sight,
       half = g.cfg.half,
       on = g.state !== 'sleep';
     if (g.kind === 'dad') {

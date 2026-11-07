@@ -36,6 +36,8 @@ export interface GuardSrc {
   speed?: number;
   /** patrol phase offset (s) */
   delay?: number;
+  /** vision range multiplier (sharper eyes on harder nights) */
+  sight?: number;
 }
 
 export type TipId =
@@ -73,6 +75,8 @@ export interface GuardSpec {
   face: number;
   speed: number;
   delay: number;
+  /** vision range multiplier */
+  sight: number;
 }
 
 /** Runtime level, shared by game logic, bot and renderer. */

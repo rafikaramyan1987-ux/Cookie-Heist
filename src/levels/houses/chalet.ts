@@ -49,7 +49,7 @@ export const CHALET: LevelSrc[] = [
   night(H1, {
     name: ['Bed Check!', 'Vérif du lit !'],
     put: 'j 0,0; c 8,2; p 8,10',
-    bedCheck: 30,
+    bedCheck: 40,
     guards: [{ k: 'dad', p: '8,6 0,5', w: 1.6, speed: 1.27 }],
     par: 35,
     tip: 'pillow',

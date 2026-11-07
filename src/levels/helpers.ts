@@ -28,6 +28,8 @@ export interface NightOpts {
   pace?: number;
   /** wait-time multiplier at patrol points for the awake grown-ups */
   linger?: number;
+  /** vision range multiplier for the awake grown-ups */
+  sight?: number;
 }
 
 const PETS = new Set(['cat', 'vacuum']);
@@ -59,11 +61,12 @@ export function night(plan: Plan, o: NightOpts): LevelSrc {
     guards: o.guards.map((g) => {
       let speed = (g.speed ?? 1) * (o.boost ?? 1),
         w = (g.w ?? 1.2) / (o.boost ?? 1);
+      const sight = (g.sight ?? 1) * (!PETS.has(g.k) && !g.sleep ? (o.sight ?? 1) : 1);
       if (!PETS.has(g.k) && !g.sleep) {
         speed *= o.pace ?? 1;
         w *= o.linger ?? 1;
       }
-      return o.boost || o.pace || o.linger ? { ...g, speed, w } : g;
+      return o.boost || o.pace || o.linger || o.sight ? { ...g, speed, w, ...(sight !== 1 ? { sight } : {}) } : g;
     }),
     par: o.par,
     toys: o.toys,

@@ -90,6 +90,21 @@ export class Bot {
   ) {
     this.rng = makeRng(seed * 7919 + 13);
     this.passP = walkable(w.L, false);
+    this.petWatch = this.stationaryPetCells();
+  }
+
+  /** cells a pet that never moves keeps watching (the cat on its cushion): route around them when possible */
+  private petWatch: Uint8Array;
+  private stationaryPetCells(): Uint8Array {
+    const w = this.w,
+      L = w.L;
+    const D = new Uint8Array(L.w * L.d);
+    const idx = w.guards.flatMap((g, i) => (!g.cfg.adult && g.spec.path.length < 2 && !g.spec.sleep ? [i] : []));
+    if (!idx.length) return D;
+    const times: number[] = [];
+    for (let t = 0; t <= 12; t += 0.5) times.push(t);
+    for (const snap of predictGuards(w, times)) for (const i of idx) this.paint(D, snap[i], 0);
+    return D;
   }
 
   /** Decide the next input. */
@@ -328,7 +343,9 @@ export class Bot {
     const K = Math.max(2, Math.round(this.profile.horizon / STEP));
     const goal = this.goal();
     const gi = Math.floor(goal.z) * L.w + Math.floor(goal.x);
-    const field = distanceField(L, w.E, this.passP, goal);
+    const s0 = Math.floor(w.player.z) * L.w + Math.floor(w.player.x);
+    let field = distanceField(L, w.E, (i) => this.passP(i) && (!this.petWatch[i] || i === gi || i === s0), goal);
+    if (field[s0] === Infinity) field = distanceField(L, w.E, this.passP, goal);
     // light switches on the way will darken their room: plan with that in mind
     this.assumeDark.clear();
     const fromMe = distanceField(L, w.E, this.passP, {
