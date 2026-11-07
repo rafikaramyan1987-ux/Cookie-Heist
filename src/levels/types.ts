@@ -83,6 +83,8 @@ export interface LevelDef {
   bed: { x: number; z: number; rot?: number };
   start: [number, number];
   cookies: [number, number, number?][];
+  /** index (into cookies) of the golden bonus cookie */
+  bonusCookie?: number;
   creaky: [number, number][];
   guards: GuardDef[];
   /** exterior sides left open (corner previews) */

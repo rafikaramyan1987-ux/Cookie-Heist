@@ -11,7 +11,7 @@ import { makeRng, Rng } from './rng';
 export const PLAYER_R = 0.24;
 export const TIPTOE_SPEED = 1.7;
 export const RUN_SPEED = 3.4;
-export const RUN_THRESHOLD = 0.62;
+export const RUN_THRESHOLD = 0.8;
 export const TOY_RANGE = 5.5;
 
 export interface GuardCfg {
@@ -64,7 +64,6 @@ export interface Guard {
   routeT: number;
   lostT: number;
   sees: boolean;
-  sawHide: boolean;
   range: number;
   half: number;
   coneOn: boolean;
@@ -186,7 +185,6 @@ export class World {
         routeT: 0,
         lostT: 0,
         sees: false,
-        sawHide: false,
         range: cfg.range,
         half: cfg.half,
         coneOn: !spec.sleep,
@@ -206,6 +204,11 @@ export class World {
 
   get cookieCount() {
     return this.cookies.filter(Boolean).length;
+  }
+
+  /** all required (non-bonus) cookies collected */
+  get requiredDone() {
+    return this.cookies.every((got, i) => got || i === this.L.bonus);
   }
 
   // ------------------------------------------------------------------ main step
@@ -255,11 +258,12 @@ export class World {
     // hiding
     if (L.hide[ci] && p.speed < 0.3) {
       p.stillT += dt;
-      if (p.stillT > 0.2 && !p.hidden) {
+      // you can't hide in plain sight of someone chasing you: "Caché" only when really safe
+      const watched = this.guards.some((g) => g.state === 'chase' && g.sees);
+      if (p.stillT > 0.2 && !p.hidden && !watched) {
         p.hidden = true;
         this.stats.hides++;
         this.events.push({ type: 'hide' });
-        for (const g of this.guards) if (g.state === 'chase' && g.sees) g.sawHide = true;
       }
     } else {
       p.stillT = 0;
@@ -356,7 +360,7 @@ export class World {
     const b = L.bed;
     const m = 0.55;
     if (p.x > b.x0 - m && p.x < b.x1 + m && p.z > b.z0 - m && p.z < b.z1 + m) {
-      if (this.cookieCount >= L.need) {
+      if (this.requiredDone) {
         this.status = 'won';
         this.events.push({ type: 'win' });
       } else if (this.needT <= 0 && this.t > 1.5) {
@@ -571,7 +575,6 @@ export class World {
           g.lostT = 0;
         } else {
           g.lostT += dt;
-          if (g.sawHide && p.hidden) g.target = { x: p.x, z: p.z };
         }
         g.routeT -= dt;
         if (g.routeT <= 0) {
@@ -581,12 +584,11 @@ export class World {
         }
         this.moveAlong(g, dt, g.cfg.chase);
         const reached = Math.hypot(g.target.x - g.x, g.target.z - g.z) < 0.35;
-        if ((g.lostT > 2.6 || reached) && !sees && !(g.sawHide && p.hidden)) {
+        if ((g.lostT > 2.6 || reached) && !sees) {
           g.state = 'search';
           g.timer = 2.4;
           g.lookBase = g.dir;
           g.alert = 0.5;
-          g.sawHide = false;
           this.events.push({ type: 'lost', g: gi });
         }
         break;
@@ -597,7 +599,8 @@ export class World {
     if (this.status === 'play' && g.state !== 'sleep') {
       const dd = Math.hypot(g.x - p.x, g.z - p.z);
       const catchR = g.state === 'chase' ? 0.62 : 0.5;
-      if (dd < catchR && (!p.hidden || (g.state === 'chase' && g.sawHide))) {
+      // a hidden kid is never caught
+      if (dd < catchR && !p.hidden) {
         this.status = 'caught';
         this.caughtBy = gi;
         this.events.push({ type: 'caught', g: gi });

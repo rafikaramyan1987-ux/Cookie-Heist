@@ -61,15 +61,14 @@ export class NoiseRing {
     this.mat = new THREE.ShaderMaterial({
       uniforms: { uT: { value: 0 }, uColor: { value: new THREE.Color(color) } },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      // one thin ripple growing to the real hearing radius, fading out (subtle, semi-transparent)
       fragmentShader: `uniform float uT; uniform vec3 uColor; varying vec2 vUv;
         void main(){
           float r = length(vUv - 0.5) * 2.0;
-          float a = 0.0;
-          for (int i = 0; i < 3; i++) {
-            float k = fract(uT * 0.9 - float(i) * 0.28);
-            a += smoothstep(0.06, 0.0, abs(r - k)) * (1.0 - k) * 1.2;
-          }
-          a += smoothstep(1.0, 0.97, r) * smoothstep(0.92, 0.97, r) * 0.35;
+          float k = clamp(uT, 0.0, 1.0);
+          float rad = 0.12 + 0.88 * (1.0 - pow(1.0 - k, 2.0));
+          float line = smoothstep(0.022, 0.0, abs(r - rad));
+          float a = line * 0.42 * (1.0 - k) + smoothstep(1.0, 0.985, r) * smoothstep(0.97, 0.985, r) * 0.12 * (1.0 - k);
           gl_FragColor = vec4(uColor * a, a);
         }`,
       transparent: true,
