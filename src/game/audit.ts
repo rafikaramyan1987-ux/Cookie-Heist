@@ -1,6 +1,6 @@
-import type { Level } from "./types";
-import { World } from "./world";
-import { canStep, walkable } from "./grid";
+import type { Level } from './types';
+import { World } from './world';
+import { canStep, walkable } from './grid';
 
 /**
  * Level audits on the real guard simulation (guards undisturbed, the kid invisible):
@@ -21,14 +21,7 @@ const STILL = { mx: 0, mz: 0 };
  * Run the guards alone for `T` seconds, calling `fn` after every step.
  * `phase` (s) overrides the per-game phase of the yawn / phone / look cycles.
  */
-export function guardTimeline(
-  L: Level,
-  T: number,
-  fn: (w: World) => void,
-  dt = 0.1,
-  seed = 1,
-  phase?: number,
-) {
+export function guardTimeline(L: Level, T: number, fn: (w: World) => void, dt = 0.1, seed = 1, phase?: number) {
   const w = new World(L, { seed });
   if (phase !== undefined) for (const g of w.guards) g.phase = phase;
   w.ghost = true;
@@ -38,7 +31,7 @@ export function guardTimeline(
   const p = w.player;
   for (let t = 0; t < T - 1e-6; t += dt) {
     w.step(dt, STILL);
-    w.status = "play";
+    w.status = 'play';
     p.x = -10;
     p.z = -10;
     fn(w);
@@ -51,10 +44,9 @@ export function cellSeen(w: World, i: number, pets = true): boolean {
   const cx = (i % L.w) + 0.5,
     cz = ((i / L.w) | 0) + 0.5;
   for (const g of w.guards) {
-    if (g.delay > 0 || g.state === "sleep" || (!pets && !g.cfg.adult)) continue;
+    if (g.delay > 0 || g.state === 'sleep' || (!pets && !g.cfg.adult)) continue;
     if (g.cfg.adult && Math.hypot(g.x - cx, g.z - cz) < 0.7) return true; // standing on it
-    for (const [ox, oz] of OFFS)
-      if (w.canSee(g, { x: cx + ox, z: cz + oz }, true).sees) return true;
+    for (const [ox, oz] of OFFS) if (w.canSee(g, { x: cx + ox, z: cz + oz }, true).sees) return true;
   }
   return false;
 }
@@ -93,12 +85,7 @@ export function startCells(L: Level, steps = 2): number[] {
  * Sightings of the start area (start + first `steps` steps) during the first `T` seconds,
  * over the whole range of look / yawn / phone cycle phases: [phase, time, cell].
  */
-export function startSightings(
-  L: Level,
-  T = 3,
-  steps = 3,
-  phases = 12,
-): [number, number, number][] {
+export function startSightings(L: Level, T = 3, steps = 3, phases = 12): [number, number, number][] {
   const cells = startCells(L, steps);
   const out: [number, number, number][] = [];
   for (let k = 0; k < phases; k++) {
@@ -107,8 +94,7 @@ export function startSightings(
       L,
       T,
       (w) => {
-        for (const c of cells)
-          if (cellSeen(w, c)) out.push([+phase.toFixed(2), +w.t.toFixed(1), c]);
+        for (const c of cells) if (cellSeen(w, c)) out.push([+phase.toFixed(2), +w.t.toFixed(1), c]);
       },
       0.1,
       k + 1,
@@ -119,12 +105,7 @@ export function startSightings(
 }
 
 /** Longest continuous time (s) each walkable cell is watched by an adult, over `T` seconds of patrols. */
-export function watchRuns(
-  L: Level,
-  T = 60,
-  dt = 0.1,
-  phases = 3,
-): Float32Array {
+export function watchRuns(L: Level, T = 60, dt = 0.1, phases = 3): Float32Array {
   const pass = walkable(L, false);
   const cells: number[] = [];
   for (let i = 0; i < L.w * L.d; i++) if (pass(i)) cells.push(i);
@@ -196,53 +177,29 @@ export function closedTargets(L: Level, maxWatch = 6, T = 60): string[] {
       [-1, 0],
       [0, 1],
       [0, -1],
-    ].some(
-      ([dx, dz]) =>
-        cx + dx >= 0 &&
-        cz + dz >= 0 &&
-        cx + dx < L.w &&
-        cz + dz < L.d &&
-        !!seen[(cz + dz) * L.w + cx + dx],
-    );
+    ].some(([dx, dz]) => cx + dx >= 0 && cz + dz >= 0 && cx + dx < L.w && cz + dz < L.d && !!seen[(cz + dz) * L.w + cx + dx]);
   };
   const bad: string[] = [];
   L.cookies.forEach((c, i) => {
-    if (i !== L.bonus && !at(c.x, c.z, c.onSolid))
-      bad.push(`cookie ${Math.floor(c.x)},${Math.floor(c.z)}`);
+    if (i !== L.bonus && !at(c.x, c.z, c.onSolid)) bad.push(`cookie ${Math.floor(c.x)},${Math.floor(c.z)}`);
   });
-  if (
-    L.bedCheck > 0 &&
-    L.pillows.length &&
-    !L.pillows.some((p) => at(p.x, p.z))
-  )
-    bad.push("pillow");
-  if (keyReach && !L.keys.some((k) => at(k.x, k.z))) bad.push("key");
+  if (L.bedCheck > 0 && L.pillows.length && !L.pillows.some((p) => at(p.x, p.z))) bad.push('pillow');
+  if (keyReach && !L.keys.some((k) => at(k.x, k.z))) bad.push('key');
   const b = L.bed;
   let bedOk = false;
   for (let z = b.z0 - 1; z <= b.z1; z++)
     for (let x = b.x0 - 1; x <= b.x1; x++) {
       if (x < 0 || z < 0 || x >= L.w || z >= L.d) continue;
-      if (
-        ((x >= b.x0 && x < b.x1) || (z >= b.z0 && z < b.z1)) &&
-        seen[z * L.w + x]
-      )
-        bedOk = true;
+      if (((x >= b.x0 && x < b.x1) || (z >= b.z0 && z < b.z1)) && seen[z * L.w + x]) bedOk = true;
     }
-  if (!bedOk) bad.push("bed");
+  if (!bedOk) bad.push('bed');
   return bad;
 }
 
 /** Awake adult guards that never move (a single patrol point). */
 export function stationaryGuards(L: Level): number[] {
   return L.guards.flatMap((g, i) => {
-    if (
-      g.sleep ||
-      (g.kind !== "mum" &&
-        g.kind !== "dad" &&
-        g.kind !== "grandma" &&
-        g.kind !== "teen")
-    )
-      return [];
+    if (g.sleep || (g.kind !== 'mum' && g.kind !== 'dad' && g.kind !== 'grandma' && g.kind !== 'teen')) return [];
     const distinct = new Set(g.path.map((p) => `${p.x},${p.z}`));
     return distinct.size < 2 ? [i] : [];
   });

@@ -1,12 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { getLevel } from "../../src/levels/index";
-import {
-  closedTargets,
-  startSightings,
-  stationaryGuards,
-} from "../../src/game/audit";
+import { describe, it, expect } from 'vitest';
+import { getLevel } from '../../src/levels/index';
+import { closedTargets, startSightings, stationaryGuards } from '../../src/game/audit';
 
-describe("level audit (real guard simulation)", () => {
+describe('level audit (real guard simulation)', () => {
   for (let h = 0; h < 5; h++)
     for (let i = 0; i < 12; i++) {
       const L = getLevel(h, i);

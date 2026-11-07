@@ -2,34 +2,26 @@
  * Headless playtest: plays every level on the real game logic with beginner / average / good bots.
  * usage: npx tsx scripts/playtest/run.ts [--runs N] [--house H] [--level L] [--md docs/playtest.md]
  */
-import { writeFileSync } from "node:fs";
-import { getLevel, levelId, LEVEL_SRC } from "../../src/levels/index";
-import { World } from "../../src/game/world";
-import { simulate, PROFILES } from "../../src/game/bot";
-import { hiddenRequiredCookies } from "../../src/game/visibility";
-import {
-  closedTargets,
-  startSightings,
-  stationaryGuards,
-} from "../../src/game/audit";
-import { CAMP_MAX } from "../../src/game/world";
+import { writeFileSync } from 'node:fs';
+import { getLevel, levelId, LEVEL_SRC } from '../../src/levels/index';
+import { World } from '../../src/game/world';
+import { simulate, PROFILES } from '../../src/game/bot';
+import { hiddenRequiredCookies } from '../../src/game/visibility';
+import { closedTargets, startSightings, stationaryGuards } from '../../src/game/audit';
+import { CAMP_MAX } from '../../src/game/world';
 
 const args = process.argv.slice(2);
 const arg = (k: string, d: string) => {
   const i = args.indexOf(k);
   return i >= 0 ? args[i + 1] : d;
 };
-const RUNS = +arg("--runs", "24");
-const onlyHouse = arg("--house", "");
-const onlyLevel = arg("--level", "");
-const md = arg("--md", "");
-const strict = args.includes("--strict");
-const jsonOut = arg("--json", "");
-const profiles = arg("--profiles", "beginner,average,good").split(",") as (
-  | "beginner"
-  | "average"
-  | "good"
-)[];
+const RUNS = +arg('--runs', '24');
+const onlyHouse = arg('--house', '');
+const onlyLevel = arg('--level', '');
+const md = arg('--md', '');
+const strict = args.includes('--strict');
+const jsonOut = arg('--json', '');
+const profiles = arg('--profiles', 'beginner,average,good').split(',') as ('beginner' | 'average' | 'good')[];
 
 export interface Row {
   id: string;
@@ -58,9 +50,9 @@ export interface Row {
 
 const rows: Row[] = [];
 for (let h = 0; h < LEVEL_SRC.length; h++) {
-  if (onlyHouse !== "" && +onlyHouse !== h) continue;
+  if (onlyHouse !== '' && +onlyHouse !== h) continue;
   for (let i = 0; i < LEVEL_SRC[h].length; i++) {
-    if (onlyLevel !== "" && +onlyLevel !== i) continue;
+    if (onlyLevel !== '' && +onlyLevel !== i) continue;
     const L = getLevel(h, i);
     const row: Row = {
       id: levelId(h, i),
@@ -72,10 +64,10 @@ for (let h = 0; h < LEVEL_SRC.length; h++) {
       audit: [],
       prof: {},
     };
-    if (stationaryGuards(L).length) row.audit.push("stationary guard");
-    if (startSightings(L).length) row.audit.push("start seen");
+    if (stationaryGuards(L).length) row.audit.push('stationary guard');
+    if (startSightings(L).length) row.audit.push('start seen');
     const closed = closedTargets(L);
-    if (closed.length) row.audit.push(`never opens: ${closed.join(", ")}`);
+    if (closed.length) row.audit.push(`never opens: ${closed.join(', ')}`);
     for (const p of profiles) {
       let escapes = 0,
         early = 0,
@@ -95,7 +87,7 @@ for (let h = 0; h < LEVEL_SRC.length; h++) {
         if (r.won) {
           win++;
           time += r.time;
-        } else if (r.status === "play") timeout++;
+        } else if (r.status === 'play') timeout++;
         else caught++;
         spotted += r.spotted;
         noise += r.noises;
@@ -121,9 +113,7 @@ for (let h = 0; h < LEVEL_SRC.length; h++) {
       const r = row.prof[p];
       return `${p[0]}:${(r.win * 100).toFixed(0).padStart(3)}% ${r.time.toFixed(0).padStart(3)}s sp${r.spotted.toFixed(1)} c${r.caught} t${r.timeout} esc${r.escapes} early${r.early} camp${r.camp.toFixed(1)}`;
     };
-    console.log(
-      `${row.id.padEnd(13)} ${row.solvable ? "OK " : "NO!"} ${profiles.map(f).join(" | ")}`,
-    );
+    console.log(`${row.id.padEnd(13)} ${row.solvable ? 'OK ' : 'NO!'} ${profiles.map(f).join(' | ')}`);
   }
 }
 
@@ -133,49 +123,39 @@ if (strict) {
   for (const r of rows) {
     const ps = Object.values(r.prof);
     const why: string[] = [...r.audit];
-    if (!r.solvable) why.push("unsolvable");
-    if (!r.visible) why.push("hidden cookie");
+    if (!r.solvable) why.push('unsolvable');
+    if (!r.visible) why.push('hidden cookie');
     const esc = ps.reduce((n, p) => n + p.escapes, 0);
     if (esc) why.push(`${esc} escape(s) after "!"`);
     const early = ps.reduce((n, p) => n + p.early, 0);
     if (early) why.push(`${early} sighting(s) in the first 3 s`);
     const camp = Math.max(...ps.map((p) => p.camp));
-    if (camp > 3)
-      why.push(`guard idled ${camp.toFixed(1)} s next to the hidden kid`);
-    if (why.length) bad.push(`${r.id}: ${why.join("; ")}`);
+    if (camp > 3) why.push(`guard idled ${camp.toFixed(1)} s next to the hidden kid`);
+    if (why.length) bad.push(`${r.id}: ${why.join('; ')}`);
   }
   if (bad.length) {
-    console.error("PLAYTEST FAILED\n  " + bad.join("\n  "));
+    console.error('PLAYTEST FAILED\n  ' + bad.join('\n  '));
     process.exit(1);
   }
-  console.log(
-    `all ${rows.length} levels solvable; 0 escapes after "!"; 0 early sightings; max idle near a hidden kid ≤ ${CAMP_MAX} s; patrols open; safe starts`,
-  );
+  console.log(`all ${rows.length} levels solvable; 0 escapes after "!"; 0 early sightings; max idle near a hidden kid ≤ ${CAMP_MAX} s; patrols open; safe starts`);
 }
 
 if (md) {
-  const names = [
-    "City Apartment",
-    "Family House",
-    "Grandma's Cottage",
-    "Snowy Chalet",
-    "Grand Mansion",
-  ];
+  const names = ['City Apartment', 'Family House', "Grandma's Cottage", 'Snowy Chalet', 'Grand Mansion'];
   let out = `# Playtest report\n\nGenerated by \`npm run playtest\` — ${RUNS} runs per level and profile on the real game logic (guard simulation + bot pathfinding).\n\n`;
   out += `Targets: house 1 nights 1–3 beginner ≥ 90%; normal nights average ≈ 70%; finales ≈ 50%; nothing below 35% (average profile).\n\n"Cookies visible": no required cookie is hidden behind a wall or tall furniture from the default phone camera (\`src/game/visibility.ts\`).\n\n`;
   out += `Audit columns (all profiles): **Escapes** = "!" that did not end in a catch (must be 0: a full sighting sends the kid to bed); **Early** = runs with a guard sighting in the first 3 s (must be 0); **Idle** = longest time a guard stood still next to the hidden kid (must be ≤ 3 s); **Audit** = static checks on the guard simulation: no stationary adult guard, nobody sees the start or the first three steps for 3 s, and every patrol cycle opens a path (each route cell clear at least every 6 s).\n\n`;
   out += `| Level | Solvable | Cookies visible | Beginner win | Average win | Good win | Avg time (avg) | Spotted / run (avg) | Escapes | Early | Idle | Audit |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n`;
-  const ps = (r: Row, k: "escapes" | "early") =>
-    Object.values(r.prof).reduce((n, p) => n + p[k], 0);
+  const ps = (r: Row, k: 'escapes' | 'early') => Object.values(r.prof).reduce((n, p) => n + p[k], 0);
   for (const r of rows) {
     const a = r.prof.average;
-    out += `| ${names[r.house]} ${r.index + 1}${r.finale ? " (finale)" : ""} | ${r.solvable ? "yes" : "**no**"} | ${r.visible ? "yes" : "**no**"} | ${(r.prof.beginner.win * 100).toFixed(0)}% | ${(a.win * 100).toFixed(0)}% | ${(r.prof.good.win * 100).toFixed(0)}% | ${a.time.toFixed(1)} s | ${a.spotted.toFixed(2)} | ${ps(r, "escapes")} | ${ps(r, "early")} | ${Math.max(...Object.values(r.prof).map((p) => p.camp)).toFixed(1)} s | ${r.audit.length ? "**" + r.audit.join("; ") + "**" : "ok"} |\n`;
+    out += `| ${names[r.house]} ${r.index + 1}${r.finale ? ' (finale)' : ''} | ${r.solvable ? 'yes' : '**no**'} | ${r.visible ? 'yes' : '**no**'} | ${(r.prof.beginner.win * 100).toFixed(0)}% | ${(a.win * 100).toFixed(0)}% | ${(r.prof.good.win * 100).toFixed(0)}% | ${a.time.toFixed(1)} s | ${a.spotted.toFixed(2)} | ${ps(r, 'escapes')} | ${ps(r, 'early')} | ${Math.max(...Object.values(r.prof).map((p) => p.camp)).toFixed(1)} s | ${r.audit.length ? '**' + r.audit.join('; ') + '**' : 'ok'} |\n`;
   }
   writeFileSync(md, out);
-  console.log("wrote", md);
+  console.log('wrote', md);
 }
 
 if (jsonOut) {
   writeFileSync(jsonOut, JSON.stringify(rows, null, 1));
-  console.log("wrote", jsonOut);
+  console.log('wrote', jsonOut);
 }

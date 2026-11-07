@@ -1,4 +1,4 @@
-import type { Level, Vec2 } from "./types";
+import type { Level, Vec2 } from './types';
 
 /**
  * Grid helpers on the level's cell / edge representation: exact line-of-sight
@@ -19,15 +19,7 @@ export function cellOf(p: Vec2) {
 }
 
 /** Distance along a ray until it hits a wall edge, a tall prop or leaves the level. */
-export function rayDist(
-  L: Level,
-  E: Edges,
-  x0: number,
-  z0: number,
-  dx: number,
-  dz: number,
-  maxD: number,
-): number {
+export function rayDist(L: Level, E: Edges, x0: number, z0: number, dx: number, dz: number, maxD: number): number {
   const w = L.w,
     d = L.d;
   let cx = Math.floor(x0),
@@ -71,14 +63,7 @@ export function los(L: Level, E: Edges, a: Vec2, b: Vec2): boolean {
 }
 
 /** Can one step from cell a to orthogonal neighbour b (edges open)? */
-function edgeOpen(
-  L: Level,
-  E: Edges,
-  x: number,
-  z: number,
-  nx: number,
-  nz: number,
-): boolean {
+function edgeOpen(L: Level, E: Edges, x: number, z: number, nx: number, nz: number): boolean {
   if (nx > x) return !blocks(E.ev[z * (L.w + 1) + x + 1]);
   if (nx < x) return !blocks(E.ev[z * (L.w + 1) + x]);
   if (nz > z) return !blocks(E.eh[(z + 1) * L.w + x]);
@@ -91,16 +76,7 @@ export function walkable(L: Level, forGuard: boolean): Passable {
   return (i) => L.room[i] >= 0 && !L.solid[i] && (!forGuard || !L.hide[i]);
 }
 
-export function canStep(
-  L: Level,
-  E: Edges,
-  pass: Passable,
-  x: number,
-  z: number,
-  dx: number,
-  dz: number,
-  goal = -1,
-): boolean {
+export function canStep(L: Level, E: Edges, pass: Passable, x: number, z: number, dx: number, dz: number, goal = -1): boolean {
   const nx = x + dx,
     nz = z + dz;
   if (nx < 0 || nz < 0 || nx >= L.w || nz >= L.d) return false;
@@ -111,12 +87,7 @@ export function canStep(
   const ia = z * L.w + nx,
     ib = nz * L.w + x;
   if (!pass(ia) || !pass(ib)) return false;
-  return (
-    edgeOpen(L, E, x, z, nx, z) &&
-    edgeOpen(L, E, nx, z, nx, nz) &&
-    edgeOpen(L, E, x, z, x, nz) &&
-    edgeOpen(L, E, x, nz, nx, nz)
-  );
+  return edgeOpen(L, E, x, z, nx, z) && edgeOpen(L, E, nx, z, nx, nz) && edgeOpen(L, E, x, z, x, nz) && edgeOpen(L, E, x, nz, nx, nz);
 }
 
 const DIRS8: [number, number, number][] = [
@@ -131,14 +102,7 @@ const DIRS8: [number, number, number][] = [
 ];
 
 /** A* over cells. Returns cell centres from (excluding) start to goal, or null. */
-export function findPath(
-  L: Level,
-  E: Edges,
-  pass: Passable,
-  from: Vec2,
-  to: Vec2,
-  diag = true,
-): Vec2[] | null {
+export function findPath(L: Level, E: Edges, pass: Passable, from: Vec2, to: Vec2, diag = true): Vec2[] | null {
   const w = L.w,
     n = w * L.d;
   const s = Math.floor(from.z) * w + Math.floor(from.x);
@@ -207,19 +171,13 @@ export function findPath(
   }
   if (prev[g] < 0) return null;
   const out: Vec2[] = [];
-  for (let i = g; i !== s; i = prev[i])
-    out.push({ x: (i % w) + 0.5, z: ((i / w) | 0) + 0.5 });
+  for (let i = g; i !== s; i = prev[i]) out.push({ x: (i % w) + 0.5, z: ((i / w) | 0) + 0.5 });
   out.reverse();
   return out;
 }
 
 /** BFS distance field (in steps, 4-neighbour) from a cell; Infinity when unreachable. */
-export function distanceField(
-  L: Level,
-  E: Edges,
-  pass: Passable,
-  from: Vec2,
-): Float32Array {
+export function distanceField(L: Level, E: Edges, pass: Passable, from: Vec2): Float32Array {
   const w = L.w,
     n = w * L.d;
   const dist = new Float32Array(n).fill(Infinity);
@@ -243,13 +201,7 @@ export function distanceField(
 }
 
 /** Push a circle out of solid cells and wall edges. */
-export function collide(
-  L: Level,
-  E: Edges,
-  p: Vec2,
-  r: number,
-  solidFor: (i: number) => boolean,
-) {
+export function collide(L: Level, E: Edges, p: Vec2, r: number, solidFor: (i: number) => boolean) {
   const w = L.w;
   const T = 0.08;
   for (let iter = 0; iter < 2; iter++) {
@@ -257,30 +209,20 @@ export function collide(
       cz = Math.floor(p.z);
     for (let z = cz - 1; z <= cz + 1; z++)
       for (let x = cx - 1; x <= cx + 1; x++) {
-        const out =
-          x < 0 || z < 0 || x >= w || z >= L.d || L.room[z * w + x] < 0;
+        const out = x < 0 || z < 0 || x >= w || z >= L.d || L.room[z * w + x] < 0;
         if (out || solidFor(z * w + x)) pushBox(p, r, x, z, x + 1, z + 1);
         // edges of this cell
         if (x >= 0 && x < w && z >= 0 && z <= L.d && z >= 0) {
-          if (z <= L.d && blocks(E.eh[z * w + x] ?? 0))
-            pushBox(p, r, x, z - T, x + 1, z + T);
+          if (z <= L.d && blocks(E.eh[z * w + x] ?? 0)) pushBox(p, r, x, z - T, x + 1, z + T);
         }
         if (z >= 0 && z < L.d && x >= 0 && x <= w) {
-          if (blocks(E.ev[z * (w + 1) + x] ?? 0))
-            pushBox(p, r, x - T, z, x + T, z + 1);
+          if (blocks(E.ev[z * (w + 1) + x] ?? 0)) pushBox(p, r, x - T, z, x + T, z + 1);
         }
       }
   }
 }
 
-function pushBox(
-  p: Vec2,
-  r: number,
-  x0: number,
-  z0: number,
-  x1: number,
-  z1: number,
-) {
+function pushBox(p: Vec2, r: number, x0: number, z0: number, x1: number, z1: number) {
   const qx = Math.max(x0, Math.min(p.x, x1));
   const qz = Math.max(z0, Math.min(p.z, z1));
   const dx = p.x - qx,
@@ -305,5 +247,4 @@ function pushBox(
   }
 }
 
-export const angleDiff = (a: number, b: number) =>
-  Math.atan2(Math.sin(a - b), Math.cos(a - b));
+export const angleDiff = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
