@@ -139,11 +139,11 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M1, {
     name: ['Secret Passage', 'Passage secret'],
-    put: 'j 0,0; k 9,11; c 10,1; Q 5,5',
+    put: 'j 0,0; k 9,11; g 10,1; c 6,3; Q 5,5',
     doors: '4,1wL',
     guards: [
-      { k: 'dad', p: '6,1 10,3', w: 2, speed: 0.7 },
-      { k: 'grandma', p: '0,4 10,4', w: 2.5, speed: 0.6 },
+      { k: 'dad', p: '6,1 10,3', w: 2.5, speed: 0.55 },
+      { k: 'grandma', p: '0,4 10,4', w: 3, speed: 0.5 },
       { k: 'vacuum', p: '5,7 6,11', w: 1 },
     ],
     par: 60,

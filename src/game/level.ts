@@ -1,5 +1,6 @@
 import type { HouseId, LevelDef, PropDef, RoomDef, Side, FloorKind, WallKind } from '../levels/types';
 import type { GuardSpec, Level, LevelSrc } from './types';
+import { distanceField, walkable } from './grid';
 
 /**
  * Parses the compact ASCII level format into the runtime Level.
@@ -166,6 +167,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
   let start: { x: number; z: number } | null = null;
   const used = new Uint8Array(w * d);
   const creakyList: [number, number][] = [];
+  let bonusCell = -1;
 
   const wallSide = (x: number, z: number): Side | null => {
     for (const s of ['n', 'w', 'e', 's'] as Side[]) if (isWall(x, z, s)) return s;
@@ -181,6 +183,10 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
       if (R(x, z) < 0) throw new Error(`${id}: object '${ch}' outside at ${x},${z}`);
       switch (ch) {
         case 'c':
+          cookies.push({ x: x + 0.5, z: z + 0.5, onSolid: false });
+          continue;
+        case 'g':
+          bonusCell = cookies.length;
           cookies.push({ x: x + 0.5, z: z + 0.5, onSolid: false });
           continue;
         case '~':
@@ -391,7 +397,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
   // locked doors render as walls with a door panel (handled by renderer via level.eh/ev)
 
   const n = cookies.length;
-  return {
+  const out: Level = {
     id,
     house,
     houseIndex: HOUSES.indexOf(house),
@@ -411,6 +417,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
     floorToy,
     cookies,
     need: n >= 2 ? n - 1 : n,
+    bonus: -1,
     keys,
     switches,
     pillows,
@@ -426,6 +433,42 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
     def,
     props,
   };
+  out.bonus = n >= 2 ? (bonusCell >= 0 ? bonusCell : pickBonus(out)) : -1;
+  if (out.bonus >= 0 && !cookies[out.bonus].onSolid) def.bonusCookie = cookies.slice(0, out.bonus).filter((c) => !c.onSolid).length;
+  return out;
+}
+
+/** The golden bonus cookie: the one that costs the longest detour (start → cookie → bed). */
+function pickBonus(L: Level): number {
+  const open = { eh: L.eh.map((v) => (v === 3 ? 2 : v)), ev: L.ev.map((v) => (v === 3 ? 2 : v)) };
+  const pass = walkable(L, false);
+  const fs = distanceField(L, open, pass, L.start);
+  const b = L.bed;
+  const fb = distanceField(L, open, pass, { x: b.x0 - 0.5 < 0 ? b.x1 + 0.5 : b.x0 - 0.5, z: (b.z0 + b.z1) / 2 });
+  const near = (f: Float32Array, c: { x: number; z: number; onSolid: boolean }) => {
+    const cx = Math.floor(c.x),
+      cz = Math.floor(c.z);
+    if (!c.onSolid) return f[cz * L.w + cx];
+    let m = Infinity;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const x = cx + dx,
+        z = cz + dz;
+      if (x >= 0 && z >= 0 && x < L.w && z < L.d) m = Math.min(m, f[z * L.w + x]);
+    }
+    return m + 1;
+  };
+  let best = -1,
+    bd = -1;
+  const floorOnes = L.cookies.filter((c) => !c.onSolid).length;
+  L.cookies.forEach((c, i) => {
+    if (c.onSolid && floorOnes > 0) return; // the jar stays a regular cookie
+    const d = near(fs, c) + (Number.isFinite(near(fb, c)) ? near(fb, c) : 0);
+    if (d > bd) {
+      bd = d;
+      best = i;
+    }
+  });
+  return best;
 }
 
 const propDepth: Record<string, number> = {

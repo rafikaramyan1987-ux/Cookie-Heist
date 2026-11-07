@@ -12,6 +12,13 @@ export const ICONS = {
           : ''
       }
     </svg>`,
+  goldCookie: (filled = true) => `
+    <svg viewBox="0 0 48 48" class="ic-cookie gold ${filled ? 'on' : 'off'}">
+      <circle cx="24" cy="25" r="19" fill="${filled ? '#a8740b' : 'rgba(20,12,50,.55)'}"/>
+      <circle cx="24" cy="23" r="19" fill="${filled ? '#ffcf3d' : 'rgba(255,210,94,.12)'}" stroke="${filled ? '#a8740b' : 'rgba(255,210,94,.75)'}" stroke-width="2.5" ${filled ? '' : 'stroke-dasharray="5 4"'}/>
+      <path d="M24 12l3.2 6.6 7.2 1-5.2 5 1.3 7.2L24 28.4l-6.5 3.4 1.3-7.2-5.2-5 7.2-1z" fill="${filled ? '#fff6c8' : 'rgba(255,210,94,.75)'}" stroke="${filled ? '#a8740b' : 'none'}" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>`,
+  bed: `<svg viewBox="0 0 48 48"><rect x="5" y="14" width="6" height="24" rx="2" fill="#8a5434"/><rect x="9" y="24" width="34" height="9" rx="3" fill="#6c8cff"/><rect x="12" y="19" width="10" height="6" rx="3" fill="#fff"/><rect x="40" y="22" width="4" height="16" rx="2" fill="#8a5434"/></svg>`,
   pause: `<svg viewBox="0 0 48 48"><rect x="14" y="12" width="7" height="24" rx="3" fill="currentColor"/><rect x="27" y="12" width="7" height="24" rx="3" fill="currentColor"/></svg>`,
   moon: `<svg viewBox="0 0 48 48"><path d="M31 7a17 17 0 1 0 10 27A15 15 0 0 1 31 7z" fill="#ffe28a"/><circle cx="20" cy="22" r="2.5" fill="#f2c25a"/><circle cx="26" cy="33" r="2" fill="#f2c25a"/></svg>`,
   coin: `<svg viewBox="0 0 48 48"><circle cx="24" cy="26" r="17" fill="#c9861f"/><circle cx="24" cy="23" r="17" fill="#ffd25e" stroke="#c9861f" stroke-width="2.5"/><circle cx="24" cy="23" r="11" fill="none" stroke="#f0a92e" stroke-width="2.5"/><path d="M16 15 Q20 10 27 9" stroke="#fff3c4" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,

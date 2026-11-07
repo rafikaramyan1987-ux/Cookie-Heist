@@ -20,6 +20,12 @@ export class GameCamera {
   private shakeT = 0;
   private shakeAmp = 0;
   focus: THREE.Vector3 | null = null; // cinematic focus (win/caught)
+  /** bounding box of the kid's current room (+1 cell for the doorways), provided by the scene */
+  roomBox: ((x: number, z: number) => { x0: number; z0: number; x1: number; z1: number }) | null = null;
+  private curDist = 14;
+  private curCenter = new THREE.Vector3();
+  private hfov = 1;
+  private vfov = 1;
   private focusDist = 6;
 
   constructor(
@@ -46,11 +52,27 @@ export class GameCamera {
     });
     this.ovTarget.copy(fit.target);
     this.ovDist = fit.distance;
-    // follow distance: visible ground width around the kid
-    const visibleW = this.portrait ? 6.2 : 12.5;
-    const hfov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(this.cam.fov / 2)) * this.aspect);
-    this.dist = visibleW / 2 / Math.tan(hfov / 2);
-    if (!this.portrait) this.dist = Math.min(this.dist, 17);
+    // follow distance limits: never closer than ~7 cells across, never farther than ~10.5 (phone)
+    this.vfov = THREE.MathUtils.degToRad(this.cam.fov);
+    this.hfov = 2 * Math.atan(Math.tan(this.vfov / 2) * this.aspect);
+    this.dist = this.distForWidth(this.portrait ? 7 : 12.5);
+  }
+
+  private distForWidth(w: number) {
+    return w / 2 / Math.tan(this.hfov / 2);
+  }
+
+  /** distance that shows the whole room box (clamped so characters stay readable) */
+  private roomFraming(px: number, pz: number) {
+    const b = this.roomBox ? this.roomBox(px, pz) : { x0: px - 3, z0: pz - 3, x1: px + 3, z1: pz + 3 };
+    const side = Math.abs(this.yaw) > 0.1;
+    const sw = side ? b.z1 - b.z0 : b.x1 - b.x0; // extent across the screen
+    const sd = side ? b.x1 - b.x0 : b.z1 - b.z0; // extent up the screen
+    const dW = this.distForWidth(sw);
+    const dD = (sd * Math.sin(this.pitch) * 0.5 + 0.7) / Math.tan(this.vfov / 2) / 0.82;
+    const lo = this.distForWidth(this.portrait ? 6.8 : 11);
+    const hi = this.distForWidth(this.portrait ? 8.6 : 16);
+    return { dist: THREE.MathUtils.clamp(Math.max(dW, dD), lo, hi), cx: (b.x0 + b.x1) / 2, cz: (b.z0 + b.z1) / 2 };
   }
 
   /** world-space ground direction vectors for screen right / up */
@@ -63,6 +85,9 @@ export class GameCamera {
   snapTo(x: number, z: number) {
     this.look.set(x, 0, z);
     this.lead.set(0, 0, 0);
+    const fr = this.roomFraming(x, z);
+    this.curCenter.set(fr.cx, 0, fr.cz);
+    this.curDist = fr.dist;
   }
 
   shake(amount = 0.25, time = 0.45) {
@@ -84,15 +109,30 @@ export class GameCamera {
       want.set((vx / sp) * k * Math.min(1, sp / 1.7), 0, (vz / sp) * k * Math.min(1, sp / 1.7));
     }
     this.lead.lerp(want, 1 - Math.exp(-dt * 1.8));
-    const tgt = new THREE.Vector3(px + this.lead.x, 0, pz + this.lead.z);
+    // frame the whole current room (+ doorways), leaning towards the kid and the direction of travel
+    const fr = this.roomFraming(px, pz);
+    this.curCenter.lerp(new THREE.Vector3(fr.cx, 0, fr.cz), 1 - Math.exp(-dt * 3));
+    this.curDist += (fr.dist - this.curDist) * (1 - Math.exp(-dt * 2.5));
+    const tgt = new THREE.Vector3(
+      THREE.MathUtils.lerp(this.curCenter.x, px, 0.45) + this.lead.x * 0.7,
+      0,
+      THREE.MathUtils.lerp(this.curCenter.z, pz, 0.45) + this.lead.z * 0.7,
+    );
     // keep the view mostly over the level
     const m = this.portrait ? 1.2 : 2.5;
     tgt.x = THREE.MathUtils.clamp(tgt.x, Math.min(this.w / 2, m), Math.max(this.w / 2, this.w - m));
     tgt.z = THREE.MathUtils.clamp(tgt.z, Math.min(this.d / 2, m), Math.max(this.d / 2, this.d - m));
-    // the camera looks a bit ahead of the kid: shift the target "up" the screen
-    const { up } = this.groundAxes();
-    tgt.addScaledVector(up, this.portrait ? 0.9 : 0.3);
+    // keep the kid comfortably inside the frame
+    const halfW = Math.tan(this.hfov / 2) * this.curDist * 0.8;
+    const halfD = (Math.tan(this.vfov / 2) * this.curDist * 0.75) / Math.sin(this.pitch);
+    const { up, right } = this.groundAxes();
+    const rel = new THREE.Vector3(px - tgt.x, 0, pz - tgt.z);
+    const ax = rel.dot(right),
+      ay = rel.dot(up);
+    if (Math.abs(ax) > halfW) tgt.addScaledVector(right, ax - Math.sign(ax) * halfW);
+    if (Math.abs(ay) > halfD) tgt.addScaledVector(up, ay - Math.sign(ay) * halfD);
     this.look.lerp(tgt, 1 - Math.exp(-dt * 4.5));
+    this.dist = this.curDist;
 
     this.overviewT += ((this.overview ? 1 : 0) - this.overviewT) * (1 - Math.exp(-dt * 5));
     let target = this.look.clone();

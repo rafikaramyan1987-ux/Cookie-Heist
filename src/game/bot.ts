@@ -76,7 +76,7 @@ export class Bot {
         this.plan = r.plan;
         if (r.blocked) this.blockedT += this.profile.replan;
         else this.blockedT = Math.max(0, this.blockedT - this.profile.replan * 0.5);
-        if (this.blockedT > 6 && w.cookieCount >= w.L.need && !this.giveUp) {
+        if (this.blockedT > 6 && w.requiredDone && !this.giveUp) {
           this.giveUp = true;
           this.blockedT = 0;
         }
@@ -149,14 +149,16 @@ export class Bot {
     }
     const have = w.cookieCount;
     const wantAll = this.profile.greedy && !this.giveUp;
-    const needMore = have < L.need || (wantAll && have < L.cookies.length);
+    const needMore = !w.requiredDone || (wantAll && have < L.cookies.length);
     if (needMore) {
       let best: Vec2 | null = null,
         bd = Infinity;
       this.goalCookie = -1;
-      const avail = L.cookies.filter((_, i) => !w.cookies[i] && (this.banned.get(i) ?? 0) < w.t).length;
+      // required cookies first; the golden bonus only once they are all collected
+      const wanted = (i: number) => !w.cookies[i] && (w.requiredDone || i !== L.bonus);
+      const avail = L.cookies.filter((_, i) => wanted(i) && (this.banned.get(i) ?? 0) < w.t).length;
       L.cookies.forEach((c, i) => {
-        if (w.cookies[i]) return;
+        if (!wanted(i)) return;
         if (avail > 0 && (this.banned.get(i) ?? 0) >= w.t) return;
         const d = reach(c, c.onSolid);
         if (d < bd) {
@@ -183,7 +185,7 @@ export class Bot {
           bestBed = { x: x + 0.5, z: z + 0.5 };
         }
       }
-    if (bd < Infinity && have >= L.need) return bestBed;
+    if (bd < Infinity && w.requiredDone) return bestBed;
     // something is locked away: fetch a key
     const k = L.keys.findIndex((_, i) => !w.keysTaken[i] && reach(L.keys[i]) < Infinity);
     if (k >= 0 && w.keys === 0) return L.keys[k];

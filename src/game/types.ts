@@ -99,6 +99,8 @@ export interface Level {
   floorToy: Uint8Array;
   cookies: (Vec2 & { onSolid: boolean })[];
   need: number;
+  /** index of the golden bonus cookie (optional), -1 if none */
+  bonus: number;
   keys: Vec2[];
   switches: (Vec2 & { room: number })[];
   pillows: Vec2[];

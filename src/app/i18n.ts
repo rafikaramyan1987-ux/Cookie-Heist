@@ -19,8 +19,8 @@ const EN = {
   hmm: 'Hmm?',
   run: 'Run!',
   hidden: 'Hidden',
-  tiptoe: 'tiptoe',
-  running: 'run!',
+  tiptoe: 'TIPTOE',
+  running: 'RUN!',
   aim: 'Tap where to throw',
   backToBedShout: 'Back to bed!',
   bedCheckShout: 'Bed check!',
@@ -78,6 +78,8 @@ const EN = {
   m_hide: 'Hide {n} times',
   reward: 'Reward',
   newTip: 'NEW!',
+  plusBonus: '+ 1 bonus ⭐',
+  bonusGot: '⭐ Bonus cookie!',
   kbHint: 'WASD / arrows = move · Shift = run · Space = toy · hold Map = overview',
 } as const;
 
@@ -101,8 +103,8 @@ const FR: Record<Key, string> = {
   hmm: 'Hein ?',
   run: 'Cours !',
   hidden: 'Caché',
-  tiptoe: 'pointe des pieds',
-  running: 'cours !',
+  tiptoe: 'PAS DE LOUP',
+  running: 'COURS !',
   aim: 'Touche où lancer',
   backToBedShout: 'Au lit !',
   bedCheckShout: 'Vérif du lit !',
@@ -160,6 +162,8 @@ const FR: Record<Key, string> = {
   m_hide: 'Cache-toi {n} fois',
   reward: 'Récompense',
   newTip: 'NOUVEAU !',
+  plusBonus: '+ 1 bonus ⭐',
+  bonusGot: '⭐ Cookie bonus !',
   kbHint: 'ZQSD / flèches = bouger · Maj = courir · Espace = jouet · Carte = vue d’ensemble',
 };
 

@@ -118,7 +118,7 @@ export class GameScene {
 
     this.buildItems();
     this.buildDark();
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 2; i++) {
       const r = new NoiseRing(1);
       r.mesh.visible = false;
       this.scene.add(r.mesh);
@@ -128,6 +128,25 @@ export class GameScene {
     this.particles = new Particles(360);
     this.scene.add(this.particles.mesh);
     this.syncKid(0, 0);
+    // room boxes for the camera framing
+    const boxes = level.roomLetters.map(() => ({ x0: 99, z0: 99, x1: -1, z1: -1 }));
+    for (let z = 0; z < level.d; z++)
+      for (let x = 0; x < level.w; x++) {
+        const r = level.room[z * level.w + x];
+        if (r < 0) continue;
+        const b = boxes[r];
+        b.x0 = Math.min(b.x0, x);
+        b.z0 = Math.min(b.z0, z);
+        b.x1 = Math.max(b.x1, x + 1);
+        b.z1 = Math.max(b.z1, z + 1);
+      }
+    this.camera.roomBox = (x, z) => {
+      const cx = Math.max(0, Math.min(level.w - 1, Math.floor(x))),
+        cz = Math.max(0, Math.min(level.d - 1, Math.floor(z)));
+      const r = level.room[cz * level.w + cx];
+      const b = r >= 0 ? boxes[r] : { x0: x - 2, z0: z - 2, x1: x + 2, z1: z + 2 };
+      return { x0: b.x0 - 1, z0: b.z0 - 1, x1: b.x1 + 1, z1: b.z1 + 1 };
+    };
     this.camera.snapTo(world.player.x, world.player.z);
     this.prevPos.set(world.player.x, world.player.z);
   }
@@ -470,8 +489,11 @@ export class GameScene {
     this.rings.forEach((r, i) => {
       this.ringAge[i] += dt;
       const a = this.ringAge[i];
-      r.mesh.visible = a < 1.1;
-      if (r.mesh.visible) r.update(a * 0.9 + 0.05);
+      r.mesh.visible = a < 0.9;
+      if (r.mesh.visible) {
+        r.update(a / 0.9);
+        r.mesh.position.set(p.x, 0.04, p.z);
+      }
     });
 
     this.particles.update(dt);
@@ -557,10 +579,13 @@ export class GameScene {
   private onEvent(e: GameEvent) {
     const p = this.world.player;
     if (e.type === 'noise') {
+      // subtle ripples around the kid only: max 2 alive, none while tiptoeing, rate-limited
+      if (!e.player || e.kind === 'toy' || p.mode === 'tiptoe') return;
+      if (Math.min(...this.ringAge) < 0.55) return;
       let i = this.ringAge.indexOf(Math.max(...this.ringAge));
       if (i < 0) i = 0;
       const r = this.rings[i];
-      r.mesh.position.set(e.x, 0.04, e.z);
+      r.mesh.position.set(p.x, 0.04, p.z);
       r.mesh.scale.setScalar(e.r);
       (r.mesh.material as THREE.ShaderMaterial).uniforms.uColor.value.set(NOISE_COLORS[e.kind] ?? 0xffffff);
       this.ringAge[i] = 0;

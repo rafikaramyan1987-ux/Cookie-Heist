@@ -264,6 +264,7 @@ export class App {
       hasKeys: level.keys.length > 0,
       hasPillow: level.pillows.length > 0,
       toyPickups: level.toyPickups.length,
+      bonus: level.bonus,
       touch: this.touch,
     });
     hud.onPause = () => this.pause();
@@ -279,7 +280,7 @@ export class App {
     // intro: whole-level overview + goals card
     this.mode = 'intro';
     scene.camera.overview = true;
-    const intro = buildIntro({ house: theme.name[getLang()], night: i + 1, name: level.name[getLang() === 'fr' ? 1 : 0], cookies: level.need, par: level.par, touch: this.touch });
+    const intro = buildIntro({ house: theme.name[getLang()], night: i + 1, name: level.name[getLang() === 'fr' ? 1 : 0], cookies: level.need, bonus: level.bonus >= 0, par: level.par, touch: this.touch });
     intro.classList.add('live-intro');
     this.overlay = intro;
     this.ui.appendChild(intro);
@@ -424,13 +425,34 @@ export class App {
           joyRadius: this.input.radius,
           aiming: this.input.aiming,
           running: world.player.mode === 'run',
+          moving: world.player.mode !== 'idle',
         },
         dt,
       );
+    if (this.mode === 'play') this.updateArrows();
     if (this.mode === 'cinematic') {
       r.endT -= dt;
       if (r.endT <= 0) this.showResult();
     }
+  }
+
+  /** off-screen pointers: remaining required cookies, the bonus, or the bed once ready */
+  private updateArrows() {
+    const r = this.run!;
+    const { world, level, scene } = r;
+    const cam = scene.camera.cam;
+    const list: { x: number; y: number; kind: 'cookie' | 'bonus' | 'bed'; behind: boolean }[] = [];
+    const push = (x: number, z: number, kind: 'cookie' | 'bonus' | 'bed') => {
+      const v = new THREE.Vector3(x, 0.5, z).project(cam);
+      list.push({ x: ((v.x + 1) / 2) * this.w, y: ((1 - v.y) / 2) * this.h, kind, behind: v.z > 1 });
+    };
+    if (!scene.camera.overview) {
+      level.cookies.forEach((c, i) => {
+        if (!world.cookies[i]) push(c.x, c.z, i === level.bonus ? 'bonus' : 'cookie');
+      });
+      if (world.requiredDone) push((level.bed.x0 + level.bed.x1) / 2, (level.bed.z0 + level.bed.z1) / 2, 'bed');
+    }
+    r.hud.setTargets(list, this.w, this.h);
   }
 
   private footsteps(dt: number) {
@@ -472,7 +494,7 @@ export class App {
         case 'cookie':
           audio.play('crunch');
           audio.play('pickup');
-          r.hud.toast(`🍪 ${r.world.cookieCount}/${r.level.cookies.length}`);
+          r.hud.toast(e.i === r.level.bonus ? t('bonusGot') : `🍪 ${r.world.cookies.filter((c, k) => c && k !== r.level.bonus).length}/${r.level.need}`);
           break;
         case 'key':
         case 'toyPickup':

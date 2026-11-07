@@ -133,10 +133,10 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H2, {
     name: ['Chalet Finale', 'Finale du chalet'],
-    put: 'j 1,0; c 9,2; c 0,8; p 8,7; Q 5,3; ~ 3,4 6,3',
+    put: 'j 1,0; c 9,2; g 0,8; p 8,7; Q 5,3; ~ 3,4 6,3',
     bedCheck: 60,
     guards: [
-      { k: 'dad', p: '0,4 9,4', w: 2, speed: 0.7 },
+      { k: 'dad', p: '0,4 9,4', w: 2.6, speed: 0.6 },
       { k: 'mum', p: '5,1 9,1', w: 2, speed: 0.75 },
       { k: 'vacuum', p: '1,6 4,8', w: 1 },
     ],

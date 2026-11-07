@@ -6,7 +6,7 @@ import { getLevel } from '../../src/levels/index';
 import { World } from '../../src/game/world';
 import { Bot, PROFILES } from '../../src/game/bot';
 
-const cands = [[1, 11]];
+const cands = [[1, 11], [1, 8], [0, 4]];
 for (const [h, i] of cands) {
   for (let seed = 1; seed <= 40; seed++) {
     const L = getLevel(h, i);

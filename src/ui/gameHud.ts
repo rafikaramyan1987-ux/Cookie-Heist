@@ -14,6 +14,8 @@ export interface HudInit {
   hasPillow: boolean;
   touch: boolean;
   toyPickups?: number;
+  /** index of the golden bonus cookie, -1 if none */
+  bonus: number;
 }
 
 export interface HudFrame {
@@ -28,6 +30,7 @@ export interface HudFrame {
   joyRadius: number;
   aiming: boolean;
   running: boolean;
+  moving: boolean;
 }
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -63,7 +66,7 @@ export class GameHud {
       <div class="alert-vignette"></div>
       <div class="hud-top">
         <div class="chip level-chip">${ICONS.moon}<div><small>${o.houseName}</small><b>${t('night')} ${o.night}</b></div></div>
-        <div class="cookie-bar">${Array.from({ length: o.total }, (_, i) => `<div class="slot ${i >= o.need ? 'bonus' : ''}">${ICONS.cookie(false)}</div>`).join('')}</div>
+        <div class="cookie-bar">${Array.from({ length: o.need }, () => `<div class="slot">${ICONS.cookie(false)}</div>`).join('')}${o.bonus >= 0 ? `<div class="slot bonus-slot">${ICONS.goldCookie(false)}</div>` : ''}</div>
         <button class="round-btn pause" aria-label="Pause">${ICONS.pause}</button>
       </div>
       <div class="hud-sub">
@@ -73,6 +76,7 @@ export class GameHud {
         <div class="chip bed-chip ${o.bedCheck ? '' : 'hidden-chip'}">⏰<b></b></div>
       </div>
       <div class="tip-card hidden-tip"><div class="tip-icon"></div><div class="tip-text"><small>${t('newTip')}</small><b></b><span></span></div></div>
+      <div class="edge-arrows"></div>
       <div class="toast"></div>
       <div class="shout"></div>
       <div class="aim-hint">${t('aim')}</div>
@@ -101,13 +105,85 @@ export class GameHud {
     el.querySelector('.pause')!.addEventListener('click', () => this.onPause());
     this.toyBtn.addEventListener('click', () => this.onToy());
     const zoom = el.querySelector<HTMLButtonElement>('.zoom')!;
-    zoom.addEventListener('pointerdown', () => this.onZoom(true));
-    zoom.addEventListener('pointerup', () => this.onZoom(false));
-    zoom.addEventListener('pointerleave', () => this.onZoom(false));
+    // tap = toggle the overview, press & hold = peek while held
+    let downAt = 0,
+      wasOn = false;
+    zoom.addEventListener('pointerdown', () => {
+      downAt = performance.now();
+      wasOn = this.zoomOn;
+      this.setZoom(true);
+    });
+    const release = () => {
+      if (!downAt) return;
+      const tap = performance.now() - downAt < 300;
+      downAt = 0;
+      this.setZoom(tap ? !wasOn : false);
+    };
+    zoom.addEventListener('pointerup', release);
+    zoom.addEventListener('pointercancel', release);
     this.tipEl.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
-      this.tipEl.classList.add('hidden-tip');
+      this.hideTip();
     });
+    this.tipEl.style.display = 'none';
+  }
+
+  private arrows: HTMLElement[] = [];
+  /** off-screen pointers to the remaining goals; positions are screen pixels (may be outside) */
+  setTargets(list: { x: number; y: number; kind: 'cookie' | 'bonus' | 'bed'; behind: boolean }[], w: number, h: number) {
+    const box = this.el.querySelector('.edge-arrows')!;
+    while (this.arrows.length < list.length) {
+      const a = document.createElement('div');
+      a.className = 'edge-arrow';
+      a.innerHTML = '<i class="tri"></i><span class="ic"></span>';
+      box.appendChild(a);
+      this.arrows.push(a);
+    }
+    const top = h > w ? 128 : 96,
+      bottom = h > w ? 120 : 110,
+      side = 34;
+    this.arrows.forEach((a, i) => {
+      const t = list[i];
+      if (!t) {
+        a.style.display = 'none';
+        return;
+      }
+      let { x, y } = t;
+      if (t.behind) {
+        x = w - x;
+        y = h * 2;
+      }
+      const inside = x > side && x < w - side && y > top && y < h - bottom;
+      if (inside) {
+        a.style.display = 'none';
+        return;
+      }
+      const cx = w / 2,
+        cy = (top + h - bottom) / 2;
+      const dx = x - cx,
+        dy = y - cy;
+      const sx = (w / 2 - side) / Math.max(1e-3, Math.abs(dx)),
+        sy = ((h - bottom - top) / 2) / Math.max(1e-3, Math.abs(dy));
+      const s = Math.min(sx, sy);
+      const ex = cx + dx * s,
+        ey = cy + dy * s;
+      a.style.display = '';
+      a.className = `edge-arrow ${t.kind}`;
+      a.style.transform = `translate(${ex}px, ${ey}px)`;
+      (a.querySelector('.tri') as HTMLElement).style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+      const ic = a.querySelector('.ic') as HTMLElement;
+      if (ic.dataset.k !== t.kind) {
+        ic.dataset.k = t.kind;
+        ic.innerHTML = t.kind === 'bed' ? ICONS.bed : t.kind === 'bonus' ? ICONS.goldCookie(true) : ICONS.cookie(true);
+      }
+    });
+  }
+
+  zoomOn = false;
+  setZoom(on: boolean) {
+    this.zoomOn = on;
+    this.el.querySelector('.zoom')?.classList.toggle('on', on);
+    this.onZoom(on);
   }
 
   layout(w: number, h: number) {
@@ -117,16 +193,17 @@ export class GameHud {
   update(f: HudFrame, dt: number) {
     this.timerEl.textContent = fmt(f.time);
     this.timerEl.parentElement!.classList.toggle('over', f.time > this.o.par);
-    const got = f.cookies.filter(Boolean).length;
-    if (got !== this.lastCookies) {
-      let k = 0;
-      this.slots.forEach((s) => {
-        const on = k < got;
-        if (on && !s.classList.contains('got')) s.innerHTML = ICONS.cookie(true);
+    const got = f.cookies.filter((c, i) => c && i !== this.o.bonus).length;
+    const gotBonus = this.o.bonus >= 0 && f.cookies[this.o.bonus];
+    const key = got * 2 + (gotBonus ? 1 : 0);
+    if (key !== this.lastCookies) {
+      this.slots.forEach((s, k) => {
+        const isBonus = s.classList.contains('bonus-slot');
+        const on = isBonus ? !!gotBonus : k < got;
+        if (on && !s.classList.contains('got')) s.innerHTML = isBonus ? ICONS.goldCookie(true) : ICONS.cookie(true);
         s.classList.toggle('got', on);
-        k++;
       });
-      this.lastCookies = got;
+      this.lastCookies = key;
     }
     const a = f.hidden ? 'hidden' : f.alert;
     this.alertEl.className = `chip stealth ${a}`;
@@ -152,17 +229,30 @@ export class GameHud {
         dy = f.joy.y - f.joy.oy;
       const d = Math.hypot(dx, dy);
       const R = f.joyRadius;
+      if (this.lastR !== R) {
+        this.lastR = R;
+        const run = this.joyEl.querySelector<HTMLElement>('.joy-run')!,
+          tip = this.joyEl.querySelector<HTMLElement>('.joy-tip')!;
+        run.style.width = run.style.height = `${2 * R + 16}px`;
+        tip.style.width = tip.style.height = `${2 * R * 0.8}px`;
+        this.joyLabel.style.top = `${R + 18}px`;
+      }
       if (d > R) {
         dx *= R / d;
         dy *= R / d;
       }
       this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
       this.joyLabel.textContent = f.running ? t('running') : t('tiptoe');
+      // run zone starts at 80% of the full drag (matches RUN_THRESHOLD)
+      const mag = Math.min(1, d / R);
+      this.joyEl.classList.toggle('near-run', !f.running && mag > 0.65);
       this.joyEl.classList.toggle('running', f.running);
     } else this.joyEl.classList.add('hidden-joy');
     if (this.tipTimer > 0) {
       this.tipTimer -= dt;
-      if (this.tipTimer <= 0) this.tipEl.classList.add('hidden-tip');
+      // the tip goes away after a few seconds, or soon after the kid starts moving
+      if (f.moving) this.movedT += dt;
+      if (this.tipTimer <= 0 || this.movedT > 1.2) this.hideTip();
     }
   }
 
@@ -173,8 +263,25 @@ export class GameHud {
     this.tipEl.querySelector('b')!.textContent = title;
     this.tipEl.querySelector('span')!.textContent = text;
     this.tipEl.querySelector('.tip-icon')!.innerHTML = icon || TIP_ICONS[id] || ICONS.cookie(true);
+    this.tipEl.style.display = '';
+    void this.tipEl.offsetWidth;
     this.tipEl.classList.remove('hidden-tip');
-    this.tipTimer = 7;
+    this.tipTimer = 5;
+    this.movedT = 0;
+    clearTimeout(this.tipKill);
+    this.tipKill = window.setTimeout(() => this.hideTip(), 6000);
+  }
+
+  private lastR = 0;
+  private movedT = 0;
+  private tipKill = 0;
+  hideTip() {
+    this.tipTimer = 0;
+    clearTimeout(this.tipKill);
+    this.tipEl.classList.add('hidden-tip');
+    window.setTimeout(() => {
+      if (this.tipEl.classList.contains('hidden-tip')) this.tipEl.style.display = 'none';
+    }, 350);
   }
 
   toast(text: string) {

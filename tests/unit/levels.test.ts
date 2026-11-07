@@ -3,6 +3,7 @@ import { getLevel, LEVEL_SRC } from '../../src/levels/index';
 import { distanceField, walkable } from '../../src/game/grid';
 import { World } from '../../src/game/world';
 import { simulate, PROFILES } from '../../src/game/bot';
+import { hiddenRequiredCookies } from '../../src/game/visibility';
 
 describe('levels', () => {
   it('there are 5 houses × 12 nights', () => {
@@ -21,6 +22,13 @@ describe('levels', () => {
         for (const c of L.cookies) expect(near(c.x, c.z, c.onSolid)).toBe(true);
         for (const k of L.keys) expect(near(k.x, k.z, false)).toBe(true);
         expect(L.cookies.length).toBeGreaterThanOrEqual(1);
+        // no required cookie hidden behind a wall or tall furniture from the phone camera
+        expect(hiddenRequiredCookies(L)).toEqual([]);
+        // with 2+ cookies exactly one is the golden bonus, and it is never needed to win
+        if (L.cookies.length >= 2) {
+          expect(L.bonus).toBeGreaterThanOrEqual(0);
+          expect(L.need).toBe(L.cookies.length - 1);
+        } else expect(L.bonus).toBe(-1);
         expect(L.cookies.length).toBeLessThanOrEqual(3);
       });
     }

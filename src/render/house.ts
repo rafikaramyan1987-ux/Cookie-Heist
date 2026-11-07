@@ -370,31 +370,40 @@ export function buildHouse(level: LevelDef, theme: HouseTheme, opts: { outside?:
   dynamic.traverse((o) => {
     if (o.name === 'cookieJar') jar = o;
   });
-  for (const [x, z, y] of level.cookies) {
+  level.cookies.forEach(([x, z, y], ci) => {
+    const bonus = ci === level.bonusCookie;
+    const warm = bonus ? 0xffe066 : 0xffb347;
     const c = new THREE.Group();
     c.position.set(x, y ?? 0, z);
-    const ck = cookieMesh(0.21, [0, 0.34, 0], [0.45, 0, 0.1]);
+    // bigger cookie, gently bobbing; the bonus one is golden with a star
+    const ck = bonus ? goldenCookie(0.27) : cookieMesh(0.27, [0, 0, 0], [0.45, 0, 0.1]);
+    ck.position.y = 0.45;
     c.add(ck);
-    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: radialTex(), color: 0xffc35c, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.85 }));
-    halo.scale.setScalar(1.1);
-    halo.position.y = 0.3;
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: radialTex(), color: bonus ? 0xffe680 : 0xffc35c, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.9 }));
+    halo.scale.setScalar(1.6);
+    halo.position.y = 0.45;
     c.add(halo);
-    const ring = new THREE.Mesh(planeGeo(1.2, 1.2), new THREE.MeshBasicMaterial({ map: radialTex(), color: 0xffb347, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const ring = new THREE.Mesh(planeGeo(1.6, 1.6), new THREE.MeshBasicMaterial({ map: radialTex(), color: warm, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.02;
     c.add(ring);
-    const sp = new Sparkles(14, new THREE.Vector3(0.5, 0.2, 0.5), 0xffe08a, 0.09, 0.7);
+    // a soft vertical light beam, visible from far away (and above half-height walls)
+    const beam = new THREE.Mesh(beamGeo(), beamMat(warm));
+    beam.renderOrder = 6;
+    c.add(beam);
+    const sp = new Sparkles(bonus ? 22 : 16, new THREE.Vector3(0.6, 0.6, 0.6), bonus ? 0xfff2a0 : 0xffe08a, 0.11, 1.4);
     sp.points.position.y = 0.15;
     c.add(sp.points);
     updaters.push((t) => {
       ck.rotation.y = t * 1.6;
-      ck.position.y = 0.36 + Math.sin(t * 2.4) * 0.06;
-      halo.material.opacity = 0.7 + Math.sin(t * 3) * 0.15;
+      ck.position.y = 0.48 + Math.sin(t * 2.2 + ci) * 0.08;
+      halo.material.opacity = 0.75 + Math.sin(t * 3 + ci) * 0.15;
+      (beam.material as THREE.ShaderMaterial).uniforms.uT.value = t;
       sp.update(t);
     });
     dynamic.add(c);
     cookies.push(c);
-  }
+  });
   if (jar) {
     const j = jar;
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: radialTex(), color: 0xffb84d, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.9 }));
@@ -403,6 +412,10 @@ export function buildHouse(level: LevelDef, theme: HouseTheme, opts: { outside?:
     j.add(halo);
     const sp = new Sparkles(22, new THREE.Vector3(0.6, 0.3, 0.6), 0xffe08a, 0.09, 0.8);
     j.add(sp.points);
+    const jb = new THREE.Mesh(beamGeo(), beamMat(0xffb347));
+    jb.renderOrder = 6;
+    j.add(jb);
+    updaters.push((t) => ((jb.material as THREE.ShaderMaterial).uniforms.uT.value = t));
     const L = new THREE.PointLight(0xffb347, 2.4, 3.4, 1.5);
     L.position.set(0, 0.35, 0.3);
     if (opts.lights !== false) {
@@ -442,6 +455,51 @@ export function buildHouse(level: LevelDef, theme: HouseTheme, opts: { outside?:
       for (const u of updaters) u(t, dt);
     },
   };
+}
+
+let _beamGeo: THREE.BufferGeometry | null = null;
+function beamGeo() {
+  if (!_beamGeo) {
+    _beamGeo = new THREE.CylinderGeometry(0.16, 0.26, 3.2, 20, 1, true);
+    _beamGeo.translate(0, 1.6, 0);
+  }
+  return _beamGeo;
+}
+function beamMat(color: number) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color(color) }, uT: { value: 0 } },
+    vertexShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uT; varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+      void main(){ float edge = pow(abs(dot(normalize(vN), normalize(vV))), 1.5);
+        float a = edge * smoothstep(1.0, 0.15, vUv.y) * smoothstep(0.0, 0.05, vUv.y) * (0.32 + 0.08 * sin(uT * 3.0 + vUv.y * 8.0));
+        gl_FragColor = vec4(uColor * a, a); }`,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+  });
+}
+
+/** Golden bonus cookie with a little star on top. */
+function goldenCookie(r: number) {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.SphereGeometry(r, 20, 10), toon(0xffcf3d, { emissive: 0x7a5200, emissiveIntensity: 0.35 }), { scale: [1, 0.32, 1] }));
+  for (let i = 0; i < 6; i++) {
+    const a = i * 2.4,
+      d = r * (0.25 + (i % 3) * 0.22);
+    g.add(mesh(new THREE.SphereGeometry(r * 0.13, 8, 6), toon(0xb8860b), { pos: [Math.cos(a) * d, r * 0.27, Math.sin(a) * d], scale: [1, 0.6, 1], cast: false }));
+  }
+  const s = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + Math.PI / 2;
+    const rr = i % 2 ? r * 0.28 : r * 0.62;
+    if (i === 0) s.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    else s.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  const star = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.04, bevelEnabled: false }), toon(0xfff3b0, { emissive: 0xffd25e, emissiveIntensity: 0.8 }));
+  star.position.y = r * 0.75;
+  g.add(star);
+  return g;
 }
 
 let _ao: THREE.Material | null = null;
