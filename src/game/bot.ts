@@ -1,7 +1,22 @@
-import type { Vec2 } from './types';
-import { World, Input, predictGuards, GuardSnap, TOY_RANGE, PLAYER_R, NOISE } from './world';
-import { distanceField, walkable, los, canStep, angleDiff, Passable } from './grid';
-import { makeRng, Rng } from './rng';
+import type { Vec2 } from "./types";
+import {
+  World,
+  Input,
+  predictGuards,
+  GuardSnap,
+  TOY_RANGE,
+  PLAYER_R,
+  NOISE,
+} from "./world";
+import {
+  distanceField,
+  walkable,
+  los,
+  canStep,
+  angleDiff,
+  Passable,
+} from "./grid";
+import { makeRng, Rng } from "./rng";
 
 /**
  * Playtest / autoplay bot. Plans in space-time over the cell grid using
@@ -10,7 +25,7 @@ import { makeRng, Rng } from './rng';
  */
 
 export interface BotProfile {
-  name: 'beginner' | 'average' | 'good';
+  name: "beginner" | "average" | "good";
   replan: number;
   horizon: number;
   margin: number;
@@ -21,14 +36,47 @@ export interface BotProfile {
   noiseCare: number;
   useToys: boolean;
   greedy: boolean; // goes for every cookie
-  /** probability per second of a careless move ignoring danger */
+  /** probability per second of a careless move: misjudging how far the beams and grown-ups reach */
   slip: number;
 }
 
-export const PROFILES: Record<BotProfile['name'], BotProfile> = {
-  beginner: { name: 'beginner', replan: 0.5, horizon: 2.4, margin: 0.0, react: 0.35, runChance: 0.035, noiseCare: 0.6, useToys: false, greedy: false, slip: 0.05 },
-  average: { name: 'average', replan: 0.35, horizon: 4.2, margin: 0.15, react: 0.22, runChance: 0.01, noiseCare: 2, useToys: true, greedy: false, slip: 0.025 },
-  good: { name: 'good', replan: 0.2, horizon: 9, margin: 0.35, react: 0.05, runChance: 0.0, noiseCare: 4, useToys: true, greedy: true, slip: 0 },
+export const PROFILES: Record<BotProfile["name"], BotProfile> = {
+  beginner: {
+    name: "beginner",
+    replan: 0.5,
+    horizon: 2.4,
+    margin: 0.0,
+    react: 0.35,
+    runChance: 0.035,
+    noiseCare: 0.6,
+    useToys: false,
+    greedy: false,
+    slip: 0.05,
+  },
+  average: {
+    name: "average",
+    replan: 0.35,
+    horizon: 4.2,
+    margin: 0.15,
+    react: 0.22,
+    runChance: 0.01,
+    noiseCare: 2,
+    useToys: true,
+    greedy: false,
+    slip: 0.025,
+  },
+  good: {
+    name: "good",
+    replan: 0.2,
+    horizon: 9,
+    margin: 0.35,
+    react: 0.05,
+    runChance: 0.0,
+    noiseCare: 4,
+    useToys: true,
+    greedy: true,
+    slip: 0,
+  },
 };
 
 const STEP = 0.6; // seconds per plan step (≈ 1 cell at tiptoe speed)
@@ -66,16 +114,18 @@ export class Bot {
     this.throwCd -= dt;
     this.slipT -= dt;
     let throwAt: Vec2 | null = null;
-    const chased = w.guards.some((g) => g.state === 'chase');
     if (this.planT <= 0) {
       this.planT = this.profile.replan * (0.8 + this.rng() * 0.4);
       this.planStart = w.t;
-      if (chased) this.plan = this.escapePlan();
-      else {
+      {
         const r = this.makePlan();
         this.plan = r.plan;
         if (r.blocked) this.blockedT += this.profile.replan;
-        else this.blockedT = Math.max(0, this.blockedT - this.profile.replan * 0.5);
+        else
+          this.blockedT = Math.max(
+            0,
+            this.blockedT - this.profile.replan * 0.5,
+          );
         if (this.blockedT > 6 && w.requiredDone && !this.giveUp) {
           this.giveUp = true;
           this.blockedT = 0;
@@ -87,7 +137,12 @@ export class Bot {
         }
         if (r.blocked) this.stuckT += this.profile.replan;
         else this.stuckT = Math.max(0, this.stuckT - this.profile.replan);
-        if (this.profile.useToys && w.toys > 0 && this.stuckT > 2.2 && this.throwCd <= 0) {
+        if (
+          this.profile.useToys &&
+          w.toys > 0 &&
+          this.stuckT > 2.2 &&
+          this.throwCd <= 0
+        ) {
           throwAt = this.pickThrow();
           if (throwAt) {
             this.throwCd = 4;
@@ -95,17 +150,22 @@ export class Bot {
           }
         }
         this.sprint = this.rng() < this.profile.runChance;
-        if (this.profile.slip > 0 && this.rng() < this.profile.slip * this.profile.replan * 10) this.slipT = 0.6;
+        if (
+          this.profile.slip > 0 &&
+          this.rng() < this.profile.slip * this.profile.replan * 10
+        )
+          this.slipT = 0.6;
       }
     }
-    const input = this.follow(chased);
+    const input = this.follow();
     input.throwAt = throwAt;
     // reaction delay: the human sees the plan a moment late
     const react = this.profile.react;
     if (react <= 0.01) return input;
     this.reactQueue.push({ t: w.t + react, input });
     let due: Input | null = null;
-    while (this.reactQueue.length && this.reactQueue[0].t <= w.t) due = this.reactQueue.shift()!.input;
+    while (this.reactQueue.length && this.reactQueue[0].t <= w.t)
+      due = this.reactQueue.shift()!.input;
     if (due) this.lastOut = due;
     const out = { ...this.lastOut };
     this.lastOut.throwAt = null;
@@ -120,7 +180,11 @@ export class Bot {
     const x = (j % L.w) + 0.5,
       z = ((j / L.w) | 0) + 0.5;
     const gs = this.snaps[Math.min(k, this.snaps.length - 1)] ?? [];
-    return gs.some((g, gi) => g.adult && Math.hypot(g.x - x, g.z - z) < r * this.w.guards[gi].cfg.hear + 0.6);
+    return gs.some(
+      (g, gi) =>
+        g.adult &&
+        Math.hypot(g.x - x, g.z - z) < r * this.w.guards[gi].cfg.hear + 0.6,
+    );
   }
 
   // ------------------------------------------------------------------ goals
@@ -134,7 +198,12 @@ export class Bot {
       if (!solid) return field[i];
       // pickup on a counter: nearest neighbouring cell
       let best = Infinity;
-      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dz] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
         const x = Math.floor(p.x) + dx,
           z = Math.floor(p.z) + dz;
         if (x < 0 || z < 0 || x >= L.w || z >= L.d) continue;
@@ -155,8 +224,11 @@ export class Bot {
         bd = Infinity;
       this.goalCookie = -1;
       // required cookies first; the golden bonus only once they are all collected
-      const wanted = (i: number) => !w.cookies[i] && (w.requiredDone || i !== L.bonus);
-      const avail = L.cookies.filter((_, i) => wanted(i) && (this.banned.get(i) ?? 0) < w.t).length;
+      const wanted = (i: number) =>
+        !w.cookies[i] && (w.requiredDone || i !== L.bonus);
+      const avail = L.cookies.filter(
+        (_, i) => wanted(i) && (this.banned.get(i) ?? 0) < w.t,
+      ).length;
       L.cookies.forEach((c, i) => {
         if (!wanted(i)) return;
         if (avail > 0 && (this.banned.get(i) ?? 0) >= w.t) return;
@@ -187,7 +259,9 @@ export class Bot {
       }
     if (bd < Infinity && w.requiredDone) return bestBed;
     // something is locked away: fetch a key
-    const k = L.keys.findIndex((_, i) => !w.keysTaken[i] && reach(L.keys[i]) < Infinity);
+    const k = L.keys.findIndex(
+      (_, i) => !w.keysTaken[i] && reach(L.keys[i]) < Infinity,
+    );
     if (k >= 0 && w.keys === 0) return L.keys[k];
     // have a key: walk to the nearest locked door
     if (w.keys > 0) {
@@ -196,7 +270,11 @@ export class Bot {
       for (let z = 0; z < L.d; z++)
         for (let x = 0; x < L.w; x++) {
           const i = z * L.w + x;
-          const locked = w.E.eh[i] === 3 || w.E.eh[(z + 1) * L.w + x] === 3 || w.E.ev[z * (L.w + 1) + x] === 3 || w.E.ev[z * (L.w + 1) + x + 1] === 3;
+          const locked =
+            w.E.eh[i] === 3 ||
+            w.E.eh[(z + 1) * L.w + x] === 3 ||
+            w.E.ev[z * (L.w + 1) + x] === 3 ||
+            w.E.ev[z * (L.w + 1) + x + 1] === 3;
           if (locked && field[i] < bd2) {
             bd2 = field[i];
             best = { x: x + 0.5, z: z + 0.5 };
@@ -211,7 +289,12 @@ export class Bot {
     const L = this.w.L;
     let best = c,
       bd = Infinity;
-    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const [dx, dz] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
       const x = Math.floor(c.x) + dx,
         z = Math.floor(c.z) + dz;
       if (x < 0 || z < 0 || x >= L.w || z >= L.d) continue;
@@ -225,7 +308,7 @@ export class Bot {
   }
 
   // ------------------------------------------------------------------ danger
-  private dangerMaps(K: number): Uint8Array[] {
+  private dangerMaps(K: number, careless = false): Uint8Array[] {
     const w = this.w,
       L = w.L;
     // sample guards 4× per plan step so fast turns between steps are not missed
@@ -234,13 +317,15 @@ export class Bot {
     for (let k = 0; k <= K * SUB; k++) times.push((k * STEP) / SUB);
     const snaps = predictGuards(w, times);
     this.snaps = snaps.filter((_, i) => i % SUB === 0);
-    const m = this.profile.margin;
+    // a careless kid underestimates the beams (and how close is too close)
+    const m = careless ? -0.4 : this.profile.margin;
     const raw: Uint8Array[] = [];
     for (let k = 0; k <= K; k++) {
       const D = new Uint8Array(L.w * L.d);
       // cells seen at any sub-sample in (k-1, k]
       const from = Math.max(0, (k - 1) * SUB + 1);
-      for (let j = from; j <= k * SUB; j++) for (const g of snaps[j]) this.paint(D, g, m);
+      for (let j = from; j <= k * SUB; j++)
+        for (const g of snaps[j]) this.paint(D, g, m);
       raw.push(D);
     }
     // a move between k and k+1 must be safe at both instants
@@ -254,12 +339,23 @@ export class Bot {
   }
 
   private paint(D: Uint8Array, g: GuardSnap, m: number) {
+    const bodyR = m < 0 ? 1.0 : 1.6;
     const w = this.w,
       L = w.L;
     // body
     const bx = Math.floor(g.x),
       bz = Math.floor(g.z);
-    if (g.adult) for (let z = bz - 2; z <= bz + 2; z++) for (let x = bx - 2; x <= bx + 2; x++) if (x >= 0 && z >= 0 && x < L.w && z < L.d && Math.hypot(x + 0.5 - g.x, z + 0.5 - g.z) < 1.6) D[z * L.w + x] = 1;
+    if (g.adult)
+      for (let z = bz - 2; z <= bz + 2; z++)
+        for (let x = bx - 2; x <= bx + 2; x++)
+          if (
+            x >= 0 &&
+            z >= 0 &&
+            x < L.w &&
+            z < L.d &&
+            Math.hypot(x + 0.5 - g.x, z + 0.5 - g.z) < bodyR
+          )
+            D[z * L.w + x] = 1;
     if (!g.on) return;
     const R = Math.ceil(g.range + 1);
     for (let z = Math.max(0, bz - R); z <= Math.min(L.d - 1, bz + R); z++)
@@ -271,11 +367,18 @@ export class Bot {
         const dx = cx - g.x,
           dz = cz - g.z;
         const d = Math.hypot(dx, dz);
-        const range = g.range * (w.roomDark[L.room[i]] || this.assumeDark.has(L.room[i]) ? 0.6 : 1);
+        const range =
+          g.range *
+          (w.roomDark[L.room[i]] || this.assumeDark.has(L.room[i]) ? 0.6 : 1);
         // a cell counts if any part of the kid standing anywhere in it could be seen
         const reach = range + PLAYER_R + 0.3 + m;
         if (d > reach) continue;
-        if (d > 0.5 && Math.abs(angleDiff(Math.atan2(dz, dx), g.dir)) > g.half + Math.atan2(0.42 + m, d)) continue;
+        if (
+          d > 0.5 &&
+          Math.abs(angleDiff(Math.atan2(dz, dx), g.dir)) >
+            g.half + Math.atan2(0.42 + m, d)
+        )
+          continue;
         // line of sight to the cell centre or a corner-ish point
         const pts = [
           { x: cx, z: cz },
@@ -298,13 +401,18 @@ export class Bot {
     const field = distanceField(L, w.E, this.passP, goal);
     // light switches on the way will darken their room: plan with that in mind
     this.assumeDark.clear();
-    const fromMe = distanceField(L, w.E, this.passP, { x: w.player.x, z: w.player.z });
+    const fromMe = distanceField(L, w.E, this.passP, {
+      x: w.player.x,
+      z: w.player.z,
+    });
     const total = fromMe[gi];
     for (const sw of L.switches) {
       const si = Math.floor(sw.z) * L.w + Math.floor(sw.x);
-      if (!w.roomDark[sw.room] && fromMe[si] + field[si] <= total + 2) this.assumeDark.add(sw.room);
+      if (!w.roomDark[sw.room] && fromMe[si] + field[si] <= total + 2)
+        this.assumeDark.add(sw.room);
     }
-    const D = this.dangerMaps(K);
+    const careless = this.slipT > 0;
+    const D = this.dangerMaps(K, careless);
     const s = Math.floor(w.player.z) * L.w + Math.floor(w.player.x);
     const N = L.w * L.d;
     // space-time Dijkstra
@@ -314,7 +422,6 @@ export class Bot {
     cost[s] = 0;
     let bestState = -1,
       bestScore = INF;
-    const careless = this.slipT > 0;
     for (let k = 0; k < K; k++) {
       const Dn = D[k + 1];
       for (let i = 0; i < N; i++) {
@@ -324,7 +431,7 @@ export class Bot {
           z = (i / L.w) | 0;
         const tryMove = (j: number, extra: number) => {
           const hidden = L.hide[j] > 0 && j === i;
-          if (!careless && Dn[j] && !hidden) return;
+          if (Dn[j] && !hidden) return;
           let nc = c + extra;
           if (j !== i && (L.creaky[j] || L.floorToy[j])) {
             const r = L.creaky[j] ? NOISE.creakTiptoe : NOISE.toyTiptoe;
@@ -338,7 +445,12 @@ export class Bot {
           }
         };
         tryMove(i, 0.35 + 0.03 * (K - k)); // wait (waiting early costs more: no procrastinating)
-        for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        for (const [dx, dz] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ]) {
           if (!canStep(L, w.E, this.passP, x, z, dx, dz)) continue;
           tryMove((z + dz) * L.w + x + dx, 1);
         }
@@ -368,61 +480,12 @@ export class Bot {
     }
     if (bestState < 0) return { plan: [], blocked: true }; // no safe move at all
     const seq: number[] = [];
-    for (let st = bestState; st >= 0 && st >= N; st = prev[st]) seq.push(st % N);
+    for (let st = bestState; st >= 0 && st >= N; st = prev[st])
+      seq.push(st % N);
     seq.reverse();
-    const progressed = seq.length > 0 && field[seq[seq.length - 1]] < field[s] - 0.5;
+    const progressed =
+      seq.length > 0 && field[seq[seq.length - 1]] < field[s] - 0.5;
     return { plan: seq, blocked: !progressed && bestScore !== -1 };
-  }
-
-  /** Being chased: sprint to the best hiding spot / away from the chasers. */
-  private escapePlan(): number[] {
-    const w = this.w,
-      L = w.L;
-    // already tucked away: stay put until they give up
-    if (w.player.hidden && this.profile.name !== 'beginner') {
-      const ci = Math.floor(w.player.z) * L.w + Math.floor(w.player.x);
-      return [ci, ci, ci];
-    }
-    const here = { x: w.player.x, z: w.player.z };
-    const field = distanceField(L, w.E, this.passP, here);
-    const chasers = w.guards.filter((g) => g.state === 'chase');
-    let best = -1,
-      bs = -Infinity;
-    for (let i = 0; i < L.w * L.d; i++) {
-      if (field[i] === Infinity) continue;
-      const p = { x: (i % L.w) + 0.5, z: ((i / L.w) | 0) + 0.5 };
-      let s = 0;
-      for (const g of chasers) {
-        const d = Math.hypot(g.x - p.x, g.z - p.z);
-        s += Math.min(d, 8);
-        if (los(L, w.E, g, p)) s -= 3;
-      }
-      if (L.hide[i]) s += this.profile.name === 'beginner' ? 2 : 5;
-      s -= field[i] * 0.6;
-      if (s > bs) {
-        bs = s;
-        best = i;
-      }
-    }
-    if (best < 0) return [];
-    // walk the distance field backwards from best
-    const seq: number[] = [];
-    let cur = best;
-    for (let n = 0; n < 40 && field[cur] > 0; n++) {
-      seq.push(cur);
-      const x = cur % L.w,
-        z = (cur / L.w) | 0;
-      let nb = cur;
-      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        if (!canStep(L, w.E, this.passP, x, z, dx, dz)) continue;
-        const j = (z + dz) * L.w + x + dx;
-        if (field[j] < field[nb]) nb = j;
-      }
-      if (nb === cur) break;
-      cur = nb;
-    }
-    seq.reverse();
-    return seq;
   }
 
   private pickThrow(): Vec2 | null {
@@ -434,8 +497,11 @@ export class Bot {
     let g = null,
       gd = Infinity;
     for (const q of w.guards) {
-      if (!q.cfg.adult || q.state === 'sleep' || q.state === 'chase') continue;
-      const d = Math.min(Math.hypot(q.x - p.x, q.z - p.z), Math.hypot(q.x - goal.x, q.z - goal.z));
+      if (!q.cfg.adult || q.state === "sleep" || q.state === "spot") continue;
+      const d = Math.min(
+        Math.hypot(q.x - p.x, q.z - p.z),
+        Math.hypot(q.x - goal.x, q.z - goal.z),
+      );
       if (d < gd) {
         gd = d;
         g = q;
@@ -447,14 +513,23 @@ export class Bot {
     for (let a = 0; a < 16; a++) {
       const ang = (a / 16) * Math.PI * 2;
       for (const dist of [2.2, 3.0, 3.6]) {
-        const t = { x: g.x + Math.cos(ang) * dist, z: g.z + Math.sin(ang) * dist };
-        if (t.x < 0.3 || t.z < 0.3 || t.x > L.w - 0.3 || t.z > L.d - 0.3) continue;
+        const t = {
+          x: g.x + Math.cos(ang) * dist,
+          z: g.z + Math.sin(ang) * dist,
+        };
+        if (t.x < 0.3 || t.z < 0.3 || t.x > L.w - 0.3 || t.z > L.d - 0.3)
+          continue;
         const ci = Math.floor(t.z) * L.w + Math.floor(t.x);
         if (L.room[ci] < 0 || L.solid[ci]) continue;
         const dp = Math.hypot(t.x - p.x, t.z - p.z);
         if (dp > TOY_RANGE - 0.2 || dp < 2) continue;
         // lure the guard away from both us and the goal
-        const score = Math.min(Math.hypot(t.x - goal.x, t.z - goal.z), dp) - Math.min(Math.hypot(g.x - goal.x, g.z - goal.z), Math.hypot(g.x - p.x, g.z - p.z));
+        const score =
+          Math.min(Math.hypot(t.x - goal.x, t.z - goal.z), dp) -
+          Math.min(
+            Math.hypot(g.x - goal.x, g.z - goal.z),
+            Math.hypot(g.x - p.x, g.z - p.z),
+          );
         if (score > bs) {
           bs = score;
           best = t;
@@ -465,7 +540,7 @@ export class Bot {
   }
 
   // ------------------------------------------------------------------ steering
-  private follow(chased: boolean): Input {
+  private follow(): Input {
     const w = this.w,
       L = w.L;
     const p = w.player;
@@ -473,15 +548,16 @@ export class Bot {
     const ci = Math.floor(p.z) * L.w + Math.floor(p.x);
     // where should we be? plan[k] is the cell at the end of step k
     let k = Math.floor((w.t - this.planStart) / STEP);
-    if (chased) k = 0;
     k = Math.min(this.plan.length - 1, Math.max(0, k));
     let target = this.plan[k];
     // slightly ahead of schedule is fine once most of the step has elapsed
-    if (target === ci && k + 1 < this.plan.length && this.plan[k + 1] !== ci && w.t - this.planStart > (k + 0.75) * STEP) target = this.plan[k + 1];
-    if (chased && target === ci && this.plan.indexOf(ci) >= 0) {
-      const idx = this.plan.indexOf(ci);
-      if (idx + 1 < this.plan.length) target = this.plan[idx + 1];
-    }
+    if (
+      target === ci &&
+      k + 1 < this.plan.length &&
+      this.plan[k + 1] !== ci &&
+      w.t - this.planStart > (k + 0.75) * STEP
+    )
+      target = this.plan[k + 1];
     const tx = (target % L.w) + 0.5,
       tz = ((target / L.w) | 0) + 0.5;
     const dx = tx - p.x,
@@ -492,15 +568,49 @@ export class Bot {
       if (d < 0.12 || L.hide[ci]) return { mx: 0, mz: 0 };
       return { mx: (dx / d) * 0.3, mz: (dz / d) * 0.3 };
     }
-    const run = chased || this.sprint;
+    const run = this.sprint;
     const mag = run ? 1 : 0.5;
     return { mx: (dx / d) * mag, mz: (dz / d) * mag };
   }
 }
 
 /** Run one full game with a bot; returns the outcome. */
-export function simulate(w: World, profile: BotProfile, seed: number, maxTime = 150, dt = 1 / 30) {
+export function simulate(
+  w: World,
+  profile: BotProfile,
+  seed: number,
+  maxTime = 150,
+  dt = 1 / 30,
+) {
   const bot = new Bot(w, profile, seed);
-  while (w.status === 'play' && w.t < maxTime) w.step(dt, bot.update(dt));
-  return { ...w.stats, won: w.status === 'won', status: w.status, time: w.t, cookies: w.cookieCount };
+  // audit metrics
+  let earlySight = 0; // guard sightings in the first 3 s
+  let maxCamp = 0; // longest a guard idled close to the hidden kid (s)
+  const camp = w.guards.map(() => 0);
+  const spotters = new Set<number>();
+  while (w.status === "play" && w.t < maxTime) {
+    w.step(dt, bot.update(dt));
+    for (const e of w.events) if (e.type === "spotted") spotters.add(e.g);
+    w.guards.forEach((g, gi) => {
+      if (w.t < 3 && g.sees) earlySight = 1;
+      camp[gi] = w.campingNear(g) ? camp[gi] + dt : 0;
+      maxCamp = Math.max(maxCamp, camp[gi]);
+    });
+  }
+  // a "!" that did not end with that kid back in bed is an escape
+  const escapes = Math.max(
+    0,
+    w.stats.spotted -
+      (w.status === "caught" && spotters.has(w.caughtBy) ? 1 : 0),
+  );
+  return {
+    ...w.stats,
+    won: w.status === "won",
+    status: w.status,
+    time: w.t,
+    cookies: w.cookieCount,
+    escapes,
+    earlySight,
+    maxCamp,
+  };
 }

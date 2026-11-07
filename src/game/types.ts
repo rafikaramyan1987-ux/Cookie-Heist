@@ -1,4 +1,11 @@
-import type { FloorKind, GuardKind, HouseId, PropDef, WallKind, LevelDef } from '../levels/types';
+import type {
+  FloorKind,
+  GuardKind,
+  HouseId,
+  PropDef,
+  WallKind,
+  LevelDef,
+} from "../levels/types";
 
 /** Compact hand-authored level source (see docs/levels.md). */
 export interface LevelSrc {
@@ -39,23 +46,23 @@ export interface GuardSrc {
 }
 
 export type TipId =
-  | 'move'
-  | 'cookies'
-  | 'cones'
-  | 'creaky'
-  | 'hide'
-  | 'run'
-  | 'toys'
-  | 'cat'
-  | 'switch'
-  | 'key'
-  | 'sleep'
-  | 'vacuum'
-  | 'teen'
-  | 'grandma'
-  | 'dad'
-  | 'pillow'
-  | 'finale';
+  | "move"
+  | "cookies"
+  | "cones"
+  | "creaky"
+  | "hide"
+  | "run"
+  | "toys"
+  | "cat"
+  | "switch"
+  | "key"
+  | "sleep"
+  | "vacuum"
+  | "teen"
+  | "grandma"
+  | "dad"
+  | "pillow"
+  | "finale";
 
 export interface Vec2 {
   x: number;

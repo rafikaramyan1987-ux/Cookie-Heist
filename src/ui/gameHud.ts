@@ -207,7 +207,7 @@ export class GameHud {
     }
     const a = f.hidden ? 'hidden' : f.alert;
     this.alertEl.className = `chip stealth ${a}`;
-    this.alertEl.querySelector('b')!.textContent = a === 'hidden' ? t('hidden') : a === 'chase' ? t('run') : a === 'sus' ? t('hmm') : '';
+    this.alertEl.querySelector('b')!.textContent = a === 'hidden' ? t('hidden') : a === 'chase' ? t('spotted') : a === 'sus' ? t('hmm') : '';
     this.vign.className = `alert-vignette ${f.alert === 'chase' ? 'chase' : f.alert === 'sus' ? 'suspicious' : ''}`;
     this.toyCount.textContent = `×${f.toys}`;
     this.toyBtn.classList.toggle('empty', f.toys <= 0);
