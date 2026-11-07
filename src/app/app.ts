@@ -409,7 +409,7 @@ export class App {
       this.footsteps(dt);
     }
     scene.update(dt, this.t, events);
-    const alert = world.guards.some((g) => g.state === 'chase') ? 'chase' : world.guards.some((g) => g.state === 'suspicious' || g.state === 'look' || g.state === 'search') ? 'sus' : 'calm';
+    const alert = world.guards.some((g) => g.state === 'spot') ? 'chase' : world.guards.some((g) => g.state === 'suspicious' || g.state === 'look') ? 'sus' : 'calm';
     audio.tension += ((alert === 'chase' ? 1 : alert === 'sus' ? 0.5 : 0) - audio.tension) * Math.min(1, dt * 2);
     if (this.mode === 'play' || this.mode === 'cinematic')
       hud.update(

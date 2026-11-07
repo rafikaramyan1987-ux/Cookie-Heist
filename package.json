@@ -12,8 +12,9 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test --trace off",
-    "playtest": "tsx scripts/playtest/run.ts --runs 24 --md docs/playtest.md",
+    "playtest": "tsx scripts/playtest/run.ts --runs 32 --strict --md docs/playtest.md",
     "check:levels": "tsx scripts/playtest/check.ts",
+    "check:audit": "tsx scripts/playtest/audit.ts",
     "shots": "node scripts/screenshots.mjs",
     "submission": "node scripts/submission/build.mjs"
   },

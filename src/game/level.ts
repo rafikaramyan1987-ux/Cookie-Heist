@@ -351,6 +351,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
       face: ((g.face ?? 90) * Math.PI) / 180,
       speed: g.speed ?? 1,
       delay: g.delay ?? 0,
+      sight: g.sight ?? 1,
     };
   });
 

@@ -539,21 +539,21 @@ export class GameScene {
       else rig.root.rotation.set(0, Math.atan2(Math.cos(g.dir), Math.sin(g.dir)), 0);
     }
     const vis = w.visionOf(g);
-    rig.mode = lying ? 'sleep' : g.moving > 0.2 ? (g.state === 'chase' ? 'run' : 'walk') : g.kind === 'teen' && g.state !== 'chase' ? 'phone' : g.kind === 'dad' && !vis.on ? 'yawn' : g.state === 'look' || g.state === 'search' ? 'look' : 'idle';
-    rig.speed = g.state === 'chase' ? 1 : 0.55;
+    rig.mode = lying ? 'sleep' : g.moving > 0.2 ? 'walk' : g.kind === 'teen' && g.state !== 'spot' ? 'phone' : g.kind === 'dad' && !vis.on ? 'yawn' : g.state === 'look' ? 'look' : 'idle';
+    rig.speed = 0.55;
     animateRig(rig, dt, t);
     // vision cone
     const cone = v.cone;
     cone.setVisible(vis.on && g.delay <= 0 && w.status === 'play');
     cone.range = vis.range;
     cone.halfAngle = vis.half;
-    cone.setAlert(g.state === 'chase' ? 'chase' : g.state === 'suspicious' || g.state === 'look' || g.state === 'search' || g.alert > 0.3 ? 'suspicious' : 'calm');
+    cone.setAlert(g.state === 'spot' ? 'chase' : g.state === 'suspicious' || g.state === 'look' || g.alert > 0.3 ? 'suspicious' : 'calm');
     rig.root.updateMatrixWorld(true);
     if (rig.lightTip && g.cfg.adult) rig.lightTip.getWorldPosition(this.tmp);
     else this.tmp.set(g.x, 0.3, g.z);
     cone.update(g.x, g.z, g.dir, this.tmp, this.rayFn(g), dt, t);
     // bubbles
-    const kind = lying ? 'z' : g.state === 'chase' ? '!' : g.state === 'suspicious' || g.state === 'look' || g.state === 'search' ? '?' : '';
+    const kind = lying ? 'z' : g.state === 'spot' ? '!' : g.state === 'suspicious' || g.state === 'look' ? '?' : '';
     if (kind !== v.last) {
       v.last = kind;
       v.pop = 0;
