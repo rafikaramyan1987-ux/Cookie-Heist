@@ -79,7 +79,7 @@ export const APARTMENT: LevelSrc[] = [
   }),
   night(A2, {
     name: ['Rubber Duck', 'Le canard en caoutchouc'],
-    put: 'j 1,0; c 2,1',
+    put: 'j 1,0; c 2,1; Q 4,4',
     guards: [{ k: 'mum', p: '5,5', face: 180, look: [180, 192, 170] }],
     par: 28,
     toys: 3,

@@ -124,12 +124,12 @@ export const COTTAGE: LevelSrc[] = [
   }),
   night(C2, {
     name: ['Cottage Finale', 'Finale de la chaumière'],
-    put: 'j 1,0; k 0,7; c 9,2; c 4,11; s 2,5; Q 4,3; Q 0,3',
+    put: 'j 1,0; k 0,7; g 9,2; c 4,11; s 2,5; Q 4,3; Q 0,3',
     doors: '2,3nL',
     dark: '',
     guards: [
       { k: 'grandma', p: '6,6 8,7', w: 2.5, speed: 0.6 },
-      { k: 'mum', p: '0,4 9,4', w: 3, speed: 0.55 },
+      { k: 'mum', p: '0,4 9,4', w: 3.5, speed: 0.5 },
       { k: 'cat', p: '8,1', face: 0 },
     ],
     par: 65,
