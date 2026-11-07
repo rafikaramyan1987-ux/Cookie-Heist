@@ -95,14 +95,16 @@ export const MANSION: LevelSrc[] = [
     par: 50,
   }),
   night(M2, {
-    pace: 1.15,
+    pace: 1.32,
+    sight: 1.15,
+    toys: 1,
     sight: 1.15,
     name: ['The Silver Key', "La clé d'argent"],
     boost: 1.3,
     put: 'j 1,0; k 10,7; c 3,2',
     doors: '2,3nL 5,1wL',
     guards: [
-      { k: 'mum', p: '11,9 0,9', w: 2, speed: 0.75 },
+      { k: 'mum', p: '11,9 2,9', w: 2, speed: 0.75 },
       { k: 'cat', p: '6,6', face: 0 },
     ],
     par: 55,

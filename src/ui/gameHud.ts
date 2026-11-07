@@ -1,6 +1,6 @@
 import { ICONS } from './icons';
 import { t, TIPS, getLang } from '../app/i18n';
-import type { Joy } from '../app/input';
+import { RUN_ZONE, type Joy } from '../app/input';
 
 export interface HudInit {
   houseName: string;
@@ -50,6 +50,7 @@ export class GameHud {
   private joyEl: HTMLElement;
   private knob: HTMLElement;
   private joyLabel: HTMLElement;
+  private wasRunning = false;
   private tipEl: HTMLElement;
   private keyChip: HTMLElement;
   private bedChip: HTMLElement;
@@ -234,7 +235,7 @@ export class GameHud {
         const run = this.joyEl.querySelector<HTMLElement>('.joy-run')!,
           tip = this.joyEl.querySelector<HTMLElement>('.joy-tip')!;
         run.style.width = run.style.height = `${2 * R + 16}px`;
-        tip.style.width = tip.style.height = `${2 * R * 0.8}px`;
+        tip.style.width = tip.style.height = `${2 * R * RUN_ZONE}px`;
         this.joyLabel.style.top = `${R + 18}px`;
       }
       if (d > R) {
@@ -243,9 +244,16 @@ export class GameHud {
       }
       this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
       this.joyLabel.textContent = f.running ? t('running') : t('tiptoe');
-      // run zone starts at 80% of the full drag (matches RUN_THRESHOLD)
+      // tiptoe inside the dashed ring; the outer band (≥ 85 % of the drag, held a moment) runs
       const mag = Math.min(1, d / R);
-      this.joyEl.classList.toggle('near-run', !f.running && mag > 0.65);
+      this.joyEl.classList.toggle('near-run', !f.running && mag > 0.72);
+      if (f.running !== this.wasRunning) {
+        this.wasRunning = f.running;
+        // pop the label when switching
+        this.joyLabel.classList.remove('pop');
+        void this.joyLabel.offsetWidth;
+        this.joyLabel.classList.add('pop');
+      }
       this.joyEl.classList.toggle('running', f.running);
     } else this.joyEl.classList.add('hidden-joy');
     if (this.tipTimer > 0) {

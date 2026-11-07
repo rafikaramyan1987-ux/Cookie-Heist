@@ -30,6 +30,7 @@ interface GuardView {
   q: THREE.Sprite;
   ex: THREE.Sprite;
   z: THREE.Sprite;
+  ph: THREE.Sprite;
   pop: number;
   last: string;
 }
@@ -109,11 +110,12 @@ export class GameScene {
       const q = bubble('?', '#ff8a2f');
       const ex = bubble('!', '#ff3d4f');
       const z = bubble('Zzz', '#cdd8ff');
-      for (const b of [q, ex, z]) {
+      const ph = bubble('phone', '#9fdcff');
+      for (const b of [q, ex, z, ph]) {
         b.visible = false;
         this.scene.add(b);
       }
-      this.guards.push({ g, rig, cone, q, ex, z, pop: 0, last: '' });
+      this.guards.push({ g, rig, cone, q, ex, z, ph, pop: 0, last: '' });
     });
 
     this.buildItems();
@@ -539,7 +541,8 @@ export class GameScene {
       else rig.root.rotation.set(0, Math.atan2(Math.cos(g.dir), Math.sin(g.dir)), 0);
     }
     const vis = w.visionOf(g);
-    rig.mode = lying ? 'sleep' : g.moving > 0.2 ? 'walk' : g.kind === 'teen' && g.state !== 'spot' ? 'phone' : g.kind === 'dad' && !vis.on ? 'yawn' : g.state === 'look' ? 'look' : 'idle';
+    const phone = w.phoneLevel(g);
+    rig.mode = lying ? 'sleep' : g.moving > 0.2 ? 'walk' : phone > 0 ? 'phone' : g.kind === 'dad' && !vis.on ? 'yawn' : g.state === 'look' ? 'look' : 'idle';
     rig.speed = 0.55;
     animateRig(rig, dt, t);
     // vision cone
@@ -547,13 +550,14 @@ export class GameScene {
     cone.setVisible(vis.on && g.delay <= 0 && w.status === 'play');
     cone.range = vis.range;
     cone.halfAngle = vis.half;
+    cone.setDim(phone);
     cone.setAlert(g.state === 'spot' ? 'chase' : g.state === 'suspicious' || g.state === 'look' || g.alert > 0.3 ? 'suspicious' : 'calm');
     rig.root.updateMatrixWorld(true);
     if (rig.lightTip && g.cfg.adult) rig.lightTip.getWorldPosition(this.tmp);
     else this.tmp.set(g.x, 0.3, g.z);
     cone.update(g.x, g.z, g.dir, this.tmp, this.rayFn(g), dt, t);
     // bubbles
-    const kind = lying ? 'z' : g.state === 'spot' ? '!' : g.state === 'suspicious' || g.state === 'look' ? '?' : '';
+    const kind = lying ? 'z' : g.state === 'spot' ? '!' : g.state === 'suspicious' || g.state === 'look' ? '?' : phone > 0.5 ? 'phone' : '';
     if (kind !== v.last) {
       v.last = kind;
       v.pop = 0;
@@ -565,6 +569,7 @@ export class GameScene {
       [v.q, '?'],
       [v.ex, '!'],
       [v.z, 'z'],
+      [v.ph, 'phone'],
     ] as [THREE.Sprite, string][]) {
       b.visible = kind === k && w.status === 'play';
       if (b.visible) {

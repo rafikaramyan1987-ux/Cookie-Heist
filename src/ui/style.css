@@ -371,7 +371,7 @@ input:checked + .sw::after { transform: translateX(22px); }
 .cover-logo.small .cookie-o { width: 86px; height: 86px; }
 .round-btn.zoom.on { background: linear-gradient(#fff3b0, #ffd25e); box-shadow: 0 5px 0 var(--ink), 0 0 18px rgba(255, 210, 94, .7); }
 
-/* joystick: the inner (tiptoe) zone covers 80% of the drag, the outer band is the run zone */
+/* joystick: the inner (tiptoe) zone covers 85% of the drag, the outer band is the run zone */
 .hud.live .joy-run { width: 170px; height: 170px; }
 .hud.live .joy-tip { width: 136px; height: 136px; border: 3px dashed rgba(111, 240, 200, .7); background: rgba(111, 240, 200, .10); }
 .hud.live.portrait .joy-run { width: 150px; height: 150px; }
@@ -396,3 +396,7 @@ input:checked + .sw::after { transform: translateX(22px); }
 .edge-arrow .ic svg { width: 28px; height: 28px; }
 .bed-ic { display: inline-flex; }
 .bed-ic svg { width: 34px; height: 34px; }
+/* run switch feedback: the label pops when tiptoe ↔ run changes */
+.joy-label.pop { animation: joyPop .32s ease-out; }
+@keyframes joyPop { 0% { transform: translate(-50%, 0) scale(1); } 40% { transform: translate(-50%, 0) scale(1.35); } 100% { transform: translate(-50%, 0) scale(1); } }
+.hud.live .joystick.running .joy-label { border-color: var(--pink); color: #fff; background: rgba(140, 30, 70, .9); }

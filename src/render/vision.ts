@@ -163,6 +163,15 @@ export class VisionCone {
     this.alert = a;
   }
 
+  private baseIntensity = -1;
+  /** 0 = normal, 1 = dimmed (e.g. a teen looking at her phone) */
+  setDim(k: number) {
+    if (this.baseIntensity < 0) this.baseIntensity = this.floorMat.uniforms.uIntensity.value as number;
+    const v = this.baseIntensity * (1 - 0.55 * k);
+    this.floorMat.uniforms.uIntensity.value = v;
+    this.volMat.uniforms.uIntensity.value = v;
+  }
+
   /**
    * @param ox,oz guard position on the floor
    * @param dir facing angle (radians, atan2(dz, dx))

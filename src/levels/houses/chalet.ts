@@ -38,7 +38,7 @@ export const CHALET: LevelSrc[] = [
   night(H1, {
     name: ['Fireside Teen', 'Ado au coin du feu'],
     boost: 1.3,
-    put: 'j 1,0; c 8,1',
+    put: 'j 1,0; c 8,1; Q 1,5',
     guards: [
       { k: 'teen', p: '5,1 6,1', w: 2.5, speed: 0.5, face: 90 },
       { k: 'vacuum', p: '0,4 8,4', w: 1.5 },
@@ -48,7 +48,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H1, {
     name: ['Bed Check!', 'Vérif du lit !'],
-    put: 'j 0,0; c 8,2; p 8,10',
+    put: 'j 0,0; c 8,2; p 8,10; Q 1,5',
     bedCheck: 40,
     guards: [{ k: 'dad', p: '8,6 0,5', w: 1.6, speed: 1.27 }],
     par: 35,
@@ -104,7 +104,7 @@ export const CHALET: LevelSrc[] = [
   night(H1, {
     name: ['Avalanche of Noise', 'Avalanche de bruit'],
     boost: 1.3,
-    put: 'j 0,0; c 8,1; ~ 2,4 5,5 6,4; Q 3,5; c 7,3',
+    put: 'j 0,0; c 8,1; ~ 2,4 5,5 6,4; Q 3,5; c 7,3; Q 1,5',
     guards: [
       { k: 'dad', p: '8,5 0,4', w: 2, speed: 0.75 },
       { k: 'vacuum', p: '4,1 7,3', w: 1 },
@@ -114,7 +114,7 @@ export const CHALET: LevelSrc[] = [
   }),
   night(H1, {
     name: ['Late Movie', 'Film tardif'],
-    put: 'j 0,0; c 8,3; p 5,10; Q 4,5; c 5,4',
+    put: 'j 0,0; c 8,3; p 5,10; Q 4,5; c 5,4; Q 1,5',
     bedCheck: 45,
     guards: [
       { k: 'teen', p: '6,2 7,2', w: 2.5, speed: 0.58, face: 180 },

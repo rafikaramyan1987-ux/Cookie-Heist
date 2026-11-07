@@ -1,6 +1,7 @@
 /**
  * Touch / mouse / keyboard input.
- * - drag anywhere = virtual joystick (screen-space vector; small drag = tiptoe, long drag = run)
+ * - drag anywhere = virtual joystick (screen-space vector). Tiptoe is the default: running needs the knob
+ *   held at ≥ 85 % of the full drag for a moment, or a deliberate double-tap-and-hold
  * - toy button then tap = throw at that point; Space throws ahead
  * - WASD / arrows move (tiptoe), Shift runs
  */
@@ -11,6 +12,13 @@ export interface Joy {
   x: number;
   y: number;
 }
+
+/** fraction of the full drag where running starts (with a short dwell), and where it stops again */
+export const RUN_ZONE = 0.85;
+const RUN_OFF = 0.7;
+const RUN_DWELL = 200; // ms
+/** a non-running drag never asks for more than this (the world runs above 0.8) */
+const TIPTOE_MAX = 0.6;
 
 export class InputCtl {
   joy: Joy = { active: false, ox: 0, oy: 0, x: 0, y: 0 };
@@ -29,7 +37,14 @@ export class InputCtl {
   private downPos = { x: 0, y: 0 };
   onAnyInput: () => void = () => {};
   onTap: (x: number, y: number) => void = () => {};
+  /** called when the drag switches between tiptoe and run */
+  onRunChange: (run: boolean) => void = () => {};
   radius = 80;
+  /** double-tap-and-hold: this drag runs */
+  private runLock = false;
+  private dragRun = false;
+  private zoneSince = 0;
+  private lastTap = { t: -1e9, x: 0, y: 0 };
 
   constructor(readonly el: HTMLElement) {
     el.addEventListener('pointerdown', this.down, { passive: false });
@@ -53,6 +68,7 @@ export class InputCtl {
     this.downAt = performance.now();
     this.downPos = { x: e.clientX, y: e.clientY };
     if (this.aiming) return;
+    this.runLock = this.downAt - this.lastTap.t < 320 && Math.hypot(e.clientX - this.lastTap.x, e.clientY - this.lastTap.y) < 60;
     this.joy = { active: true, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY };
   };
   private move = (e: PointerEvent) => {
@@ -62,9 +78,9 @@ export class InputCtl {
       dy = e.clientY - this.joy.oy;
     const d = Math.hypot(dx, dy);
     const R = this.radius;
-    // the base follows the finger if dragged beyond the ring (comfortable on phones)
-    if (d > R * 1.25) {
-      const k = (d - R * 1.25) / d;
+    // the base follows the finger if dragged well beyond the ring (comfortable on phones)
+    if (d > R * 1.4) {
+      const k = (d - R * 1.4) / d;
       this.joy.ox += dx * k;
       this.joy.oy += dy * k;
       dx = e.clientX - this.joy.ox;
@@ -77,12 +93,29 @@ export class InputCtl {
     if (e.pointerId !== this.pid) return;
     const quick = performance.now() - this.downAt < 260 && Math.hypot(e.clientX - this.downPos.x, e.clientY - this.downPos.y) < 14;
     if (this.aiming && quick) this.tapThrow = { x: e.clientX, y: e.clientY };
-    else if (quick) this.onTap(e.clientX, e.clientY);
+    else if (quick) {
+      this.onTap(e.clientX, e.clientY);
+      this.lastTap = { t: performance.now(), x: e.clientX, y: e.clientY };
+    }
     this.release();
   };
   private release() {
     this.pid = -1;
     this.joy.active = false;
+    this.runLock = false;
+    this.setDragRun(false);
+  }
+  private setDragRun(on: boolean) {
+    if (on === this.dragRun) return;
+    this.dragRun = on;
+    if (on) {
+      try {
+        navigator.vibrate?.(15);
+      } catch {
+        /* not supported */
+      }
+    }
+    this.onRunChange(on);
   }
   private kd = (e: KeyboardEvent) => {
     this.onAnyInput();
@@ -122,11 +155,21 @@ export class InputCtl {
       const d = Math.hypot(dx, dy);
       const m = Math.min(1, d / this.radius);
       if (d > 6) {
-        this.vx = (dx / d) * m;
-        this.vy = (-dy / d) * m;
+        const now = performance.now();
+        if (m >= RUN_ZONE) {
+          if (!this.zoneSince) this.zoneSince = now;
+        } else this.zoneSince = 0;
+        const run = this.runLock || (this.dragRun ? m >= RUN_OFF : !!this.zoneSince && now - this.zoneSince >= RUN_DWELL);
+        this.setDragRun(run);
+        this.run = run;
+        const k = run ? 1 : Math.min(m, TIPTOE_MAX);
+        this.vx = (dx / d) * k;
+        this.vy = (-dy / d) * k;
         return;
       }
     }
+    this.zoneSince = 0;
+    this.setDragRun(false);
     this.vx = 0;
     this.vy = 0;
   }

@@ -7,7 +7,7 @@ import { getLevel, levelId, LEVEL_SRC } from '../../src/levels/index';
 import { World } from '../../src/game/world';
 import { simulate, PROFILES } from '../../src/game/bot';
 import { hiddenRequiredCookies } from '../../src/game/visibility';
-import { closedTargets, startSightings, stationaryGuards } from '../../src/game/audit';
+import { closedTargets, startSightings, stationaryGuards, crossingWaits, MAX_CROSS_WAIT } from '../../src/game/audit';
 import { CAMP_MAX } from '../../src/game/world';
 
 const args = process.argv.slice(2);
@@ -68,6 +68,7 @@ for (let h = 0; h < LEVEL_SRC.length; h++) {
     if (startSightings(L).length) row.audit.push('start seen');
     const closed = closedTargets(L);
     if (closed.length) row.audit.push(`never opens: ${closed.join(', ')}`);
+    if (crossingWaits(L).some((s) => s.maxWait > MAX_CROSS_WAIT)) row.audit.push('only route not readable');
     for (const p of profiles) {
       let escapes = 0,
         early = 0,

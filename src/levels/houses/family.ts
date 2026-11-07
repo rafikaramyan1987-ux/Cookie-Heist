@@ -115,7 +115,7 @@ export const FAMILY: LevelSrc[] = [
     sight: 1.3,
     name: ['Dark Hallway', 'Couloir sombre'],
     boost: 1.3,
-    put: 'j 1,0; c 7,4; s 3,4; P 4,4',
+    put: 'j 1,0; c 7,4; s 3,4; P 4,4; Q 3,5',
     dark: 'H',
     guards: [
       { k: 'dad', p: '1,6 7,6', w: 2, speed: 0.7 },
