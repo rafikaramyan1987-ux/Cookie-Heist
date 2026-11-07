@@ -350,7 +350,7 @@ input:checked + .sw::after { transform: translateX(22px); }
 .hud.live.portrait .level-chip { padding: 4px 10px 4px 6px; }
 .hud.live.portrait .cookie-bar { left: auto; right: 72px; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
+  *, *::before, *::after { animation: none !important; transition-duration: 0.001s !important; }
 }
 
 /* ---------- store cover ---------- */
