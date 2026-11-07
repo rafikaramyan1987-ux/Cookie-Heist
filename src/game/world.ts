@@ -529,6 +529,8 @@ export class World {
    */
   phoneLevel(g: Guard): number {
     if (g.kind !== 'teen' || g.delay > 0 || (g.state !== 'patrol' && g.state !== 'wait' && g.state !== 'return')) return 0;
+    // no phone break while she's been standing next to a hidden kid for a while: she moves on instead
+    if (g.campT >= CAMP_MAX * 0.5) return 0;
     const c = (this.t + g.phase) % PHONE_CYCLE;
     if (c >= PHONE_TIME) return 0;
     return Math.max(0.02, Math.min(1, c / PHONE_RAMP, (PHONE_TIME - c) / PHONE_RAMP));
@@ -729,7 +731,7 @@ export class World {
   /** Stop camping: walk to the patrol point farthest from the hidden kid. */
   private moveOn(g: Guard) {
     const pts = g.spec.path;
-    g.campT = 0;
+    // campT keeps counting until she is actually walking (no phone break in between)
     let best = -1,
       bd = -1;
     pts.forEach((q, i) => {
