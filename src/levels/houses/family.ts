@@ -110,7 +110,7 @@ export const FAMILY: LevelSrc[] = [
     toys: 1,
   }),
   night(F1, {
-    pace: 1.3,
+    pace: 1.69,
     linger: 0.7,
     sight: 1.3,
     name: ['Dark Hallway', 'Couloir sombre'],
@@ -132,8 +132,8 @@ export const FAMILY: LevelSrc[] = [
     toys: 1,
   }),
   night(F2, {
-    pace: 1.3,
-    linger: 0.91,
+    pace: 1.49,
+    linger: 0.64,
     sight: 1.15,
     name: ['Key Trouble', 'Histoire de clé'],
     put: 'j 2,0; k 9,7; g 6,1; Q 4,5',
@@ -147,6 +147,7 @@ export const FAMILY: LevelSrc[] = [
   }),
   night(F2, {
     pace: 1.3,
+    sight: 1.15,
     name: ['Family Finale', 'Finale en famille'],
     put: 'j 1,0; k 9,8; c 0,2; g 5,11; Q 4,5; Q 0,4; ~ 7,5',
     doors: '1,4nL',
