@@ -109,6 +109,8 @@ export const MANSION: LevelSrc[] = [
     par: 55,
   }),
   night(M2, {
+    pace: 1.15,
+    linger: 0.7,
     name: ['Midnight Bell', 'La cloche de minuit'],
     put: 'j 1,0; c 11,2; p 9,6; Q 6,4',
     bedCheck: 50,

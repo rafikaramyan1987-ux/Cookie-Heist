@@ -105,7 +105,7 @@ export const APARTMENT: LevelSrc[] = [
   night(A3, {
     name: ['Phone Glow', 'Lueur de téléphone'],
     put: 'j 0,0; c 8,2',
-    guards: [{ k: 'teen', p: '6,5 4,5', w: 2, speed: 0.5, face: 180 }],
+    guards: [{ k: 'teen', p: '6,5 4,5', w: 2, speed: 0.5, face: 180, delay: 1 }],
     par: 26,
     tip: 'teen',
   }),

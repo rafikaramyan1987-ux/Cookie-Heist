@@ -35,6 +35,18 @@ for (const [tab, pick, name] of [['skin', 'skin:dino', 'shop-pyjamas'], ['cap', 
 }
 // ---- hint (capture mode: deterministic frames)
 if (only !== 'shop') {
+// the offer on the 3rd fail in a row
+await page.goto(`${base}?nosdk&notips&level=0-10`);
+await page.waitForFunction(() => window.__ready === true && !!window.__game.run, null, { timeout: 120000 });
+await page.evaluate(() => {
+  const g = window.__game;
+  g.save.fails['apartment-11'] = 2;
+  g.run.world.status = 'caught';
+  g.ui.innerHTML = '';
+  g.showResult();
+});
+await page.waitForTimeout(600);
+await page.screenshot({ path: `${out}/hint-offer.png`, timeout: 180000 });
 await page.goto(`${base}?capture&nosdk&notips&introhold&autoplay=hint&level=0-10&hint&seed=3`);
 await page.waitForFunction(() => window.__ready === true && !!window.__game.run, null, { timeout: 120000 });
 const tick = (n) => page.evaluate((k) => { for (let i = 0; i < k; i++) window.__game.tick(1 / 30); }, n);

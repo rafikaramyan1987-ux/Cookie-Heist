@@ -67,7 +67,7 @@ export class App {
   async boot() {
     const loading = document.createElement('div');
     loading.className = 'loading';
-    loading.textContent = '🍪';
+    loading.innerHTML = ICONS.cookie(true);
     document.body.appendChild(loading);
     await sdk.init(params.has('nosdk') ? 1 : 3500);
     sdk.loadingStart();
@@ -593,7 +593,8 @@ export class App {
         case 'cookie':
           audio.play('crunch');
           audio.play('pickup');
-          r.hud.toast(e.i === r.level.bonus ? t('bonusGot') : `🍪 ${r.world.cookies.filter((c, k) => c && k !== r.level.bonus).length}/${r.level.need}`);
+          if (e.i === r.level.bonus) r.hud.toast(t('bonusGot'));
+          else r.hud.toast(` ${r.world.cookies.filter((c, k) => c && k !== r.level.bonus).length}/${r.level.need}`, ICONS.cookie(true));
           break;
         case 'key':
         case 'toyPickup':

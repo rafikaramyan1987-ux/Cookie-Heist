@@ -76,8 +76,8 @@ export class GameHud {
       <div class="hud-sub">
         <div class="chip timer"><span class="clock"></span><b>0:00</b><i>/ ${fmt(o.par)}</i></div>
         <div class="chip stealth calm">${ICONS.eye}<b></b></div>
-        <div class="chip key-chip hidden-chip">🔑<b>${t('key')}</b></div>
-        <div class="chip bed-chip ${o.bedCheck ? '' : 'hidden-chip'}">⏰<b></b></div>
+        <div class="chip key-chip hidden-chip">${ICONS.key}<b>${t('key')}</b></div>
+        <div class="chip bed-chip ${o.bedCheck ? '' : 'hidden-chip'}">${ICONS.clock}<b></b></div>
       </div>
       <div class="tip-card hidden-tip"><div class="tip-icon"></div><div class="tip-text"><small>${t('newTip')}</small><b></b><span></span></div></div>
       <div class="edge-arrows"></div>
@@ -310,8 +310,9 @@ export class GameHud {
     }, 350);
   }
 
-  toast(text: string) {
-    this.toastEl.textContent = text;
+  toast(text: string, icon = '') {
+    this.toastEl.innerHTML = icon;
+    this.toastEl.append(text);
     this.toastEl.classList.remove('show');
     void this.toastEl.offsetWidth;
     this.toastEl.classList.add('show');
@@ -333,15 +334,15 @@ const TIP_ICONS: Record<string, string> = {
   cones: `<svg viewBox="0 0 64 64"><path d="M14 30 L58 12 L58 50 Z" fill="#ffe2a0" opacity=".85"/><rect x="6" y="25" width="14" height="10" rx="3" fill="#2e3446"/></svg>`,
   hide: ICONS.hide,
   move: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" fill="none" stroke="#6ff0c8" stroke-width="4" stroke-dasharray="6 5"/><circle cx="40" cy="26" r="10" fill="#fff4dc" stroke="#2a1a33" stroke-width="3"/></svg>`,
-  key: '<span style="font-size:36px">🔑</span>',
-  switch: '<span style="font-size:36px">💡</span>',
+  key: ICONS.key,
+  switch: ICONS.bulb,
   sleep: '<span style="font-size:32px;color:#cdd8ff;font-weight:700">Zzz</span>',
-  cat: '<span style="font-size:36px">🐱</span>',
-  vacuum: '<span style="font-size:36px">🤖</span>',
-  teen: '<span style="font-size:36px">📱</span>',
-  grandma: '<span style="font-size:36px">🏮</span>',
-  dad: '<span style="font-size:36px">🔦</span>',
-  pillow: '<span style="font-size:36px">⏰</span>',
-  finale: '<span style="font-size:36px">⭐</span>',
-  run: '<span style="font-size:36px">💨</span>',
+  cat: ICONS.cat,
+  vacuum: ICONS.vacuum,
+  teen: ICONS.phone,
+  grandma: ICONS.lantern,
+  dad: ICONS.flashlight,
+  pillow: ICONS.clock,
+  finale: ICONS.star(true),
+  run: ICONS.wind,
 };

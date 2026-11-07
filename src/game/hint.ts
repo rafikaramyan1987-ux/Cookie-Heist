@@ -42,11 +42,13 @@ const DT = 1 / 60;
 
 /** The hint planner: the good bot's look-ahead, required cookies only, never runs, no slips. */
 const HINT_PROFILE: BotProfile = { ...PROFILES.good, greedy: false, runChance: 0, slip: 0 };
+/** Fallback for tight spots: same planner without a safety margin. */
+const HINT_TIGHT: BotProfile = { ...HINT_PROFILE, margin: 0 };
 
 /** Record the hint planner on `seed`; null if it does not win. */
-export function recordHint(level: Level, seed: number, maxTime = 120): Hint | null {
+export function recordHint(level: Level, seed: number, maxTime = 120, tight = false): Hint | null {
   const w = new World(level, { seed });
-  const bot = new Bot(w, HINT_PROFILE, 7);
+  const bot = new Bot(w, tight ? HINT_TIGHT : HINT_PROFILE, 7);
   // uniform samples (time = index × HINT_SAMPLE) and the pickups made after each sample
   const samples: Vec2[] = [{ x: w.player.x, z: w.player.z }];
   const items = new Map<number, HintPoint[]>();
@@ -121,8 +123,11 @@ export const FOLLOW_NOISE = 0.2;
 export function findHint(level: Level, seed: number, tries = 8, checks = 4): Hint | null {
   let best: Hint | null = null,
     bestOk = -1;
-  for (let k = 0; k < tries; k++) {
-    const h = recordHint(level, seed + k * 7919);
+  for (let k = 0; k < tries * 2; k++) {
+    // careful planner first, the tight one only if needed
+    const tight = k >= tries;
+    if (tight && bestOk === checks) break;
+    const h = recordHint(level, seed + (k % tries) * 7919, 120, tight);
     if (!h) continue;
     let ok = 0;
     for (let c = 0; c < checks; c++) if (followHint(level, h, c + 1)) ok++;

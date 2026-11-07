@@ -43,9 +43,9 @@ export function houseMap(save: SaveData, onPlay: (h: number, i: number) => void,
         const s = save.stars[levelIds(h, i)];
         const ok = unlocked(h, i);
         const fin = i === 11;
-        return `<button class="night ${ok ? '' : 'locked'} ${s !== undefined ? 'done' : ''} ${fin ? 'finale' : ''}" data-h="${h}" data-i="${i}" ${ok ? '' : 'disabled'}><span>${fin ? '👑' : i + 1}</span>${s !== undefined ? starRow(s, 11) : ok ? '' : '🔒'}</button>`;
+        return `<button class="night ${ok ? '' : 'locked'} ${s !== undefined ? 'done' : ''} ${fin ? 'finale' : ''}" data-h="${h}" data-i="${i}" ${ok ? '' : 'disabled'}><span>${fin ? ICONS.crown : i + 1}</span>${s !== undefined ? starRow(s, 11) : ok ? '' : `<i class="lock-ic">${ICONS.lock}</i>`}</button>`;
       }).join('')}</div>
-      ${open ? '' : `<div class="lock-note">🔒 ${t('comingSoon')}</div>`}
+      ${open ? '' : `<div class="lock-note">${ICONS.lock} ${t('comingSoon')}</div>`}
       <div class="progress"><i style="width:${(done / 12) * 100}%"></i></div>
     </div>`;
   });
@@ -217,8 +217,8 @@ export function missionsScreen(save: SaveData, onClaim: (i: number) => number): 
 export function settingsScreen(save: SaveData, onChange: () => void, extra = ''): HTMLDivElement {
   const body = `<div class="settings">
     <label class="row"><span>${ICONS.sound}${t('sound')}</span><input type="checkbox" data-k="sound" ${save.sound ? 'checked' : ''}><i class="sw"></i></label>
-    <label class="row"><span>🎵 ${t('music')}</span><input type="checkbox" data-k="music" ${save.music ? 'checked' : ''}><i class="sw"></i></label>
-    <div class="row"><span>🌐 ${t('language')}</span><div class="lang"><b data-l="en" class="${getLang() === 'en' ? 'on' : ''}">EN</b><b data-l="fr" class="${getLang() === 'fr' ? 'on' : ''}">FR</b></div></div>
+    <label class="row"><span>${ICONS.music}${t('music')}</span><input type="checkbox" data-k="music" ${save.music ? 'checked' : ''}><i class="sw"></i></label>
+    <div class="row"><span>${ICONS.globe}${t('language')}</span><div class="lang"><b data-l="en" class="${getLang() === 'en' ? 'on' : ''}">EN</b><b data-l="fr" class="${getLang() === 'fr' ? 'on' : ''}">FR</b></div></div>
   </div>${extra}`;
   const el = modal(t('settings'), body, 'settings-modal');
   el.querySelectorAll<HTMLInputElement>('input[data-k]').forEach((i) =>

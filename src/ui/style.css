@@ -443,3 +443,12 @@ input:checked + .sw::after { transform: translateX(22px); }
 .go-glow { position: absolute; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 60px 18px rgba(39, 194, 108, .85); }
 .go-glow.on { animation: goGlow .9s ease-out; }
 @keyframes goGlow { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+/* SVG icons replacing emojis */
+.chip.key-chip svg, .chip.bed-chip svg { width: 22px; height: 22px; }
+.toast svg { width: 30px; height: 30px; vertical-align: middle; }
+.lock-note svg, .night .lock-ic svg { width: 16px; height: 16px; vertical-align: -2px; }
+.night .lock-ic { display: block; font-style: normal; }
+.night.finale span svg { width: 22px; height: 22px; }
+.settings .row span svg { width: 24px; height: 24px; vertical-align: middle; margin-right: 6px; }
+.tip-icon svg { width: 44px; height: 44px; }
+.loading svg { width: 72px; height: 72px; animation: pulse 1s ease-in-out infinite; }
