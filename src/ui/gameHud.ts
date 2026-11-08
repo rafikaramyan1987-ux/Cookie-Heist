@@ -1,6 +1,6 @@
 import { ICONS } from './icons';
 import { t, TIPS, getLang } from '../app/i18n';
-import type { Joy } from '../app/input';
+import { RUN_ZONE, type Joy } from '../app/input';
 
 export interface HudInit {
   houseName: string;
@@ -16,6 +16,8 @@ export interface HudInit {
   toyPickups?: number;
   /** index of the golden bonus cookie, -1 if none */
   bonus: number;
+  /** peek boosts owned */
+  peeks?: number;
 }
 
 export interface HudFrame {
@@ -50,6 +52,7 @@ export class GameHud {
   private joyEl: HTMLElement;
   private knob: HTMLElement;
   private joyLabel: HTMLElement;
+  private wasRunning = false;
   private tipEl: HTMLElement;
   private keyChip: HTMLElement;
   private bedChip: HTMLElement;
@@ -64,6 +67,7 @@ export class GameHud {
     el.className = 'hud live';
     el.innerHTML = `
       <div class="alert-vignette"></div>
+      <div class="go-glow"></div>
       <div class="hud-top">
         <div class="chip level-chip">${ICONS.moon}<div><small>${o.houseName}</small><b>${t('night')} ${o.night}</b></div></div>
         <div class="cookie-bar">${Array.from({ length: o.need }, () => `<div class="slot">${ICONS.cookie(false)}</div>`).join('')}${o.bonus >= 0 ? `<div class="slot bonus-slot">${ICONS.goldCookie(false)}</div>` : ''}</div>
@@ -72,8 +76,8 @@ export class GameHud {
       <div class="hud-sub">
         <div class="chip timer"><span class="clock"></span><b>0:00</b><i>/ ${fmt(o.par)}</i></div>
         <div class="chip stealth calm">${ICONS.eye}<b></b></div>
-        <div class="chip key-chip hidden-chip">🔑<b>${t('key')}</b></div>
-        <div class="chip bed-chip ${o.bedCheck ? '' : 'hidden-chip'}">⏰<b></b></div>
+        <div class="chip key-chip hidden-chip">${ICONS.key}<b>${t('key')}</b></div>
+        <div class="chip bed-chip ${o.bedCheck ? '' : 'hidden-chip'}">${ICONS.clock}<b></b></div>
       </div>
       <div class="tip-card hidden-tip"><div class="tip-icon"></div><div class="tip-text"><small>${t('newTip')}</small><b></b><span></span></div></div>
       <div class="edge-arrows"></div>
@@ -82,6 +86,7 @@ export class GameHud {
       <div class="aim-hint">${t('aim')}</div>
       <div class="joystick hidden-joy"><div class="joy-run"></div><div class="joy-tip"></div><div class="joy-knob"></div><div class="joy-label">${t('tiptoe')}</div></div>
       <button class="round-btn zoom" aria-label="Map">${ICONS.map}</button>
+      <button class="round-btn peek ${o.peeks ? '' : 'hidden-chip'}" aria-label="Peek">${ICONS.binoculars}<span class="peek-count">×${o.peeks ?? 0}</span></button>
       <button class="toy-btn ${o.toys > 0 || o.toyPickups ? '' : 'no-toys'}" aria-label="Throw toy"><div class="toy-ring"></div>${ICONS.duck}<span class="toy-count">×0</span></button>
       ${o.touch ? '' : `<div class="kb-hint">${t('kbHint')}</div>`}
     `;
@@ -104,6 +109,7 @@ export class GameHud {
     for (const b of el.querySelectorAll('button')) b.addEventListener('pointerdown', stop);
     el.querySelector('.pause')!.addEventListener('click', () => this.onPause());
     this.toyBtn.addEventListener('click', () => this.onToy());
+    el.querySelector('.peek')!.addEventListener('click', () => this.onPeek());
     const zoom = el.querySelector<HTMLButtonElement>('.zoom')!;
     // tap = toggle the overview, press & hold = peek while held
     let downAt = 0,
@@ -180,6 +186,19 @@ export class GameHud {
   }
 
   zoomOn = false;
+  onPeek: () => void = () => {};
+  /** on-screen pulse when a hint's safe window opens */
+  goPulse() {
+    const v = this.el.querySelector<HTMLElement>('.go-glow')!;
+    v.classList.remove('on');
+    void v.offsetWidth;
+    v.classList.add('on');
+  }
+  setPeeks(n: number) {
+    const b = this.el.querySelector<HTMLElement>('.peek')!;
+    b.classList.toggle('hidden-chip', n <= 0);
+    b.querySelector('.peek-count')!.textContent = `×${n}`;
+  }
   setZoom(on: boolean) {
     this.zoomOn = on;
     this.el.querySelector('.zoom')?.classList.toggle('on', on);
@@ -234,7 +253,7 @@ export class GameHud {
         const run = this.joyEl.querySelector<HTMLElement>('.joy-run')!,
           tip = this.joyEl.querySelector<HTMLElement>('.joy-tip')!;
         run.style.width = run.style.height = `${2 * R + 16}px`;
-        tip.style.width = tip.style.height = `${2 * R * 0.8}px`;
+        tip.style.width = tip.style.height = `${2 * R * RUN_ZONE}px`;
         this.joyLabel.style.top = `${R + 18}px`;
       }
       if (d > R) {
@@ -243,9 +262,16 @@ export class GameHud {
       }
       this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
       this.joyLabel.textContent = f.running ? t('running') : t('tiptoe');
-      // run zone starts at 80% of the full drag (matches RUN_THRESHOLD)
+      // tiptoe inside the dashed ring; the outer band (≥ 85 % of the drag, held a moment) runs
       const mag = Math.min(1, d / R);
-      this.joyEl.classList.toggle('near-run', !f.running && mag > 0.65);
+      this.joyEl.classList.toggle('near-run', !f.running && mag > 0.72);
+      if (f.running !== this.wasRunning) {
+        this.wasRunning = f.running;
+        // pop the label when switching
+        this.joyLabel.classList.remove('pop');
+        void this.joyLabel.offsetWidth;
+        this.joyLabel.classList.add('pop');
+      }
       this.joyEl.classList.toggle('running', f.running);
     } else this.joyEl.classList.add('hidden-joy');
     if (this.tipTimer > 0) {
@@ -284,8 +310,9 @@ export class GameHud {
     }, 350);
   }
 
-  toast(text: string) {
-    this.toastEl.textContent = text;
+  toast(text: string, icon = '') {
+    this.toastEl.innerHTML = icon;
+    this.toastEl.append(text);
     this.toastEl.classList.remove('show');
     void this.toastEl.offsetWidth;
     this.toastEl.classList.add('show');
@@ -307,15 +334,15 @@ const TIP_ICONS: Record<string, string> = {
   cones: `<svg viewBox="0 0 64 64"><path d="M14 30 L58 12 L58 50 Z" fill="#ffe2a0" opacity=".85"/><rect x="6" y="25" width="14" height="10" rx="3" fill="#2e3446"/></svg>`,
   hide: ICONS.hide,
   move: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" fill="none" stroke="#6ff0c8" stroke-width="4" stroke-dasharray="6 5"/><circle cx="40" cy="26" r="10" fill="#fff4dc" stroke="#2a1a33" stroke-width="3"/></svg>`,
-  key: '<span style="font-size:36px">🔑</span>',
-  switch: '<span style="font-size:36px">💡</span>',
+  key: ICONS.key,
+  switch: ICONS.bulb,
   sleep: '<span style="font-size:32px;color:#cdd8ff;font-weight:700">Zzz</span>',
-  cat: '<span style="font-size:36px">🐱</span>',
-  vacuum: '<span style="font-size:36px">🤖</span>',
-  teen: '<span style="font-size:36px">📱</span>',
-  grandma: '<span style="font-size:36px">🏮</span>',
-  dad: '<span style="font-size:36px">🔦</span>',
-  pillow: '<span style="font-size:36px">⏰</span>',
-  finale: '<span style="font-size:36px">⭐</span>',
-  run: '<span style="font-size:36px">💨</span>',
+  cat: ICONS.cat,
+  vacuum: ICONS.vacuum,
+  teen: ICONS.phone,
+  grandma: ICONS.lantern,
+  dad: ICONS.flashlight,
+  pillow: ICONS.clock,
+  finale: ICONS.star(true),
+  run: ICONS.wind,
 };

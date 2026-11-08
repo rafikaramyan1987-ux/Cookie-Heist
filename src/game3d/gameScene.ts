@@ -6,6 +6,8 @@ import { THEMES } from '../render/themes';
 import { nightLights } from '../render/stage';
 import { skyTex, radialTex, canvasTex } from '../render/textures';
 import { makeCharacter, animateRig, optimizeRig, bubble, Rig, PyjamaSkin, CapId } from '../render/characters';
+import { HintView } from './hintView';
+import type { Hint } from '../game/hint';
 import { VisionCone } from '../render/vision';
 import { NoiseRing, Particles, Sparkles } from '../render/fx';
 import { hideMarker } from '../render/markers';
@@ -30,6 +32,7 @@ interface GuardView {
   q: THREE.Sprite;
   ex: THREE.Sprite;
   z: THREE.Sprite;
+  ph: THREE.Sprite;
   pop: number;
   last: string;
 }
@@ -48,6 +51,11 @@ const NOISE_COLORS: Record<string, number> = {
 export class GameScene {
   readonly scene = new THREE.Scene();
   readonly camera: GameCamera;
+  /** hint overlay (safe route) for this attempt */
+  hint: HintView | null = null;
+  /** the intro replay of the hint is running */
+  hintReplay = false;
+  private routes: THREE.Group | null = null;
   house: BuiltHouse;
   kid: Rig;
   guards: GuardView[] = [];
@@ -109,11 +117,12 @@ export class GameScene {
       const q = bubble('?', '#ff8a2f');
       const ex = bubble('!', '#ff3d4f');
       const z = bubble('Zzz', '#cdd8ff');
-      for (const b of [q, ex, z]) {
+      const ph = bubble('phone', '#9fdcff');
+      for (const b of [q, ex, z, ph]) {
         b.visible = false;
         this.scene.add(b);
       }
-      this.guards.push({ g, rig, cone, q, ex, z, pop: 0, last: '' });
+      this.guards.push({ g, rig, cone, q, ex, z, ph, pop: 0, last: '' });
     });
 
     this.buildItems();
@@ -499,7 +508,49 @@ export class GameScene {
     this.particles.update(dt);
     this.house.update(t, dt);
     this.updateCinematic(dt, t);
+    this.hint?.update(dt, t, w.t, this.hintReplay, p);
     this.camera.update(dt, p.x, p.z, this.vel.x, this.vel.y);
+  }
+
+  setHint(h: Hint, labels: { wait: string; go: string }) {
+    this.hint = new HintView(h, labels);
+    this.scene.add(this.hint.group);
+  }
+
+  /** peek: dotted patrol routes of the grown-ups */
+  setRoutes(on: boolean) {
+    if (on && !this.routes) {
+      this.routes = new THREE.Group();
+      const colors: Record<string, number> = { mum: 0xff9f6b, dad: 0x8fb4ff, grandma: 0xffc46b, teen: 0x9fdcff };
+      for (const g of this.world.guards) {
+        if (!g.cfg.adult || g.spec.sleep || g.spec.path.length < 2) continue;
+        const pts = g.spec.path;
+        const loop = pts.length > 2 && pts[0].x === pts[pts.length - 1].x && pts[0].z === pts[pts.length - 1].z;
+        const segs: [THREE.Vector3, THREE.Vector3][] = [];
+        for (let i = 1; i < pts.length; i++) segs.push([new THREE.Vector3(pts[i - 1].x, 0.06, pts[i - 1].z), new THREE.Vector3(pts[i].x, 0.06, pts[i].z)]);
+        if (!loop && pts.length > 2) segs.push([new THREE.Vector3(pts[pts.length - 1].x, 0.06, pts[pts.length - 1].z), new THREE.Vector3(pts[0].x, 0.06, pts[0].z)]);
+        const mat = new THREE.MeshBasicMaterial({ color: colors[g.kind] ?? 0xffffff, transparent: true, opacity: 0.9, depthWrite: false });
+        const geo = new THREE.CircleGeometry(0.07, 10);
+        geo.rotateX(-Math.PI / 2);
+        for (const [a, b] of segs) {
+          const n = Math.max(1, Math.round(a.distanceTo(b) / 0.3));
+          for (let k = 0; k <= n; k++) {
+            const d = new THREE.Mesh(geo, mat);
+            d.position.copy(a).lerp(b, k / n);
+            d.renderOrder = 5;
+            this.routes.add(d);
+          }
+        }
+        for (const p of pts) {
+          const ring = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 24), mat);
+          ring.rotation.x = -Math.PI / 2;
+          ring.position.set(p.x, 0.065, p.z);
+          this.routes.add(ring);
+        }
+      }
+      this.scene.add(this.routes);
+    }
+    if (this.routes) this.routes.visible = on;
   }
 
   private isUnlocked(x: number, z: number) {
@@ -539,7 +590,8 @@ export class GameScene {
       else rig.root.rotation.set(0, Math.atan2(Math.cos(g.dir), Math.sin(g.dir)), 0);
     }
     const vis = w.visionOf(g);
-    rig.mode = lying ? 'sleep' : g.moving > 0.2 ? 'walk' : g.kind === 'teen' && g.state !== 'spot' ? 'phone' : g.kind === 'dad' && !vis.on ? 'yawn' : g.state === 'look' ? 'look' : 'idle';
+    const phone = w.phoneLevel(g);
+    rig.mode = lying ? 'sleep' : g.moving > 0.2 ? 'walk' : phone > 0 ? 'phone' : g.kind === 'dad' && !vis.on ? 'yawn' : g.state === 'look' ? 'look' : 'idle';
     rig.speed = 0.55;
     animateRig(rig, dt, t);
     // vision cone
@@ -547,13 +599,14 @@ export class GameScene {
     cone.setVisible(vis.on && g.delay <= 0 && w.status === 'play');
     cone.range = vis.range;
     cone.halfAngle = vis.half;
+    cone.setDim(phone);
     cone.setAlert(g.state === 'spot' ? 'chase' : g.state === 'suspicious' || g.state === 'look' || g.alert > 0.3 ? 'suspicious' : 'calm');
     rig.root.updateMatrixWorld(true);
     if (rig.lightTip && g.cfg.adult) rig.lightTip.getWorldPosition(this.tmp);
     else this.tmp.set(g.x, 0.3, g.z);
     cone.update(g.x, g.z, g.dir, this.tmp, this.rayFn(g), dt, t);
     // bubbles
-    const kind = lying ? 'z' : g.state === 'spot' ? '!' : g.state === 'suspicious' || g.state === 'look' ? '?' : '';
+    const kind = lying ? 'z' : g.state === 'spot' ? '!' : g.state === 'suspicious' || g.state === 'look' ? '?' : phone > 0.5 ? 'phone' : '';
     if (kind !== v.last) {
       v.last = kind;
       v.pop = 0;
@@ -565,6 +618,7 @@ export class GameScene {
       [v.q, '?'],
       [v.ex, '!'],
       [v.z, 'z'],
+      [v.ph, 'phone'],
     ] as [THREE.Sprite, string][]) {
       b.visible = kind === k && w.status === 'play';
       if (b.visible) {

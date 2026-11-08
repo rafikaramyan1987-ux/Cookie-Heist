@@ -1,10 +1,11 @@
 /**
  * Static level audit on the real guard simulation:
- * stationary adult guards, sightings of the start area in the first 3 s, and route cells that never open.
+ * stationary adult guards, sightings of the start area in the first 3 s, route cells that never open, and
+ * corridors every route must take that do not open a crossing window at least every 10 s.
  * usage: npx tsx scripts/playtest/audit.ts [h-i]
  */
 import { getLevel, LEVEL_SRC } from '../../src/levels/index';
-import { closedTargets, startSightings, stationaryGuards } from '../../src/game/audit';
+import { closedTargets, startSightings, stationaryGuards, crossingWaits, MAX_CROSS_WAIT } from '../../src/game/audit';
 
 const only = process.argv[2];
 let fails = 0;
@@ -19,6 +20,8 @@ for (let h = 0; h < LEVEL_SRC.length; h++)
     if (ss.length) probs.push(`start seen (phase ${ss[0][0]}, ${ss[0][1]} s)`);
     const ct = closedTargets(L);
     if (ct.length) probs.push(`never opens: ${ct.join(', ')}`);
+    const cw = crossingWaits(L).filter((s) => s.maxWait > MAX_CROSS_WAIT);
+    if (cw.length) probs.push(`only route not readable: ${cw.map((s) => `${s.cells.length}-cell corridor waits ${s.maxWait.toFixed(1)} s`).join(', ')}`);
     if (probs.length) fails++;
     if (probs.length || only) console.log(`${L.id.padEnd(13)} ${probs.join('; ') || 'ok'}`);
   }

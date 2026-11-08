@@ -20,6 +20,10 @@ export interface SaveData {
   daily: { last: string; streak: number };
   missions: { day: string; list: { id: string; n: number; progress: number; reward: number; claimed: boolean }[] };
   totals: { cookies: number; wins: number };
+  /** boosts bought with coins (consumed when used) */
+  items: { toy: number; peek: number; hint: number; pillow: number };
+  /** nights won with a hint (tracked silently; stars are not affected) */
+  hinted: Record<string, boolean>;
 }
 
 const KEY = 'cookieheist.save.v1';
@@ -43,6 +47,8 @@ export function defaultSave(): SaveData {
     daily: { last: '', streak: 0 },
     missions: { day: '', list: [] },
     totals: { cookies: 0, wins: 0 },
+    items: { toy: 0, peek: 0, hint: 0, pillow: 0 },
+    hinted: {},
   };
 }
 
@@ -58,6 +64,8 @@ export function parseSave(raw: string | null | undefined): SaveData {
       daily: { ...base.daily, ...(d.daily ?? {}) },
       missions: d.missions && Array.isArray(d.missions.list) ? d.missions : base.missions,
       totals: { ...base.totals, ...(d.totals ?? {}) },
+      items: { ...base.items, ...(d.items ?? {}) },
+      hinted: d.hinted && typeof d.hinted === 'object' ? d.hinted : {},
       owned: Array.isArray(d.owned) ? Array.from(new Set([...base.owned, ...d.owned])) : base.owned,
       coins: Math.max(0, Math.floor(Number(d.coins) || 0)),
     };

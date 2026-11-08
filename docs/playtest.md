@@ -6,67 +6,67 @@ Targets: house 1 nights 1–3 beginner ≥ 90%; normal nights average ≈ 70%; f
 
 "Cookies visible": no required cookie is hidden behind a wall or tall furniture from the default phone camera (`src/game/visibility.ts`).
 
-Audit columns (all profiles): **Escapes** = "!" that did not end in a catch (must be 0: a full sighting sends the kid to bed); **Early** = runs with a guard sighting in the first 3 s (must be 0); **Idle** = longest time a guard stood still next to the hidden kid (must be ≤ 3 s); **Audit** = static checks on the guard simulation: no stationary adult guard, nobody sees the start or the first three steps for 3 s, and every patrol cycle opens a path (each route cell clear at least every 6 s).
+Audit columns (all profiles): **Escapes** = "!" that did not end in a catch (must be 0: a full sighting sends the kid to bed); **Early** = runs with a guard sighting in the first 3 s (must be 0); **Idle** = longest time a guard stood still next to the hidden kid (must be ≤ 3 s); **Hint** = how often a person-like follower (about 0.15 s late, ± 0.2 s, on the countdown rings) wins with the hint offered after 3 fails; **Audit** = static checks on the guard simulation: no stationary adult guard, nobody sees the start or the first three steps for 3 s, every patrol cycle opens a path (each route cell clear at least every 6 s), and a corridor every route must take opens a crossing window at least every 10 s.
 
-| Level | Solvable | Cookies visible | Beginner win | Average win | Good win | Avg time (avg) | Spotted / run (avg) | Escapes | Early | Idle | Audit |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| City Apartment 1 | yes | yes | 100% | 100% | 100% | 8.1 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| City Apartment 2 | yes | yes | 97% | 100% | 0% | 8.7 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| City Apartment 3 | yes | yes | 100% | 100% | 100% | 8.1 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| City Apartment 4 | yes | yes | 31% | 78% | 94% | 10.4 s | 0.22 | 0 | 0 | 0.0 s | ok |
-| City Apartment 5 | yes | yes | 53% | 81% | 100% | 25.1 s | 0.19 | 0 | 0 | 1.9 s | ok |
-| City Apartment 6 | yes | yes | 59% | 75% | 100% | 23.2 s | 0.25 | 0 | 0 | 2.1 s | ok |
-| City Apartment 7 | yes | yes | 53% | 72% | 100% | 21.2 s | 0.28 | 0 | 0 | 2.1 s | ok |
-| City Apartment 8 | yes | yes | 9% | 56% | 69% | 40.3 s | 0.44 | 0 | 0 | 2.1 s | ok |
-| City Apartment 9 | yes | yes | 100% | 100% | 100% | 17.4 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| City Apartment 10 | yes | yes | 3% | 59% | 0% | 22.1 s | 0.41 | 0 | 0 | 2.1 s | ok |
-| City Apartment 11 | yes | yes | 28% | 56% | 91% | 42.9 s | 0.44 | 0 | 0 | 2.1 s | ok |
-| City Apartment 12 (finale) | yes | yes | 3% | 47% | 44% | 41.9 s | 0.50 | 0 | 0 | 2.1 s | ok |
-| Family House 1 | yes | yes | 100% | 100% | 100% | 19.1 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| Family House 2 | yes | yes | 100% | 100% | 100% | 20.5 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| Family House 3 | yes | yes | 47% | 97% | 100% | 19.4 s | 0.03 | 0 | 0 | 2.1 s | ok |
-| Family House 4 | yes | yes | 75% | 88% | 97% | 30.0 s | 0.13 | 0 | 0 | 2.1 s | ok |
-| Family House 5 | yes | yes | 100% | 100% | 100% | 20.2 s | 0.00 | 0 | 0 | 0.8 s | ok |
-| Family House 6 | yes | yes | 56% | 78% | 94% | 35.8 s | 0.22 | 0 | 0 | 2.5 s | ok |
-| Family House 7 | yes | yes | 66% | 81% | 100% | 33.0 s | 0.19 | 0 | 0 | 2.0 s | ok |
-| Family House 8 | yes | yes | 88% | 88% | 81% | 34.2 s | 0.13 | 0 | 0 | 0.0 s | ok |
-| Family House 9 | yes | yes | 41% | 72% | 100% | 29.9 s | 0.28 | 0 | 0 | 2.5 s | ok |
-| Family House 10 | yes | yes | 19% | 69% | 100% | 46.4 s | 0.31 | 0 | 0 | 2.1 s | ok |
-| Family House 11 | yes | yes | 53% | 78% | 94% | 38.4 s | 0.22 | 0 | 0 | 2.1 s | ok |
-| Family House 12 (finale) | yes | yes | 25% | 50% | 97% | 44.3 s | 0.50 | 0 | 0 | 2.5 s | ok |
-| Grandma's Cottage 1 | yes | yes | 9% | 94% | 100% | 38.5 s | 0.06 | 0 | 0 | 2.1 s | ok |
-| Grandma's Cottage 2 | yes | yes | 100% | 100% | 100% | 17.8 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| Grandma's Cottage 3 | yes | yes | 100% | 100% | 0% | 16.3 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| Grandma's Cottage 4 | yes | yes | 88% | 56% | 100% | 21.7 s | 0.44 | 0 | 0 | 0.0 s | ok |
-| Grandma's Cottage 5 | yes | yes | 81% | 84% | 100% | 19.6 s | 0.16 | 0 | 0 | 2.1 s | ok |
-| Grandma's Cottage 6 | yes | yes | 100% | 47% | 0% | 77.7 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| Grandma's Cottage 7 | yes | yes | 16% | 66% | 0% | 20.8 s | 0.34 | 0 | 0 | 1.5 s | ok |
-| Grandma's Cottage 8 | yes | yes | 88% | 72% | 100% | 35.8 s | 0.28 | 0 | 0 | 1.2 s | ok |
-| Grandma's Cottage 9 | yes | yes | 13% | 78% | 59% | 26.5 s | 0.22 | 0 | 0 | 2.1 s | ok |
-| Grandma's Cottage 10 | yes | yes | 63% | 75% | 100% | 28.5 s | 0.25 | 0 | 0 | 2.1 s | ok |
-| Grandma's Cottage 11 | yes | yes | 56% | 63% | 63% | 55.5 s | 0.38 | 0 | 0 | 2.5 s | ok |
-| Grandma's Cottage 12 (finale) | yes | yes | 50% | 59% | 91% | 49.9 s | 0.41 | 0 | 0 | 2.5 s | ok |
-| Snowy Chalet 1 | yes | yes | 100% | 100% | 100% | 13.1 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| Snowy Chalet 2 | yes | yes | 97% | 97% | 0% | 22.9 s | 0.03 | 0 | 0 | 0.0 s | ok |
-| Snowy Chalet 3 | yes | yes | 63% | 91% | 56% | 33.8 s | 0.09 | 0 | 0 | 2.1 s | ok |
-| Snowy Chalet 4 | yes | yes | 6% | 78% | 100% | 78.5 s | 0.19 | 0 | 0 | 2.1 s | ok |
-| Snowy Chalet 5 | yes | yes | 47% | 78% | 100% | 47.1 s | 0.19 | 0 | 0 | 0.0 s | ok |
-| Snowy Chalet 6 | yes | yes | 9% | 78% | 100% | 56.5 s | 0.22 | 0 | 0 | 2.4 s | ok |
-| Snowy Chalet 7 | yes | yes | 53% | 78% | 100% | 49.0 s | 0.22 | 0 | 0 | 2.1 s | ok |
-| Snowy Chalet 8 | yes | yes | 25% | 78% | 100% | 45.3 s | 0.22 | 0 | 0 | 0.0 s | ok |
-| Snowy Chalet 9 | yes | yes | 47% | 81% | 97% | 50.6 s | 0.19 | 0 | 0 | 2.1 s | ok |
-| Snowy Chalet 10 | yes | yes | 25% | 59% | 59% | 53.9 s | 0.41 | 0 | 0 | 2.1 s | ok |
-| Snowy Chalet 11 | yes | yes | 34% | 72% | 88% | 40.5 s | 0.28 | 0 | 0 | 2.5 s | ok |
-| Snowy Chalet 12 (finale) | yes | yes | 41% | 56% | 97% | 47.3 s | 0.41 | 0 | 0 | 2.5 s | ok |
-| Grand Mansion 1 | yes | yes | 100% | 100% | 100% | 29.8 s | 0.00 | 0 | 0 | 0.0 s | ok |
-| Grand Mansion 2 | yes | yes | 56% | 97% | 100% | 35.2 s | 0.03 | 0 | 0 | 2.1 s | ok |
-| Grand Mansion 3 | yes | yes | 75% | 91% | 100% | 43.5 s | 0.09 | 0 | 0 | 0.1 s | ok |
-| Grand Mansion 4 | yes | yes | 22% | 66% | 81% | 52.4 s | 0.34 | 0 | 0 | 2.4 s | ok |
-| Grand Mansion 5 | yes | yes | 47% | 63% | 100% | 35.9 s | 0.38 | 0 | 0 | 2.1 s | ok |
-| Grand Mansion 6 | yes | yes | 53% | 81% | 100% | 57.2 s | 0.19 | 0 | 0 | 2.1 s | ok |
-| Grand Mansion 7 | yes | yes | 69% | 66% | 84% | 91.2 s | 0.22 | 0 | 0 | 0.8 s | ok |
-| Grand Mansion 8 | yes | yes | 13% | 66% | 34% | 42.3 s | 0.34 | 0 | 0 | 2.1 s | ok |
-| Grand Mansion 9 | yes | yes | 31% | 78% | 97% | 41.2 s | 0.22 | 0 | 0 | 2.5 s | ok |
-| Grand Mansion 10 | yes | yes | 6% | 59% | 56% | 53.4 s | 0.41 | 0 | 0 | 2.1 s | ok |
-| Grand Mansion 11 | yes | yes | 56% | 75% | 100% | 35.4 s | 0.25 | 0 | 0 | 2.4 s | ok |
-| Grand Mansion 12 (finale) | yes | yes | 38% | 53% | 59% | 44.0 s | 0.47 | 0 | 0 | 2.5 s | ok |
+| Level | Solvable | Cookies visible | Beginner win | Average win | Good win | Avg time (avg) | Spotted / run (avg) | Escapes | Early | Idle | Hint | Audit |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| City Apartment 1 | yes | yes | 100% | 100% | 100% | 8.1 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| City Apartment 2 | yes | yes | 97% | 100% | 0% | 8.7 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| City Apartment 3 | yes | yes | 100% | 100% | 100% | 8.1 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| City Apartment 4 | yes | yes | 31% | 78% | 94% | 10.4 s | 0.22 | 0 | 0 | 0.0 s | 100% | ok |
+| City Apartment 5 | yes | yes | 53% | 81% | 100% | 25.1 s | 0.19 | 0 | 0 | 1.9 s | 100% | ok |
+| City Apartment 6 | yes | yes | 59% | 75% | 100% | 23.2 s | 0.25 | 0 | 0 | 2.1 s | 100% | ok |
+| City Apartment 7 | yes | yes | 53% | 72% | 100% | 21.2 s | 0.28 | 0 | 0 | 2.1 s | 100% | ok |
+| City Apartment 8 | yes | yes | 47% | 72% | 100% | 33.2 s | 0.25 | 0 | 0 | 2.2 s | 100% | ok |
+| City Apartment 9 | yes | yes | 91% | 97% | 100% | 25.6 s | 0.03 | 0 | 0 | 2.1 s | 100% | ok |
+| City Apartment 10 | yes | yes | 3% | 59% | 0% | 22.8 s | 0.41 | 0 | 0 | 2.1 s | 100% | ok |
+| City Apartment 11 | yes | yes | 31% | 78% | 100% | 38.3 s | 0.22 | 0 | 0 | 2.5 s | 100% | ok |
+| City Apartment 12 (finale) | yes | yes | 6% | 50% | 44% | 45.4 s | 0.47 | 0 | 0 | 2.1 s | 100% | ok |
+| Family House 1 | yes | yes | 100% | 100% | 100% | 19.1 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| Family House 2 | yes | yes | 100% | 100% | 100% | 20.5 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| Family House 3 | yes | yes | 47% | 97% | 100% | 19.4 s | 0.03 | 0 | 0 | 2.1 s | 100% | ok |
+| Family House 4 | yes | yes | 75% | 88% | 97% | 30.0 s | 0.13 | 0 | 0 | 2.1 s | 100% | ok |
+| Family House 5 | yes | yes | 100% | 100% | 100% | 20.2 s | 0.00 | 0 | 0 | 0.8 s | 100% | ok |
+| Family House 6 | yes | yes | 56% | 78% | 94% | 35.8 s | 0.22 | 0 | 0 | 2.5 s | 100% | ok |
+| Family House 7 | yes | yes | 66% | 81% | 100% | 33.0 s | 0.19 | 0 | 0 | 2.0 s | 100% | ok |
+| Family House 8 | yes | yes | 88% | 91% | 56% | 34.0 s | 0.09 | 0 | 0 | 0.0 s | 100% | ok |
+| Family House 9 | yes | yes | 41% | 72% | 100% | 29.9 s | 0.28 | 0 | 0 | 2.5 s | 100% | ok |
+| Family House 10 | yes | yes | 34% | 81% | 100% | 33.5 s | 0.16 | 0 | 0 | 2.1 s | 100% | ok |
+| Family House 11 | yes | yes | 53% | 78% | 94% | 38.4 s | 0.22 | 0 | 0 | 2.1 s | 100% | ok |
+| Family House 12 (finale) | yes | yes | 25% | 50% | 97% | 44.3 s | 0.50 | 0 | 0 | 2.5 s | 100% | ok |
+| Grandma's Cottage 1 | yes | yes | 9% | 94% | 100% | 38.5 s | 0.06 | 0 | 0 | 2.1 s | 100% | ok |
+| Grandma's Cottage 2 | yes | yes | 100% | 100% | 100% | 17.8 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| Grandma's Cottage 3 | yes | yes | 100% | 100% | 0% | 16.3 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| Grandma's Cottage 4 | yes | yes | 88% | 56% | 100% | 21.7 s | 0.44 | 0 | 0 | 0.0 s | 100% | ok |
+| Grandma's Cottage 5 | yes | yes | 81% | 84% | 100% | 19.6 s | 0.16 | 0 | 0 | 2.1 s | 100% | ok |
+| Grandma's Cottage 6 | yes | yes | 100% | 47% | 0% | 77.7 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| Grandma's Cottage 7 | yes | yes | 16% | 66% | 0% | 20.8 s | 0.34 | 0 | 0 | 1.5 s | 100% | ok |
+| Grandma's Cottage 8 | yes | yes | 100% | 59% | 94% | 34.9 s | 0.41 | 0 | 0 | 2.1 s | 100% | ok |
+| Grandma's Cottage 9 | yes | yes | 13% | 78% | 59% | 26.5 s | 0.22 | 0 | 0 | 2.1 s | 100% | ok |
+| Grandma's Cottage 10 | yes | yes | 63% | 75% | 100% | 28.5 s | 0.25 | 0 | 0 | 2.1 s | 100% | ok |
+| Grandma's Cottage 11 | yes | yes | 56% | 63% | 63% | 55.5 s | 0.38 | 0 | 0 | 2.5 s | 100% | ok |
+| Grandma's Cottage 12 (finale) | yes | yes | 50% | 59% | 91% | 49.9 s | 0.41 | 0 | 0 | 2.5 s | 100% | ok |
+| Snowy Chalet 1 | yes | yes | 100% | 100% | 100% | 13.1 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| Snowy Chalet 2 | yes | yes | 97% | 97% | 0% | 22.9 s | 0.03 | 0 | 0 | 0.0 s | 100% | ok |
+| Snowy Chalet 3 | yes | yes | 75% | 88% | 69% | 37.0 s | 0.13 | 0 | 0 | 2.1 s | 100% | ok |
+| Snowy Chalet 4 | yes | yes | 0% | 75% | 100% | 77.4 s | 0.19 | 0 | 0 | 2.1 s | 100% | ok |
+| Snowy Chalet 5 | yes | yes | 47% | 78% | 100% | 47.1 s | 0.19 | 0 | 0 | 0.0 s | 100% | ok |
+| Snowy Chalet 6 | yes | yes | 9% | 81% | 100% | 50.8 s | 0.19 | 0 | 0 | 2.5 s | 100% | ok |
+| Snowy Chalet 7 | yes | yes | 53% | 78% | 100% | 49.0 s | 0.22 | 0 | 0 | 2.1 s | 100% | ok |
+| Snowy Chalet 8 | yes | yes | 16% | 88% | 97% | 42.1 s | 0.13 | 0 | 0 | 0.0 s | 100% | ok |
+| Snowy Chalet 9 | yes | yes | 53% | 69% | 94% | 52.9 s | 0.31 | 0 | 0 | 2.1 s | 75% | ok |
+| Snowy Chalet 10 | yes | yes | 28% | 56% | 53% | 55.9 s | 0.44 | 0 | 0 | 2.1 s | 100% | ok |
+| Snowy Chalet 11 | yes | yes | 34% | 72% | 88% | 40.5 s | 0.28 | 0 | 0 | 2.5 s | 100% | ok |
+| Snowy Chalet 12 (finale) | yes | yes | 41% | 56% | 97% | 47.3 s | 0.41 | 0 | 0 | 2.5 s | 100% | ok |
+| Grand Mansion 1 | yes | yes | 100% | 100% | 100% | 29.8 s | 0.00 | 0 | 0 | 0.0 s | 100% | ok |
+| Grand Mansion 2 | yes | yes | 56% | 97% | 100% | 35.2 s | 0.03 | 0 | 0 | 2.1 s | 100% | ok |
+| Grand Mansion 3 | yes | yes | 75% | 91% | 100% | 43.5 s | 0.09 | 0 | 0 | 0.1 s | 100% | ok |
+| Grand Mansion 4 | yes | yes | 22% | 66% | 81% | 52.4 s | 0.34 | 0 | 0 | 2.4 s | 100% | ok |
+| Grand Mansion 5 | yes | yes | 47% | 63% | 100% | 35.9 s | 0.38 | 0 | 0 | 2.1 s | 100% | ok |
+| Grand Mansion 6 | yes | yes | 31% | 69% | 100% | 55.4 s | 0.31 | 0 | 0 | 2.1 s | 100% | ok |
+| Grand Mansion 7 | yes | yes | 31% | 59% | 100% | 76.7 s | 0.34 | 0 | 0 | 0.0 s | 100% | ok |
+| Grand Mansion 8 | yes | yes | 13% | 66% | 34% | 42.3 s | 0.34 | 0 | 0 | 2.1 s | 100% | ok |
+| Grand Mansion 9 | yes | yes | 28% | 69% | 100% | 40.1 s | 0.31 | 0 | 0 | 0.2 s | 100% | ok |
+| Grand Mansion 10 | yes | yes | 6% | 59% | 56% | 53.4 s | 0.41 | 0 | 0 | 2.1 s | 100% | ok |
+| Grand Mansion 11 | yes | yes | 56% | 75% | 100% | 35.4 s | 0.25 | 0 | 0 | 2.5 s | 100% | ok |
+| Grand Mansion 12 (finale) | yes | yes | 38% | 53% | 59% | 44.0 s | 0.47 | 0 | 0 | 2.5 s | 100% | ok |

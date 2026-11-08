@@ -25,6 +25,11 @@ export const EDGE_FRAC = 0.7;
 export const EDGE_ALERT = 0.85;
 /** "Hein ?": a guard stops and stares this long before walking over to check (s) */
 export const PUZZLED = 0.6;
+/** teen phone break: every PHONE_CYCLE s she stops for PHONE_TIME s, eyes on the screen (small, dim beam) */
+export const PHONE_CYCLE = 6;
+export const PHONE_TIME = 2.2;
+const PHONE_RAMP = 0.35;
+
 /** alert gained per second in the beam: base + bonus × closeness (0 far edge … 1 at the guard) */
 export const ALERT_RATE: [number, number] = [0.55, 1.7];
 
@@ -509,15 +514,26 @@ export class World {
       const c = (this.t + g.phase) % 8;
       if (c < 1.4 && g.state !== 'spot') on = false;
     }
-    if (g.kind === 'teen' && g.state !== 'spot' && g.state !== 'suspicious') {
-      // glued to the phone, looks up for 2 s every 6 s
-      const c = (this.t + g.phase) % 6;
-      if (c > 2) {
-        range *= 0.55;
-        half *= 0.8;
-      }
+    const ph = this.phoneLevel(g);
+    if (ph > 0) {
+      // phone break: the beam shrinks to a small pool at her feet
+      range *= 1 - 0.68 * ph;
+      half *= 1 - 0.3 * ph;
     }
     return { range, half, on };
+  }
+
+  /**
+   * 0..1: how deep a teen is in her phone break (0 = walking and looking). Breaks are regular and
+   * eased in / out, so the safe moment is predictable and readable on screen.
+   */
+  phoneLevel(g: Guard): number {
+    if (g.kind !== 'teen' || g.delay > 0 || (g.state !== 'patrol' && g.state !== 'wait' && g.state !== 'return')) return 0;
+    // no phone break while she's been standing next to a hidden kid for a while: she moves on instead
+    if (g.campT >= CAMP_MAX * 0.5) return 0;
+    const c = (this.t + g.phase) % PHONE_CYCLE;
+    if (c >= PHONE_TIME) return 0;
+    return Math.max(0.02, Math.min(1, c / PHONE_RAMP, (PHONE_TIME - c) / PHONE_RAMP));
   }
 
   canSee(g: Guard, p: Vec2, ignoreHidden = false): { sees: boolean; d: number } {
@@ -629,7 +645,9 @@ export class World {
         break;
       case 'patrol':
       case 'wait':
-        this.patrol(g, dt, g.cfg.walk * g.spec.speed);
+        // a teen on her phone break stands still
+        if (this.phoneLevel(g) > 0) g.moving = Math.max(0, g.moving - dt * 6);
+        else this.patrol(g, dt, g.cfg.walk * g.spec.speed);
         break;
       case 'suspicious': {
         if (g.timer > 0) {
@@ -652,6 +670,10 @@ export class World {
         if (g.timer <= 0) this.goHome(g);
         break;
       case 'return': {
+        if (this.phoneLevel(g) > 0) {
+          g.moving = Math.max(0, g.moving - dt * 6);
+          break;
+        }
         const done = this.moveAlong(g, dt, g.cfg.walk * g.spec.speed);
         if (done) {
           if (g.spec.sleep) {
@@ -709,7 +731,7 @@ export class World {
   /** Stop camping: walk to the patrol point farthest from the hidden kid. */
   private moveOn(g: Guard) {
     const pts = g.spec.path;
-    g.campT = 0;
+    // campT keeps counting until she is actually walking (no phone break in between)
     let best = -1,
       bd = -1;
     pts.forEach((q, i) => {

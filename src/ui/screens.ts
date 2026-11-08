@@ -1,6 +1,8 @@
 import { ICONS } from './icons';
 import { t, getLang } from '../app/i18n';
-import { SHOP, ShopItem, TRAIL_NAMES, DAILY, MISSION_KEY, dailyAvailable } from '../app/meta';
+import { SHOP, ShopItem, TRAIL_NAMES, DAILY, MISSION_KEY, dailyAvailable, BOOSTS, BoostId } from '../app/meta';
+import { sharedPreview } from './pipPreview';
+import type { Key } from '../app/i18n';
 import type { SaveData } from '../app/save';
 import { SKINS, CAPS } from '../render/characters';
 import { THEMES } from '../render/themes';
@@ -41,9 +43,9 @@ export function houseMap(save: SaveData, onPlay: (h: number, i: number) => void,
         const s = save.stars[levelIds(h, i)];
         const ok = unlocked(h, i);
         const fin = i === 11;
-        return `<button class="night ${ok ? '' : 'locked'} ${s !== undefined ? 'done' : ''} ${fin ? 'finale' : ''}" data-h="${h}" data-i="${i}" ${ok ? '' : 'disabled'}><span>${fin ? '👑' : i + 1}</span>${s !== undefined ? starRow(s, 11) : ok ? '' : '🔒'}</button>`;
+        return `<button class="night ${ok ? '' : 'locked'} ${s !== undefined ? 'done' : ''} ${fin ? 'finale' : ''}" data-h="${h}" data-i="${i}" ${ok ? '' : 'disabled'}><span>${fin ? ICONS.crown : i + 1}</span>${s !== undefined ? starRow(s, 11) : ok ? '' : `<i class="lock-ic">${ICONS.lock}</i>`}</button>`;
       }).join('')}</div>
-      ${open ? '' : `<div class="lock-note">🔒 ${t('comingSoon')}</div>`}
+      ${open ? '' : `<div class="lock-note">${ICONS.lock} ${t('comingSoon')}</div>`}
       <div class="progress"><i style="width:${(done / 12) * 100}%"></i></div>
     </div>`;
   });
@@ -60,62 +62,111 @@ export function houseMap(save: SaveData, onPlay: (h: number, i: number) => void,
 }
 
 // ------------------------------------------------------------------ shop
-export function shopScreen(save: SaveData, onChange: () => void, onBuy: (item: ShopItem) => boolean): HTMLDivElement {
+type ShopTab = 'boost' | ShopItem['kind'];
+
+export function shopScreen(save: SaveData, onChange: () => void, onBuy: (item: ShopItem) => boolean, onBuyBoost: (id: BoostId) => boolean): HTMLDivElement {
   const lang = getLang();
-  const el = modal(t('shop'), `<div class="coins-line">${ICONS.coin}<b class="coin-val">${save.coins}</b></div><div class="tabs"><button data-k="skin" class="on">${t('pyjamas')}</button><button data-k="cap">${t('caps')}</button><button data-k="trail">${t('trails')}</button></div><div class="shop-grid"></div>`, 'shop-modal');
-  const grid = el.querySelector('.shop-grid')!;
-  let kind: ShopItem['kind'] = 'skin';
+  const el = modal(
+    t('shop'),
+    `<div class="coins-line">${ICONS.coin}<b class="coin-val">${save.coins}</b></div>
+     <div class="tabs"><button data-k="boost" class="on">${t('boosts')}</button><button data-k="skin">${t('pyjamas')}</button><button data-k="cap">${t('caps')}</button><button data-k="trail">${t('trails')}</button></div>
+     <div class="shop-stage"><div class="stage-view"></div><div class="stage-info"><small>${t('tryOn')}</small><b class="try-name"></b><div class="try-act"></div></div></div>
+     <div class="shop-grid"></div>`,
+    'shop-modal',
+  );
+  const grid = el.querySelector<HTMLElement>('.shop-grid')!;
+  const stage = el.querySelector<HTMLElement>('.shop-stage')!;
+  const preview = sharedPreview();
+  if (preview) el.querySelector('.stage-view')!.appendChild(preview.canvas);
+  let tab: ShopTab = 'boost';
+  // try-on: what Pip wears in the preview (equipped items until you tap another one)
+  const look = { skin: save.skin, cap: save.cap, trail: save.trail };
+  const keyOf = (k: ShopItem['kind']) => (k === 'skin' ? 'skin' : k === 'cap' ? 'cap' : 'trail') as 'skin' | 'cap' | 'trail';
+  const equipped = (it: ShopItem) => save[keyOf(it.kind)] === it.key;
+  const nameOf = (it: ShopItem) => (it.kind === 'skin' ? SKINS.find((k) => k.id === it.key)!.name[lang] : it.kind === 'cap' ? CAPS.find((c) => c.id === it.key)!.name[lang] : TRAIL_NAMES[it.key][lang]);
+  const thumbFor = (it: ShopItem) => {
+    if (!preview) return '';
+    const l = { skin: save.skin, cap: save.cap, trail: 'none' };
+    l[keyOf(it.kind)] = it.key;
+    return preview.thumb(l, 112);
+  };
+  const stageSize = () => Math.round(Math.min(200, window.innerHeight * 0.26));
+  const renderStage = () => {
+    if (tab === 'boost') return;
+    const it = SHOP.find((x) => x.kind === tab && x.key === look[keyOf(tab)])!;
+    el.querySelector('.try-name')!.textContent = nameOf(it);
+    const act = el.querySelector<HTMLElement>('.try-act')!;
+    const owned = save.owned.includes(it.id);
+    act.innerHTML = equipped(it) ? `<span class="tag on">${t('equipped')}</span>` : owned ? `<button class="mini-btn" data-act="equip">${t('equip')}</button>` : `<button class="mini-btn buy ${save.coins < it.price ? 'poor' : ''}" data-act="buy">${ICONS.coin}${it.price}</button>`;
+    act.querySelector('button')?.addEventListener('click', (e) => {
+      const b = e.currentTarget as HTMLButtonElement;
+      if (b.dataset.act === 'buy') {
+        if (!onBuy(it)) {
+          b.classList.add('shake');
+          setTimeout(() => b.classList.remove('shake'), 400);
+          return;
+        }
+      } else save[keyOf(it.kind)] = it.key;
+      onChange();
+      render();
+    });
+    preview?.setLook(look);
+  };
   const render = () => {
     el.querySelector('.coin-val')!.textContent = String(save.coins);
-    grid.innerHTML = SHOP.filter((s) => s.kind === kind)
-      .map((s) => {
-        const owned = save.owned.includes(s.id);
-        const eq = (s.kind === 'skin' && save.skin === s.key) || (s.kind === 'cap' && save.cap === s.key) || (s.kind === 'trail' && save.trail === s.key);
-        let name = '',
-          swatch = '';
-        if (s.kind === 'skin') {
-          const sk = SKINS.find((k) => k.id === s.key)!;
-          name = sk.name[lang];
-          swatch = `<div class="swatch" style="background:radial-gradient(circle at 30% 30%, #${sk.b.toString(16).padStart(6, '0')} 0 18%, transparent 19%), radial-gradient(circle at 70% 65%, #${sk.b.toString(16).padStart(6, '0')} 0 14%, transparent 15%), #${sk.a.toString(16).padStart(6, '0')}"></div>`;
-        } else if (s.kind === 'cap') {
-          name = CAPS.find((c) => c.id === s.key)!.name[lang];
-          swatch = `<div class="swatch cap">${{ classic: '🧢', bunny: '🐰', crown: '👑', propeller: '🚁', chef: '👨‍🍳' }[s.key] ?? '🧢'}</div>`;
-        } else {
-          name = TRAIL_NAMES[s.key][lang];
-          swatch = `<div class="swatch cap">${{ none: '∅', crumbs: '🍪', stars: '✨', hearts: '💖', bubbles: '🫧' }[s.key]}</div>`;
-        }
-        const btn = eq ? `<span class="tag on">${t('equipped')}</span>` : owned ? `<button class="mini-btn" data-act="equip">${t('equip')}</button>` : `<button class="mini-btn buy ${save.coins < s.price ? 'poor' : ''}" data-act="buy">${ICONS.coin}${s.price}</button>`;
-        return `<div class="item ${eq ? 'eq' : ''}" data-id="${s.id}">${swatch}<b>${name}</b>${btn}</div>`;
-      })
-      .join('');
-    grid.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) =>
-      b.addEventListener('click', () => {
-        const id = b.closest<HTMLElement>('.item')!.dataset.id!;
-        const item = SHOP.find((s) => s.id === id)!;
-        if (b.dataset.act === 'buy') {
-          if (!onBuy(item)) {
-            b.classList.add('shake');
-            setTimeout(() => b.classList.remove('shake'), 400);
+    stage.style.display = tab === 'boost' || !preview ? 'none' : '';
+    if (tab === 'boost') {
+      grid.className = 'shop-grid boost-list';
+      grid.innerHTML = BOOSTS.map(
+        (b) => `<div class="boost-row" data-id="${b.id}">
+          <img alt="" src="${preview?.boostThumb(b.id, 112) ?? ''}">
+          <div class="b-text"><b>${t(`b_${b.id}` as Key)}</b><small>${t(`b_${b.id}_d` as Key)}</small><em>${t('owned', { n: save.items[b.id] })}</em></div>
+          <button class="mini-btn buy ${save.coins < b.price ? 'poor' : ''}">${ICONS.coin}${b.price}</button>
+        </div>`,
+      ).join('');
+      grid.querySelectorAll<HTMLButtonElement>('.boost-row button').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          const id = btn.closest<HTMLElement>('.boost-row')!.dataset.id as BoostId;
+          if (!onBuyBoost(id)) {
+            btn.classList.add('shake');
+            setTimeout(() => btn.classList.remove('shake'), 400);
             return;
           }
-        } else {
-          if (item.kind === 'skin') save.skin = item.key;
-          else if (item.kind === 'cap') save.cap = item.key;
-          else save.trail = item.key;
-        }
-        onChange();
+          onChange();
+          render();
+        }),
+      );
+      return;
+    }
+    grid.className = 'shop-grid';
+    grid.innerHTML = SHOP.filter((x) => x.kind === tab)
+      .map((it) => {
+        const owned = save.owned.includes(it.id);
+        const trying = look[keyOf(it.kind)] === it.key;
+        const state = equipped(it) ? `<span class="tag on">${t('equipped')}</span>` : owned ? `<span class="tag">${t('equip')}</span>` : `<span class="price">${ICONS.coin}${it.price}</span>`;
+        const pic = preview ? `<img alt="" src="${thumbFor(it)}">` : `<div class="swatch"></div>`;
+        return `<button class="item ${trying ? 'trying' : ''} ${equipped(it) ? 'eq' : ''}" data-id="${it.id}">${pic}<b>${nameOf(it)}</b>${state}</button>`;
+      })
+      .join('');
+    grid.querySelectorAll<HTMLButtonElement>('.item').forEach((b) =>
+      b.addEventListener('click', () => {
+        const it = SHOP.find((x) => x.id === b.dataset.id)!;
+        look[keyOf(it.kind)] = it.key; // try it on
         render();
       }),
     );
+    renderStage();
+    preview?.start(stageSize());
   };
   el.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) =>
     b.addEventListener('click', () => {
       el.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('on'));
       b.classList.add('on');
-      kind = b.dataset.k as ShopItem['kind'];
+      tab = b.dataset.k as ShopTab;
       render();
     }),
   );
+  el.querySelector('.close')!.addEventListener('click', () => preview?.stop());
   render();
   return el;
 }
@@ -166,8 +217,8 @@ export function missionsScreen(save: SaveData, onClaim: (i: number) => number): 
 export function settingsScreen(save: SaveData, onChange: () => void, extra = ''): HTMLDivElement {
   const body = `<div class="settings">
     <label class="row"><span>${ICONS.sound}${t('sound')}</span><input type="checkbox" data-k="sound" ${save.sound ? 'checked' : ''}><i class="sw"></i></label>
-    <label class="row"><span>🎵 ${t('music')}</span><input type="checkbox" data-k="music" ${save.music ? 'checked' : ''}><i class="sw"></i></label>
-    <div class="row"><span>🌐 ${t('language')}</span><div class="lang"><b data-l="en" class="${getLang() === 'en' ? 'on' : ''}">EN</b><b data-l="fr" class="${getLang() === 'fr' ? 'on' : ''}">FR</b></div></div>
+    <label class="row"><span>${ICONS.music}${t('music')}</span><input type="checkbox" data-k="music" ${save.music ? 'checked' : ''}><i class="sw"></i></label>
+    <div class="row"><span>${ICONS.globe}${t('language')}</span><div class="lang"><b data-l="en" class="${getLang() === 'en' ? 'on' : ''}">EN</b><b data-l="fr" class="${getLang() === 'fr' ? 'on' : ''}">FR</b></div></div>
   </div>${extra}`;
   const el = modal(t('settings'), body, 'settings-modal');
   el.querySelectorAll<HTMLInputElement>('input[data-k]').forEach((i) =>
@@ -256,14 +307,15 @@ export function winScreen(w: WinInfo, onDouble: () => Promise<boolean>, onNext: 
   return el;
 }
 
-export function failScreen(o: { bedcheck: boolean; fails: number; canSkip: boolean }, onRetry: (extraToy: boolean) => void, onSkip: () => Promise<boolean>, onToyAd: () => Promise<boolean>, onMenu: () => void) {
+export function failScreen(o: { bedcheck: boolean; fails: number; canSkip: boolean; freeHint?: boolean }, onRetry: (extraToy: boolean, hint: boolean) => void, onSkip: () => Promise<boolean>, onToyAd: () => Promise<boolean>, onMenu: () => void) {
   const el = document.createElement('div');
   el.className = 'modal-wrap result fail';
   el.innerHTML = `<div class="modal result-card">
     <div class="result-title">${o.bedcheck ? t('bedCheckTitle') : t('caughtTitle')}</div>
     <p class="sub">${o.bedcheck ? t('bedCheckText') : t('caughtText')}</p>
-    <div class="sleepy">😴</div>
-    <button class="big-btn retry">↻ ${t('retry')}</button>
+    <div class="sleepy">${ICONS.moon}</div>
+    ${o.freeHint ? `<button class="big-btn hint-retry">${ICONS.bulb}<span>${t('retryHint')}</span></button>` : ''}
+    <button class="${o.freeHint ? 'mid-btn' : 'big-btn'} retry">↻ ${t('retry')}</button>
     <button class="ad-btn toy">▶ ${t('extraToyAd')}</button>
     ${o.canSkip ? `<button class="ad-btn skip">▶ ${t('skipAd')}</button>` : ''}
     <button class="mid-btn menu">⌂ ${t('menu')}</button>
@@ -272,7 +324,11 @@ export function failScreen(o: { bedcheck: boolean; fails: number; canSkip: boole
   let extra = false;
   el.querySelector('.retry')!.addEventListener('click', () => {
     el.remove();
-    onRetry(extra);
+    onRetry(extra, false);
+  });
+  el.querySelector('.hint-retry')?.addEventListener('click', () => {
+    el.remove();
+    onRetry(extra, true);
   });
   const toy = el.querySelector<HTMLButtonElement>('.toy')!;
   toy.addEventListener('click', async () => {

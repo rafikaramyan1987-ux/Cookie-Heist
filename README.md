@@ -10,8 +10,14 @@ Caught? Mum gasps *“Back to bed!”* and carries you back — child-friendly, 
 - Mechanics introduced gradually with animated tips: flashlight vision cones (orange = “Hein ?” at the beam’s edge, in the dark or after a noise; red = “!” spotted → back to bed, no foot race),
   noise (creaky boards, squeaky toys, running), hiding spots, thrown toys as distractions, light switches,
   keys & locked doors, sleeping guards, the meowing cat, the beeping robot vacuum, bed checks & pillow decoys.
-- 3 stars per night (all cookies · never spotted · under par time), coins, ×2 coins (rewarded ad), shop
-  (6 pyjamas, 5 caps, 5 cookie trails), daily reward, 3 daily missions, house map with progress.
+  The big sibling stops for a phone break every few seconds (small, dim beam): a readable safe moment.
+- Stuck? After 3 fails in a row a free **hint** is offered: a ghost replays a safe route on the intro, then the
+  dotted path and “wait here” rings with a countdown pulse **GO** when the safe window opens. After 5 fails the
+  night can be skipped (rewarded ad). Hints never affect stars.
+- 3 stars per night (all cookies · never spotted · under par time), coins, ×2 coins (rewarded ad), daily reward,
+  3 daily missions, house map with progress.
+- Shop: **boosts** for coins (extra duck, peek at the grown-ups' routes, hint, pillow decoy — small prices, never
+  required) and cosmetics (6 pyjamas, 5 caps, 5 trails) with a rotating 3D Pip to try items on before buying.
 - EN + FR (auto-detected, switchable). All sounds synthesised (Web Audio), all models procedural.
 
 ## Controls
@@ -19,10 +25,11 @@ Caught? Mum gasps *“Back to bed!”* and carries you back — child-friendly, 
 | | Touch | Mouse | Keyboard |
 |---|---|---|---|
 | Move | drag anywhere (virtual joystick) | drag | WASD / arrows (ZQSD works too) |
-| Tiptoe (silent) | small drag | small drag | default |
-| Run (fast, noisy) | long drag | long drag | hold Shift |
+| Tiptoe (silent) | drag (default) | drag (default) | default |
+| Run (fast, noisy) | drag to the outer ring and hold, or double-tap & hold | same | hold Shift |
 | Throw a toy | tap the duck, then tap the floor | click duck, click floor | Space (throws ahead) |
-| Overview map | hold the map button | hold the map button | — |
+| Overview map | tap (or hold) the map button | same | — |
+| Peek (boost) | binoculars button | same | — |
 | Pause | ⏸ button | ⏸ button | ⏸ button |
 
 ## Development

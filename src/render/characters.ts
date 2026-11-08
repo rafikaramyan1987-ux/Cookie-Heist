@@ -890,6 +890,23 @@ export function bubble(text: string, color = '#ff7a2f'): THREE.Sprite {
     g.arc(64, 56, 44, 0, Math.PI * 2);
     g.fill();
   }
+  if (text === 'phone') {
+    // a little glowing phone (drawn, no emoji)
+    g.fillStyle = '#1c1f2b';
+    g.beginPath();
+    g.roundRect(44, 22, 40, 66, 9);
+    g.fill();
+    g.fillStyle = color;
+    g.fillRect(49, 31, 30, 46);
+    g.fillStyle = '#ffffff';
+    for (let k = 0; k < 3; k++) g.fillRect(53, 37 + k * 11, 22 - k * 6, 5);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, toneMapped: false }));
+    sp.renderOrder = 20;
+    sp.scale.setScalar(0.42);
+    return sp;
+  }
   g.font = `bold ${isZ ? 70 : 72}px Fredoka, "Arial Rounded MT Bold", sans-serif`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';

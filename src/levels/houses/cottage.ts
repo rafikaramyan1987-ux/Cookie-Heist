@@ -96,7 +96,8 @@ export const COTTAGE: LevelSrc[] = [
     toys: 1,
   }),
   night(C2, {
-    pace: 1.5,
+    pace: 1.72,
+    linger: 1.3,
     name: ['Laundry Day', 'Jour de lessive'],
     boost: 1.6,
     put: 'j 1,0; c 8,11; Q 4,4; Q 0,8; Q 9,3; c 5,6',

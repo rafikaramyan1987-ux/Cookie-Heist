@@ -204,3 +204,135 @@ export function stationaryGuards(L: Level): number[] {
     return distinct.size < 2 ? [i] : [];
   });
 }
+
+// ------------------------------------------------------------------ route control
+/** a corridor every route must take opens a crossing window at least this often (s) */
+export const MAX_CROSS_WAIT = 10;
+
+/** Cells to reach: required cookies (or a cell next to them), keys / pillow when needed, and the bed sides. */
+function targetSets(L: Level): number[][] {
+  const pass = walkable(L, false);
+  const near = (x: number, z: number, solid: boolean): number[] => {
+    const cx = Math.floor(x),
+      cz = Math.floor(z);
+    if (!solid) return [cz * L.w + cx];
+    return DIRS.map(([dx, dz]) => [cx + dx, cz + dz])
+      .filter(([a, b]) => a >= 0 && b >= 0 && a < L.w && b < L.d && pass(b * L.w + a))
+      .map(([a, b]) => b * L.w + a);
+  };
+  const sets: number[][] = [];
+  L.cookies.forEach((c, i) => {
+    if (i !== L.bonus) sets.push(near(c.x, c.z, c.onSolid));
+  });
+  if (L.keys.length) sets.push(L.keys.flatMap((k) => near(k.x, k.z, false)));
+  if (L.bedCheck > 0 && L.pillows.length) sets.push(L.pillows.flatMap((k) => near(k.x, k.z, false)));
+  const b = L.bed;
+  const bed: number[] = [];
+  for (let z = b.z0 - 1; z <= b.z1; z++)
+    for (let x = b.x0 - 1; x <= b.x1; x++) if (x >= 0 && z >= 0 && x < L.w && z < L.d && ((x >= b.x0 && x < b.x1) || (z >= b.z0 && z < b.z1)) && pass(z * L.w + x)) bed.push(z * L.w + x);
+  sets.push(bed);
+  return sets;
+}
+
+function flood(L: Level, blocked: number): Uint8Array {
+  const pass = walkable(L, false);
+  const E = L.keys.length ? { eh: L.eh.map((v) => (v === 3 ? 2 : v)), ev: L.ev.map((v) => (v === 3 ? 2 : v)) } : L;
+  const ok = (i: number) => pass(i) && i !== blocked;
+  const seen = new Uint8Array(L.w * L.d);
+  const s = Math.floor(L.start.z) * L.w + Math.floor(L.start.x);
+  if (!ok(s)) return seen;
+  const q = [s];
+  seen[s] = 1;
+  while (q.length) {
+    const c = q.pop()!;
+    const x = c % L.w,
+      z = (c / L.w) | 0;
+    for (const [dx, dz] of DIRS) {
+      if (!canStep(L, E, ok, x, z, dx, dz)) continue;
+      const j = (z + dz) * L.w + x + dx;
+      if (!seen[j]) {
+        seen[j] = 1;
+        q.push(j);
+      }
+    }
+  }
+  return seen;
+}
+
+/** Corridors every route must take (connected choke cells; hiding spots split them, they are safe rest points). */
+export function chokeSegments(L: Level): number[][] {
+  const sets = targetSets(L);
+  const base = flood(L, -1);
+  const pass = walkable(L, false);
+  const s0 = Math.floor(L.start.z) * L.w + Math.floor(L.start.x);
+  const choke = new Uint8Array(L.w * L.d);
+  for (let c = 0; c < L.w * L.d; c++) {
+    if (!base[c] || L.hide[c] || c === s0) continue;
+    const f = flood(L, c);
+    if (sets.some((set) => set.some((i) => base[i]) && !set.some((i) => f[i] && i !== c))) choke[c] = 1;
+  }
+  // the start room's own cells right next to the bed are not "corridors"
+  const segs: number[][] = [];
+  const done = new Uint8Array(L.w * L.d);
+  for (let c = 0; c < L.w * L.d; c++) {
+    if (!choke[c] || done[c]) continue;
+    const seg: number[] = [];
+    const q = [c];
+    done[c] = 1;
+    while (q.length) {
+      const k = q.pop()!;
+      seg.push(k);
+      const x = k % L.w,
+        z = (k / L.w) | 0;
+      for (const [dx, dz] of DIRS) {
+        const j = (z + dz) * L.w + x + dx;
+        if (canStep(L, L, pass, x, z, dx, dz) && choke[j] && !done[j]) {
+          done[j] = 1;
+          q.push(j);
+        }
+      }
+    }
+    segs.push(seg);
+  }
+  return segs;
+}
+
+/**
+ * Route control: for every corridor that every route must take, the longest wait (s) for a window in which the
+ * whole corridor is clear of grown-ups long enough to tiptoe across it (0.6 s per cell + 0.6 s margin).
+ * A guard that controls the only route must open such a window regularly (predictable) — the cone is drawn, so it is visible.
+ */
+export function crossingWaits(L: Level, T = 60, dt = 0.1, phases = 3): { cells: number[]; need: number; maxWait: number }[] {
+  const segs = chokeSegments(L);
+  const out = segs.map((cells) => ({ cells, need: 0.6 * cells.length + 0.6, maxWait: 0 }));
+  if (!segs.length) return out;
+  for (let k = 0; k < phases; k++) {
+    const clear: boolean[][] = segs.map(() => []);
+    guardTimeline(
+      L,
+      T,
+      (w) => {
+        segs.forEach((cells, si) => clear[si].push(cells.every((c) => !cellSeen(w, c, false))));
+      },
+      dt,
+      k + 1,
+      (k * 10) / phases,
+    );
+    segs.forEach((_, si) => {
+      const need = Math.round(out[si].need / dt);
+      const arr = clear[si];
+      // for every moment: how long until a window long enough to cross starts
+      const n = arr.length;
+      const runFrom = new Int32Array(n + 1);
+      for (let i = n - 1; i >= 0; i--) runFrom[i] = arr[i] ? runFrom[i + 1] + 1 : 0;
+      let next = Infinity,
+        worst = 0;
+      for (let i = n - 1; i >= 0; i--) {
+        if (runFrom[i] >= need) next = i;
+        if (i <= n - need) worst = Math.max(worst, (next === Infinity ? n : next) - i);
+      }
+      out[si].maxWait = Math.max(out[si].maxWait, worst * dt);
+    });
+  }
+  return out;
+}
