@@ -31,6 +31,8 @@ declare global {
 }
 
 const MIDGAME_GAP = 120_000;
+/** an ad that has not started after this long is treated as unavailable (ms) */
+export const AD_TIMEOUT = 8000;
 
 class SdkWrapper {
   private s: CGSdk | null = null;
@@ -89,45 +91,55 @@ class SdkWrapper {
     this.s?.game.happytime();
   }
 
-  /** Midgame ad between levels, at most once per ~2 minutes. Resolves when done (or skipped). */
-  midgame(): Promise<void> {
-    if (!this.s || Date.now() - this.lastMidgame < MIDGAME_GAP) return Promise.resolve();
-    this.lastMidgame = Date.now();
+  /**
+   * Request an ad and settle exactly once: on adFinished / adError, when requestAd throws, or when the ad has not
+   * started within AD_TIMEOUT (no fill, blocked, SDK stuck) — so the game never hangs waiting for an ad.
+   */
+  private requestAd(type: 'midgame' | 'rewarded'): Promise<boolean> {
+    const s = this.s!;
     return new Promise((res) => {
-      this.s!.ad.requestAd('midgame', {
-        adStarted: () => this.onAdPause(true),
-        adFinished: () => {
-          this.onAdPause(false);
-          res();
-        },
-        adError: () => {
-          this.onAdPause(false);
-          res();
-        },
-      });
+      let done = false;
+      const finish = (ok: boolean) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        this.onAdPause(false);
+        res(ok);
+      };
+      const timer = setTimeout(() => finish(false), AD_TIMEOUT);
+      try {
+        s.ad.requestAd(type, {
+          adStarted: () => {
+            if (done) return;
+            clearTimeout(timer); // the ad is playing: wait for it to finish
+            this.onAdPause(true);
+          },
+          adFinished: () => finish(true),
+          adError: () => finish(false),
+        });
+      } catch {
+        finish(false);
+      }
     });
   }
 
-  /** Rewarded ad; resolves true only if the ad completed. Always optional for the player. */
-  rewarded(): Promise<boolean> {
+  /** Midgame ad between levels, at most once per ~2 minutes. Resolves when done, skipped, failed or timed out. */
+  async midgame(): Promise<void> {
+    if (!this.s || Date.now() - this.lastMidgame < MIDGAME_GAP) return;
+    this.lastMidgame = Date.now();
+    await this.requestAd('midgame');
+  }
+
+  /** Rewarded ad; resolves true only if the ad completed (false on error / timeout). Always optional for the player. */
+  async rewarded(): Promise<boolean> {
     if (!this.s) {
       // no SDK (local dev / tests): grant the reward so the flow can be tested
-      return Promise.resolve(true);
+      return true;
     }
-    return new Promise((res) => {
-      this.s!.ad.requestAd('rewarded', {
-        adStarted: () => this.onAdPause(true),
-        adFinished: () => {
-          this.onAdPause(false);
-          this.lastMidgame = Date.now();
-          res(true);
-        },
-        adError: () => {
-          this.onAdPause(false);
-          res(false);
-        },
-      });
-    });
+    const ok = await this.requestAd('rewarded');
+    // a finished rewarded ad also counts as the midgame break
+    if (ok) this.lastMidgame = Date.now();
+    return ok;
   }
 }
 

@@ -30,6 +30,6 @@ PEGI 3–7 friendly: no violence, being caught means being carried back to bed.
 - `videos/trailer-1920x1080.mp4`, `videos/trailer-1080x1920.mp4` — 18 s, no sound, recorded from real play
   (the playtest bot playing the actual game): apartment, a close call hiding from mum, the snowy chalet,
   and a win in bed. First frame = cover.
-- `cookie-heist-build.zip` — the single-file build (`index.html`), ready to upload.
+- `cookie-heist-build.zip` — the single-file build (`index.html`), ready to upload; `index.html` — the same build, unzipped.
 
 Regenerate everything with `npm run build && npm run submission` (needs a running `vite preview` on port 4174).

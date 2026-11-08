@@ -2,6 +2,8 @@ import { ICONS } from './icons';
 import { t, getLang } from '../app/i18n';
 import { SHOP, ShopItem, TRAIL_NAMES, DAILY, MISSION_KEY, dailyAvailable, BOOSTS, BoostId } from '../app/meta';
 import { sharedPreview } from './pipPreview';
+import { adUnavailable } from './adButton';
+export { adUnavailable };
 import type { Key } from '../app/i18n';
 import type { SaveData } from '../app/save';
 import { SKINS, CAPS } from '../render/characters';
@@ -286,11 +288,12 @@ export function winScreen(w: WinInfo, onDouble: () => Promise<boolean>, onNext: 
   el.addEventListener('pointerdown', (e) => e.stopPropagation());
   const dbl = el.querySelector<HTMLButtonElement>('.double')!;
   dbl.addEventListener('click', async () => {
+    const label = dbl.innerHTML;
     dbl.disabled = true;
     if (await onDouble()) {
       el.querySelector('.coin-amt')!.textContent = `+${w.coins * 2}`;
       dbl.textContent = '✓ ×2';
-    } else dbl.disabled = false;
+    } else adUnavailable(dbl, label);
   });
   el.querySelector('.next')!.addEventListener('click', () => {
     el.remove();
@@ -332,14 +335,20 @@ export function failScreen(o: { bedcheck: boolean; fails: number; canSkip: boole
   });
   const toy = el.querySelector<HTMLButtonElement>('.toy')!;
   toy.addEventListener('click', async () => {
+    const label = toy.innerHTML;
     toy.disabled = true;
     if (await onToyAd()) {
       extra = true;
       toy.textContent = `✓ ${t('extraToy')}`;
-    } else toy.disabled = false;
+    } else adUnavailable(toy, label);
   });
-  el.querySelector('.skip')?.addEventListener('click', async () => {
+  const skip = el.querySelector<HTMLButtonElement>('.skip');
+  skip?.addEventListener('click', async () => {
+    // disabled while the ad is requested (no double requests)
+    const label = skip.innerHTML;
+    skip.disabled = true;
     if (await onSkip()) el.remove();
+    else adUnavailable(skip, label);
   });
   el.querySelector('.menu')!.addEventListener('click', () => {
     el.remove();
