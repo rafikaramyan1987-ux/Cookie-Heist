@@ -102,6 +102,8 @@ export class App {
       if (document.hidden && this.mode === 'play' && !this.capture) this.pause();
     });
     (window as unknown as { __game: unknown }).__game = this;
+    // GamePix: loading 100 %, then `await lifecycle.loaded()` before the menu shows (the loading screen stays up)
+    if (__PLATFORM__ === 'gamepix') await sdk.ready?.();
     const lv = params.get('level');
     if (lv) {
       const [h, i] = lv.split('-').map(Number);
@@ -698,6 +700,7 @@ export class App {
       progressMission(this.save, 'hide', w.stats.hides);
       const houseDone = r.i === LEVELS_PER_HOUSE - 1;
       if (houseDone) sdk.happytime();
+      else if (__PLATFORM__ === 'gamepix') sdk.happytime(); // GamePix: a happy moment for every level complete
       this.persist();
       const last = r.h === HOUSE_COUNT - 1 && r.i === LEVELS_PER_HOUSE - 1;
       this.ui.appendChild(
@@ -719,6 +722,7 @@ export class App {
       );
     } else {
       this.save.fails[id] = (this.save.fails[id] ?? 0) + 1;
+      if (__PLATFORM__ === 'gamepix') sdk.sadMoment?.(w.status === 'bedcheck' ? 'level_failed' : 'game_over');
       progressMission(this.save, 'hide', w.stats.hides);
       progressMission(this.save, 'toys', w.stats.toysThrown);
       this.persist();

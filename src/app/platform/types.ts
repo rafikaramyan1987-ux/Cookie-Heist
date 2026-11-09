@@ -3,7 +3,12 @@
  * One implementation per portal, chosen at build time (`__PLATFORM__`, see vite.config.ts).
  */
 
-export type PlatformName = 'crazygames' | 'gd' | 'web';
+export type PlatformName = 'crazygames' | 'gd' | 'web' | 'gamepix';
+
+declare global {
+  /** the build target, a string literal at build time (vite.config.ts `define`), so other platforms' branches are dropped */
+  const __PLATFORM__: PlatformName;
+}
 
 /**
  * Where an interstitial may be shown. All of them are outside gameplay and follow a user input:
@@ -44,6 +49,10 @@ export interface Platform {
   midgame(slot?: AdSlot): Promise<void>;
   /** rewarded ad; resolves true only if the reward was earned */
   rewarded(): Promise<boolean>;
+  /** GamePix only: report the end of loading and wait until the portal lets the game show its menu (never blocks) */
+  ready?(): Promise<void>;
+  /** GamePix only: a sad moment (game over / level failed) */
+  sadMoment?(name: string): void;
 }
 
 /** at most one interstitial per ~2 minutes */

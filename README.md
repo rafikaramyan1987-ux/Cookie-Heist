@@ -40,6 +40,7 @@ npm run dev            # http://localhost:5173  (?level=0-0 jumps to a night, ?a
 npm run build          # CrazyGames build: dist/index.html — single file, no extra requests (~1 MB)
 npm run build:gd       # GameDistribution build: dist-gd/index.html (no CrazyGames code)
 npm run build:web      # portal-free build: dist-web/index.html
+npm run build:gamepix  # GamePix build: dist-gamepix/index.html (GamePix SDK only); zip: npm run submission:gamepix
 npm run lint && npm run typecheck && npm test
 npm run test:e2e       # Playwright smoke tests (desktop + 390×844 portrait), CrazyGames build
 npm run test:e2e:gd    # Playwright smoke tests of the GD build with a mocked gdsdk
@@ -60,7 +61,7 @@ static meshes merged per material, one shadow-casting light, DPR capped at 2, ha
 - `src/game3d/` — 3D presentation of a running world + gameplay camera (follow + look-ahead + overview)
 - `src/render/` — toon materials, procedural characters/props/textures, house builder, vision cones, effects
 - `src/app/` — app flow, input, Web Audio synth, save, i18n, meta (shop/daily/missions)
-- `src/app/platform/` — portal layer: one `Platform` interface, CrazyGames / GameDistribution / plain-web implementations
+- `src/app/platform/` — portal layer: one `Platform` interface, CrazyGames / GameDistribution / GamePix / plain-web implementations
 - `src/levels/` — the 60 levels (see `docs/levels.md`)
 - `scripts/playtest/` — headless playtest bot report; `scripts/submission/` — covers, trailers, zip
 
@@ -86,4 +87,4 @@ Next / Retry / Menu on the result screens, at most one every ~2 minutes. Rewarde
 only after `SDK_REWARDED_WATCH_COMPLETE`; every ad settles once (completion, error / cancel, or not started in 8 s).
 Saves use localStorage (in-memory fallback). Without the SDK the game plays on without ads.
 
-See `submission/README.md` (CrazyGames) and `submission-gd/README.md` (GameDistribution) for the store texts, tags and assets, and `CREDITS.md` for licences.
+See `submission/README.md` (CrazyGames) and `submission-gd/README.md` (GameDistribution), `submission-gamepix/README.md` (GamePix) for the store texts, tags and assets, and `CREDITS.md` for licences.

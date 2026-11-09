@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "build:gd": "tsc --noEmit && vite build --mode gd",
     "build:web": "tsc --noEmit && vite build --mode web",
+    "build:gamepix": "tsc --noEmit && vite build --mode gamepix",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint .",
@@ -20,7 +21,8 @@
     "check:audit": "tsx scripts/playtest/audit.ts",
     "shots": "node scripts/screenshots.mjs",
     "submission": "node scripts/submission/build.mjs",
-    "submission:gd": "node scripts/submission/build-gd.mjs"
+    "submission:gd": "node scripts/submission/build-gd.mjs",
+    "submission:gamepix": "node scripts/submission/build-gamepix.mjs"
   },
   "license": "UNLICENSED",
   "dependencies": {
