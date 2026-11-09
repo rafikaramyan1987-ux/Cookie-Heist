@@ -14,7 +14,7 @@ import { titleView } from '../art/titleView';
 import type { View } from '../art/view';
 import { InputCtl } from './input';
 import { audio } from './audio';
-import { sdk } from './sdk';
+import { sdk, type AdSlot } from './sdk';
 import { loadSave, saveSoon, SaveData } from './save';
 import { t, setLang, detectLang, getLang } from './i18n';
 import { buy, levelCoins, claimDaily, dailyAvailable, ensureMissions, progressMission, claimMission, useBoost, buyBoost, BoostId } from './meta';
@@ -63,6 +63,8 @@ export class App {
   autoplay = params.get('autoplay') as 'beginner' | 'average' | 'good' | 'hint' | null;
   capture = params.has('capture');
   private last = performance.now();
+  private adPausedPlay = false;
+  private adBusy = false;
 
   async boot() {
     const loading = document.createElement('div');
@@ -83,7 +85,14 @@ export class App {
     };
     sdk.onAdPause = (p) => {
       audio.suspend(p);
-      if (p && this.mode === 'play') this.pause();
+      if (p && this.mode === 'play') {
+        this.pause();
+        this.adPausedPlay = true;
+      } else if (!p && this.adPausedPlay) {
+        this.adPausedPlay = false;
+        // portals that hand control back with an event (GD's SDK_GAME_START) resume the level by themselves
+        if (sdk.autoResume && this.mode === 'paused') this.resume();
+      }
     };
     await document.fonts.ready;
     this.stage = createStage(this.canvas, { low: params.has('low') });
@@ -168,7 +177,7 @@ export class App {
     switch (act) {
       case 'play': {
         const [h, i] = this.nextLevel();
-        this.openLevel(h, i);
+        this.between(() => this.openLevel(h, i), 'preroll');
         break;
       }
       case 'map':
@@ -422,6 +431,13 @@ export class App {
     this.titleEl = null;
   }
 
+  resume() {
+    if (this.mode !== 'paused') return;
+    this.ui.querySelectorAll('.pause-modal').forEach((m) => m.remove());
+    this.mode = 'play';
+    sdk.gameplayStart();
+  }
+
   pause() {
     if (this.mode !== 'play' || !this.run) return;
     this.mode = 'paused';
@@ -431,11 +447,7 @@ export class App {
     this.ui.appendChild(
       pauseScreen(
         this.save,
-        () => {
-          this.ui.querySelectorAll('.pause-modal').forEach((m) => m.remove());
-          this.mode = 'play';
-          sdk.gameplayStart();
-        },
+        () => this.resume(),
         () => this.openLevel(r.h, r.i, { hint: r.hinted }),
         () => this.showTitle(),
         () => this.applySettings(),
@@ -701,7 +713,7 @@ export class App {
             return ok;
           },
           () => this.goNext(r.h, r.i),
-          () => this.showTitle(),
+          () => this.between(() => this.showTitle(), 'menu'),
           () => this.between(() => this.openLevel(r.h, r.i)),
         ),
       );
@@ -725,7 +737,7 @@ export class App {
             return ok;
           },
           () => sdk.rewarded(),
-          () => this.showTitle(),
+          () => this.between(() => this.showTitle(), 'menu'),
         ),
       );
     }
@@ -742,9 +754,24 @@ export class App {
     this.between(() => this.openLevel(nh, ni));
   }
 
-  /** midgame ad slot: only between levels, rate-limited by the SDK wrapper */
-  private async between(next: () => void) {
-    if (!this.autoplay && !this.capture) await sdk.midgame();
+  /**
+   * Interstitial slot (always after a click, never during a level), rate-limited by the platform. Slots the
+   * platform does not use continue synchronously.
+   */
+  private async between(next: () => void, slot: AdSlot = 'between') {
+    if (slot === 'between') {
+      if (!this.autoplay && !this.capture) await sdk.midgame(slot);
+      return next();
+    }
+    if (!sdk.adSlot(slot)) return next();
+    // the title stays clickable behind the ad: one Play at a time
+    if (this.adBusy) return;
+    this.adBusy = true;
+    try {
+      if (!this.autoplay && !this.capture) await sdk.midgame(slot);
+    } finally {
+      this.adBusy = false;
+    }
     next();
   }
 }
