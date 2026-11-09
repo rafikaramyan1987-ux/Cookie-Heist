@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GamePixPlatform, REWARD_GRACE, type GamePixAdResult } from '../../src/app/platform/gamepix';
-import { AD_TIMEOUT } from '../../src/app/platform/types';
+import { AD_TIMEOUT, MIDGAME_GAP } from '../../src/app/platform/types';
 
 /** a GamePix SDK stand-in: `ad` decides what an ad does (it may emit the SDK's pause / resume events) */
 type Emit = (name: 'pause' | 'resume') => void;
@@ -138,6 +138,7 @@ describe('GamePix platform', () => {
     await gp.midgame('between');
     expect(GamePix.ads.interstitial).not.toHaveBeenCalled();
     gp.gameplayStop();
+    await vi.advanceTimersByTimeAsync(MIDGAME_GAP);
     let done = false;
     gp.midgame('between').then(() => (done = true));
     // a second request while one is showing is dropped (and the reward is not granted)
@@ -147,6 +148,52 @@ describe('GamePix platform', () => {
     resolve({ success: false, message: 'No ad available' });
     await vi.advanceTimersByTimeAsync(0);
     expect(done).toBe(true);
+  });
+
+  it('interstitial: none in the first ~2 minutes, then at most one per MIDGAME_GAP; preroll never', async () => {
+    const { gp, GamePix } = await setup(async () => ({ success: true }));
+    await gp.ready();
+    await gp.midgame('between');
+    await gp.midgame('menu');
+    expect(GamePix.ads.interstitial).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(MIDGAME_GAP);
+    await gp.midgame('between');
+    expect(GamePix.ads.interstitial).toHaveBeenCalledTimes(1);
+    // the next break within the gap: no ad, the caller continues at once
+    await vi.advanceTimersByTimeAsync(MIDGAME_GAP - 1000);
+    await gp.midgame('between');
+    await gp.midgame('menu');
+    await gp.midgame('preroll');
+    expect(GamePix.ads.interstitial).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await gp.midgame('menu');
+    expect(GamePix.ads.interstitial).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(MIDGAME_GAP * 5);
+    await gp.midgame('preroll');
+    expect(GamePix.ads.interstitial).toHaveBeenCalledTimes(2);
+  });
+
+  it('rewarded is not limited by the gap; a completed one counts as the interstitial break (as in GD)', async () => {
+    let reward: GamePixAdResult = { success: true };
+    const { gp, GamePix } = await setup(async (kind) => (kind === 'reward' ? reward : { success: true }));
+    await gp.ready();
+    await vi.advanceTimersByTimeAsync(MIDGAME_GAP);
+    await gp.midgame('between');
+    expect(GamePix.ads.interstitial).toHaveBeenCalledTimes(1);
+    // right after an interstitial, rewarded ads still work, several in a row
+    expect(await gp.rewarded()).toBe(true);
+    expect(await gp.rewarded()).toBe(true);
+    expect(GamePix.ads.reward).toHaveBeenCalledTimes(2);
+    // a completed reward restarts the gap
+    await vi.advanceTimersByTimeAsync(MIDGAME_GAP - 1000);
+    await gp.midgame('between');
+    expect(GamePix.ads.interstitial).toHaveBeenCalledTimes(1);
+    // a cancelled reward does not
+    reward = { success: false };
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(await gp.rewarded()).toBe(false);
+    await gp.midgame('between');
+    expect(GamePix.ads.interstitial).toHaveBeenCalledTimes(2);
   });
 
   it('pause / resume and visibility are idempotent and tracked separately', async () => {

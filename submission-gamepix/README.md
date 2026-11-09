@@ -5,9 +5,11 @@
   (`integration.gamepix.com/sdk/v3/gamepix.sdk.js`, manual lifecycle), loaded before the game bundle.
 - **Icon / cover:** `icon-512x512.png`, `cover-1280x720.png` — scaled from the store covers rendered from the real 3D
   title scene (title "Cookie Heist" and characters only, no URLs).
-- **Screen capture:** `cookie-heist-gamepix-capture.mp4` (55 s, 960x540) — the GamePix build in the local SDK
-  simulator: title, night 1 played by the demo bot (sped up 4x), the ×2 coins rewarded ad (`?gpx_reward=success`,
-  the simulator grants it instantly), Next night with the simulator's fake interstitial (sped up 2x), night 2 intro.
+- **Screen capture:** `cookie-heist-gamepix-capture.mp4` (58 s, 960x540) — the GamePix build in the local SDK
+  simulator: title, night 1 played by the demo bot (sped up 3x), Next night with the simulator's fake interstitial
+  (shown because 2 minutes have passed since loading; the idle wait on the result screen is cut; ad sped up 2x),
+  a short bit of night 2 ending in a scripted "Caught!" (to keep the clip short), then the "+1 toy" rewarded ad
+  (`?gpx_reward=success`, the simulator grants it instantly).
 - **Orientation:** portrait and landscape (responsive), desktop and mobile.
 
 ## Name
@@ -52,9 +54,10 @@ Puzzle
   physics and input stop) and mute all audio; resume restores the player's own sound / music settings. Both are
   idempotent. A window blur (click outside the iframe) does not pause.
 - Interstitials (`ads.interstitial()`) only after a click at natural breaks: Next / Retry / Menu on the result
-  screens; never during a night, never two at once, no pre-roll.
+  screens, at most one every ~2 minutes (none in the first ~2 minutes after loading; a completed rewarded ad also
+  counts as the break); never during a night, never two at once, no pre-roll.
 - Rewarded ads (`ads.reward()`) only from buttons that say the reward (×2 coins, +1 toy, skip a night after 5
-  fails), always optional; the reward is granted only when `success === true`. Otherwise (no fill, cancel, error,
+  fails), always optional and never limited by the 2-minute gap; the reward is granted only when `success === true`. Otherwise (no fill, cancel, error,
   or no ad within 8 s) the button says "No ad available right now, try later" for 2.5 s and can be tried again.
 - `happyMoment('level_complete')` on every night won, `sadMoment('game_over')` when caught,
   `sadMoment('level_failed')` on a missed bed check. Language from `GamePix.lang()` (English / French, else

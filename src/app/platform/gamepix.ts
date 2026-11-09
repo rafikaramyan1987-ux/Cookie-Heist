@@ -6,13 +6,15 @@
  * - `pause` / `resume` SDK events and document visibility (hidden / visible): pause the level and mute all audio;
  *   resume restores audio only through the player's own sound settings. Idempotent, reasons are tracked separately.
  * - interstitials (`GamePix.ads.interstitial()`) only at natural breaks after a click (Next / Retry / Menu on the
- *   result screens); never during a level, one at a time. No pre-roll (the Play slot continues at once).
- * - rewarded (`GamePix.ads.reward()`): the reward is granted only when `success === true`
+ *   result screens), at most one per ~2 minutes (none in the first ~2 minutes after loading); never during a level,
+ *   one at a time. No pre-roll (the Play slot continues at once).
+ * - rewarded (`GamePix.ads.reward()`): the reward is granted only when `success === true`; never rate-limited (a
+ *   completed one counts as the interstitial break, as in the GD build)
  * - every ad request settles exactly once (result, rejection, or not started within 8 s)
  * - happyMoment / sadMoment signals, GamePix.lang() as the locale, plain localStorage for saves
  */
 
-import { AD_TIMEOUT, type AdSlot, type Platform } from './types';
+import { AD_TIMEOUT, MIDGAME_GAP, type AdSlot, type Platform } from './types';
 
 export const GPX_SDK_URL = 'https://integration.gamepix.com/sdk/v3/gamepix.sdk.js';
 /** a rewarded ad whose `resume` came without a result gets this long for a late result (ms) */
@@ -54,6 +56,7 @@ export class GamePixPlatform implements Platform {
   private loaded = false;
   private started = false;
   private playing = false;
+  private lastMidgame = Date.now(); // no interstitial right after loading (as in the other builds)
   private pausedBy = new Set<PauseReason>();
   private paused = false;
   private pending: Pending | null = null;
@@ -225,14 +228,19 @@ export class GamePixPlatform implements Platform {
     return slot !== 'preroll';
   }
 
-  /** Interstitial at a natural break (never in a level, one at a time; GamePix handles the frequency). */
+  /** Interstitial at a natural break, at most once per ~2 minutes (MIDGAME_GAP). Never in a level, one at a time. */
   async midgame(slot: AdSlot = 'between'): Promise<void> {
-    if (!this.adSlot(slot) || this.playing) return;
+    if (!this.adSlot(slot) || this.playing || !this.s || !this.loaded || this.pending) return;
+    if (Date.now() - this.lastMidgame < MIDGAME_GAP) return;
+    this.lastMidgame = Date.now();
     await this.requestAd('interstitial');
   }
 
-  /** Rewarded ad; true only when the SDK reports `success: true`. Without the SDK there is no reward. */
+  /** Rewarded ad (not rate-limited); true only when the SDK reports `success: true`. Without the SDK there is no reward. */
   async rewarded(): Promise<boolean> {
-    return this.requestAd('reward');
+    const ok = await this.requestAd('reward');
+    // a finished rewarded ad also counts as the interstitial break (same as the GD build)
+    if (ok) this.lastMidgame = Date.now();
+    return ok;
   }
 }
