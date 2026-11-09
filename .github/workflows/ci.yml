@@ -32,6 +32,25 @@ jobs:
       - name: Check single-file build size (< 10 MB)
         run: test $(stat -c%s dist/index.html) -lt 10000000 && test $(stat -c%s dist-gd/index.html) -lt 10000000
 
+  gamepix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: GamePix build
+        run: npm run build:gamepix
+      - name: GamePix zip (index.html at the root, gamepix.sdk.js referenced, no CrazyGames / GameDistribution, no other links)
+        run: |
+          mkdir -p ci-gamepix
+          zip -j -9 -X -q ci-gamepix/cookie-heist-gamepix-v1.zip dist-gamepix/index.html
+          node scripts/submission/check-gamepix.mjs ci-gamepix/cookie-heist-gamepix-v1.zip
+          test $(stat -c%s dist-gamepix/index.html) -lt 10000000
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
