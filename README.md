@@ -1,6 +1,6 @@
 # Cookie Heist
 
-A cosy 3D stealth-puzzle game for the web (portrait-first, CrazyGames-ready).
+A cosy 3D stealth-puzzle game for the web (portrait-first, CrazyGames- and GameDistribution-ready).
 A kid in pyjamas sneaks out of bed at night, steals cookies from the kitchen and tiptoes back to bed
 without being caught by mum, dad, grandma, the big sibling, the cat or the robot vacuum.
 Caught? Mum gasps *“Back to bed!”* and carries you back — child-friendly, no violence (PEGI 3–7).
@@ -37,9 +37,12 @@ Caught? Mum gasps *“Back to bed!”* and carries you back — child-friendly, 
 ```bash
 npm install
 npm run dev            # http://localhost:5173  (?level=0-0 jumps to a night, ?autoplay=good lets the bot play)
-npm run build          # dist/index.html — single file, no extra requests (~1 MB)
+npm run build          # CrazyGames build: dist/index.html — single file, no extra requests (~1 MB)
+npm run build:gd       # GameDistribution build: dist-gd/index.html (no CrazyGames code)
+npm run build:web      # portal-free build: dist-web/index.html
 npm run lint && npm run typecheck && npm test
-npm run test:e2e       # Playwright smoke tests (desktop + 390×844 portrait)
+npm run test:e2e       # Playwright smoke tests (desktop + 390×844 portrait), CrazyGames build
+npm run test:e2e:gd    # Playwright smoke tests of the GD build with a mocked gdsdk
 npm run playtest       # bot plays all 60 levels (strict audit) → docs/playtest.md
 npm run check:audit    # static level audit: no parked guards, safe starts, every patrol cycle opens a path
 npm run check:levels   # static reachability checks
@@ -56,9 +59,16 @@ static meshes merged per material, one shadow-casting light, DPR capped at 2, ha
 - `src/game/` — deterministic game logic (level parser, world sim, guards, vision/LOS on the grid, noise, A*, bot)
 - `src/game3d/` — 3D presentation of a running world + gameplay camera (follow + look-ahead + overview)
 - `src/render/` — toon materials, procedural characters/props/textures, house builder, vision cones, effects
-- `src/app/` — app flow, input, Web Audio synth, CrazyGames SDK v3 wrapper, save, i18n, meta (shop/daily/missions)
+- `src/app/` — app flow, input, Web Audio synth, save, i18n, meta (shop/daily/missions)
+- `src/app/platform/` — portal layer: one `Platform` interface, CrazyGames / GameDistribution / plain-web implementations
 - `src/levels/` — the 60 levels (see `docs/levels.md`)
 - `scripts/playtest/` — headless playtest bot report; `scripts/submission/` — covers, trailers, zip
+
+## Platforms
+
+The portal is chosen at build time (`VITE_PLATFORM=crazygames|gd|web`, or `vite build --mode gd|web`; default
+CrazyGames). `src/app/sdk.ts` picks the implementation from a compile-time constant, so each build contains only its
+own SDK code: the GD build never includes or loads the CrazyGames SDK and vice versa.
 
 ## CrazyGames integration
 
@@ -67,4 +77,13 @@ SDK v3 is loaded at runtime (with a timeout and an offline fallback): `loadingSt
 one every ~2 minutes, optional rewarded ads (×2 coins, +1 toy, skip a night after 3 fails), SDK mute respected,
 progress saved through the SDK Data Module with a localStorage fallback.
 
-See `submission/README.md` for the store texts, tags and assets, and `CREDITS.md` for licences.
+## GameDistribution integration
+
+`window.GD_OPTIONS = { gameId, onEvent }` and the GD HTML5 SDK script (`gamedistribution-jssdk`) are loaded once while
+the game boots. `SDK_GAME_PAUSE` pauses the game and mutes all audio, `SDK_GAME_START` resumes it (sound / music
+settings respected). Interstitials only after a click and outside gameplay: Play on the title (pre-roll) and
+Next / Retry / Menu on the result screens, at most one every ~2 minutes. Rewarded ads (×2 coins, +1 toy, skip) pay
+only after `SDK_REWARDED_WATCH_COMPLETE`; every ad settles once (completion, error / cancel, or not started in 8 s).
+Saves use localStorage (in-memory fallback). Without the SDK the game plays on without ads.
+
+See `submission/README.md` (CrazyGames) and `submission-gd/README.md` (GameDistribution) for the store texts, tags and assets, and `CREDITS.md` for licences.

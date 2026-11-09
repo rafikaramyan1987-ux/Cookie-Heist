@@ -20,12 +20,17 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: GameDistribution build (no CrazyGames code inside)
+        run: |
+          npm run build:gd
+          ! grep -qi crazygames dist-gd/index.html
+          ! grep -qi gamedistribution dist/index.html
       - name: Level audit (no stationary guards, safe starts, every patrol cycle opens a path)
         run: npm run check:audit
       - name: Playtest bot (solvable; 0 escapes after "!"; 0 sightings in the first 3 s; no camping)
         run: npx tsx scripts/playtest/run.ts --runs 6 --strict
       - name: Check single-file build size (< 10 MB)
-        run: test $(stat -c%s dist/index.html) -lt 10000000
+        run: test $(stat -c%s dist/index.html) -lt 10000000 && test $(stat -c%s dist-gd/index.html) -lt 10000000
 
   e2e:
     runs-on: ubuntu-latest
@@ -40,3 +45,5 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npm run test:e2e
+      - run: npm run build:gd
+      - run: npm run test:e2e:gd

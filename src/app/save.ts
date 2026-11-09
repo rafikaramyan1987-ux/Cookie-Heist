@@ -1,6 +1,6 @@
 import { sdk } from './sdk';
 
-/** Persistent progress. Stored through the CrazyGames Data Module (localStorage fallback). */
+/** Persistent progress. Stored through the platform storage (CrazyGames Data Module) or localStorage, with an in-memory fallback. */
 export interface SaveData {
   v: 1;
   coins: number;

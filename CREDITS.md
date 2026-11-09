@@ -11,6 +11,7 @@ Everything in Cookie Heist is **original** and generated in code — no third-pa
 | Levels (60) | Hand-designed data (`src/levels/houses/*`) | Project licence |
 | Font: **Fredoka** (`@fontsource/fredoka`) | Milena Brandão / Google Fonts | SIL Open Font License 1.1 |
 | Engine: **three.js** | mrdoob & contributors | MIT |
-| CrazyGames SDK v3 | Loaded at runtime from `sdk.crazygames.com` (only on CrazyGames) | CrazyGames terms |
+| CrazyGames SDK v3 | Loaded at runtime from `sdk.crazygames.com` (CrazyGames build only) | CrazyGames terms |
+| GameDistribution HTML5 SDK | Loaded at runtime from `html5.api.gamedistribution.com` (GD build only) | GameDistribution terms |
 
 No CC0 asset packs were needed: all models are procedural.
