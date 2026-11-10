@@ -5,7 +5,8 @@ import { walk, idle, TUTORIAL } from '../../scripts/media/driver';
 async function advance(page: Page, seconds: number) {
   for (let t = 0; t < seconds; t += 1) await page.evaluate(() => { for (let i = 0; i < 30; i++) window.__game.tick(1 / 30); });
 }
-const step = (page: Page) => (dt: number) => page.evaluate((d) => window.__game.tick(d), dt);
+/** one game frame without rendering (same logic and camera; software WebGL makes rendering every frame slow on CI) */
+const step = (page: Page) => (dt: number) => page.evaluate((d) => window.__game.simOnly(d), dt);
 
 /** a returning player (tutorial done): the menu shows */
 async function returning(page: Page, extra: Record<string, unknown> = {}) {
@@ -42,7 +43,9 @@ test('first visit: the loading screen, then straight into night 1 with the in-ga
 });
 
 test('tutorial: sneak to the basket, mum sweeps past ("Phew!"), grab the cookie, back to bed → result with teaser + daily', async ({ page }) => {
-  const errors = await boot(page, 'fakeads');
+  test.setTimeout(480_000);
+  // ?manual: no internal frame loop, the test drives every frame
+  const errors = await boot(page, 'fakeads&manual');
   const s = step(page);
   await walk(page, TUTORIAL.basket, s);
   await idle(page, 1, s);
@@ -51,7 +54,7 @@ test('tutorial: sneak to the basket, mum sweeps past ("Phew!"), grab the cookie,
   expect(await page.evaluate(() => window.__game.run.tut.step)).toBe('cookie');
   await walk(page, TUTORIAL.cookie, s);
   await walk(page, TUTORIAL.bed, s);
-  for (let i = 0; i < 10 && !(await page.locator('.result.win').count()); i++) await advance(page, 1);
+  for (let i = 0; i < 150 && !(await page.locator('.result.win').count()); i++) await s(1 / 30);
   await expect(page.locator('.result.win')).toBeVisible();
   expect(await page.evaluate(() => window.__game.run.world.stats.spotted)).toBe(0);
   await expect(page.locator('.result .teaser')).toBeVisible();
