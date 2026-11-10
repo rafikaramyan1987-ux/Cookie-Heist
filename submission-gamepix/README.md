@@ -4,8 +4,8 @@
   a single `index.html` at the root of the zip (all code, art and sounds inlined, relative paths only).
   `cookie-heist-gamepix-v1.zip` is the previous build, kept for reference. The only external script is the GamePix SDK
   (`integration.gamepix.com/sdk/v3/gamepix.sdk.js`, manual lifecycle), loaded before the game bundle.
-- **Icon / cover:** `icon-256x256.jpg`, `cover-1360x850.jpg` — from v3 cover A (the kid's guilty grin and a giant glowing
-  cookie, rendered from the real 3D scene; title only, no URLs). `icon-512x512.png` / `cover-1280x720.png` = v1.
+- **Icon / cover:** `icon-256x256.jpg`, `cover-1360x850.jpg` — from the v3 main cover B2 (the kid's guilty grin at the
+  kitchen table, a cookie in hand, mum's flashlight close by; rendered from the real 3D scene; title only, no URLs). `icon-512x512.png` / `cover-1280x720.png` = v1.
 - **Sound:** the SDK's `soundOff` / `soundOn` events (and the legacy `GamePix.soundOff()` / `soundOn()` hooks) are
   handled: soundOff mutes without pausing, soundOn restores sound only when no pause or ad is active, through the
   player's own sound / music settings.

@@ -16,9 +16,11 @@ import type { View } from './view';
  *  B: the kid hiding under the kitchen table, mum's legs and flashlight right next to him, the cookie jar glowing
  *  C: top-down tension: the kid tiptoes past sleeping dad, mum's beam almost touching him
  * The cat watches in each one. Title only ("COOKIE HEIST"), the top-left corner kept clear.
- * `?view=cover3&v=A|B|C&t=<s>`
+ *  B2 (the main cover): B with the kid big and clear: crouching at the table's front edge, guilty grin to camera,
+ *      a cookie held out at the side, lit by the jar's warm glow; mum's legs + beam and the cat stay
+ * `?view=cover3&v=A|B|B2|C&t=<s>`
  */
-type Variant = 'A' | 'B' | 'C';
+type Variant = 'A' | 'B' | 'B2' | 'C';
 
 /** a soft additive glow disc (sprite) */
 function glow(color: number, size: number, opacity = 0.9) {
@@ -67,7 +69,7 @@ export function cover3View(variant: Variant): View {
   scene.add(mum.root);
   const cat = makeCharacter('cat');
   scene.add(cat.root);
-  const cone = new VisionCone(variant === 'B' ? 1.75 : variant === 'C' ? 3.2 : 6.5, variant === 'B' ? 0.4 : variant === 'A' ? 0.2 : 0.42, { intensity: variant === 'A' ? 1.5 : 1.1 });
+  const cone = new VisionCone(variant === 'B2' ? 1.45 : variant === 'B' ? 1.75 : variant === 'C' ? 3.2 : 6.5, variant === 'B' || variant === 'B2' ? 0.4 : variant === 'A' ? 0.2 : 0.42, { intensity: variant === 'A' ? 1.5 : variant === 'B2' ? 1.7 : 1.1 });
   scene.add(cone.group);
   const sp = new Sparkles(variant === 'C' ? 14 : 26, new THREE.Vector3(0.7, 0.6, 0.7), 0xffe08a, variant === 'A' ? 0.06 : 0.09, 0.5);
   scene.add(sp.points);
@@ -143,6 +145,46 @@ export function cover3View(variant: Variant): View {
     camPos.set(1.75, 0.34, 4.85);
     target.set(2.15, 0.5, 2.6);
     fov = 46;
+  } else if (variant === 'B2') {
+    // the same night kitchen as B, but the kid is the hero: crouched at the front edge of the table, close to us
+    const table = buildProp('table');
+    table.position.set(1.95, 0, 2.05);
+    scene.add(table);
+    const jar = buildProp('cookieJar');
+    jar.position.set(2.55, 0.8, 2.3);
+    jar.scale.setScalar(1.35);
+    scene.add(jar);
+    extras.push(table, jar);
+    const jg = glow(0xffb347, 1.0, 0.5);
+    jg.position.set(2.55, 1.05, 2.35);
+    scene.add(jg);
+    kid.mode = 'idle';
+    kid.root.scale.set(0.8, 0.74, 0.8); // crouching
+    kid.root.position.set(1.85, 0, 3.3);
+    kid.root.rotation.y = 0.22;
+    // a cookie held out at the side, never in front of the body
+    kid.armR?.add(cookieMesh(0.15, [0, -0.25, 0.04], [1.3, 0, 0.3]));
+    const cg = glow(0xffb347, 0.45, 0.55);
+    cg.name = 'handGlow';
+    scene.add(cg);
+    extras.push(cg);
+    mum.mode = 'look';
+    mum.root.position.set(3.15, 0, 3.15);
+    mumDir = Math.PI - 0.05;
+    // warm key light from the jar onto the kid's face, a soft fill from the front
+    warm.position.set(2.25, 0.95, 3.35);
+    warm.intensity = 2.0;
+    warm.distance = 2.4;
+    const fill = new THREE.PointLight(0xffc27a, 0.9, 2.2, 1.5);
+    fill.position.set(1.95, 0.6, 4.0);
+    scene.add(fill);
+    sp.points.position.set(2.45, 0.95, 2.4);
+    // the cat on the table, behind the jar, watching the kid
+    cat.root.position.set(1.95, 0.8, 2.0);
+    face(cat, 1.85, 3.3);
+    camPos.set(2.15, 0.78, 4.55);
+    target.set(2.3, 0.55, 2.55);
+    fov = 44;
   } else {
     // parents' room: dad asleep in the big bed, the kid tiptoes by with a cookie, mum's beam from the door
     kid.mode = 'tiptoe';
@@ -189,11 +231,18 @@ export function cover3View(variant: Variant): View {
       // A / B are shot from inside the kitchen (a wall right behind the camera): widen the lens instead of backing up
       const back = variant === 'C' ? (portrait ? 1.35 : aspect < 1.2 ? 1.15 : 1) : 1;
       const p = camPos.clone().sub(target).multiplyScalar(back).add(target);
+      const look = target.clone();
+      if (variant === 'B2' && aspect < 1.2) {
+        // tall / square: the kid in the middle, big, above the title band; mum's beam and the jar around him
+        camera.fov = fov * (portrait ? 1.55 : 1.22);
+        p.set(portrait ? 2.02 : 2.15, 0.74, 4.6);
+        look.set(portrait ? 2.1 : 2.25, 0.5, 2.6);
+      }
       camera.position.copy(p);
-      camera.lookAt(target);
+      camera.lookAt(look);
       // room for the title: wide = bottom-right block, so the scene sits a bit left; tall / square = bottom band
-      if (!portrait && aspect >= 1.2) camera.setViewOffset(w, h, w * (variant === 'C' ? 0.1 : 0.12), -h * 0.02, w, h);
-      else camera.setViewOffset(w, h, 0, -h * (variant === 'C' ? 0.14 : portrait ? 0.08 : 0.06), w, h);
+      if (!portrait && aspect >= 1.2) camera.setViewOffset(w, h, w * (variant === 'C' ? 0.1 : variant === 'B2' ? 0 : 0.12), -h * 0.02, w, h);
+      else camera.setViewOffset(w, h, 0, variant === 'B2' ? h * (portrait ? 0.07 : 0.05) : -h * (variant === 'C' ? 0.14 : portrait ? 0.08 : 0.06), w, h);
       camera.updateProjectionMatrix();
     },
     update(dt, t) {
@@ -208,6 +257,15 @@ export function cover3View(variant: Variant): View {
       } else if (variant === 'B') {
         if (kid.armL) kid.armL.rotation.set(-1.1, 0, -0.3);
         if (kid.armR) kid.armR.rotation.set(-1.1, 0, 0.3);
+      } else if (variant === 'B2') {
+        // cookie arm out to the side, the other hand on the knee
+        if (kid.armR) kid.armR.rotation.set(-0.45, 0, 1.15);
+        if (kid.armL) kid.armL.rotation.set(-0.35, 0, -0.25);
+        const hg = scene.getObjectByName('handGlow');
+        if (hg && kid.armR) {
+          kid.root.updateMatrixWorld(true);
+          kid.armR.localToWorld(hg.position.set(0, -0.25, 0.04));
+        }
       }
       mum.root.updateMatrixWorld(true);
       mum.lightTip!.getWorldPosition(tip);

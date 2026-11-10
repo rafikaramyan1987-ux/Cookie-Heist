@@ -1,7 +1,8 @@
 // v3 trailer from REAL play (the game logic + the playtest bot / a scripted hide), frame by frame, no sound.
 // usage: node scripts/submission/trailer-v3.mjs <base> <width> <height> <out.mp4>
-// 0.0 s cover A (first frame) → night 1: hidden in the basket, mum's flashlight sweeps right past ("Phew!")
-// → snowy chalet: a cookie grab (sparkle) → hiding while a grown-up walks by → a 3-star win (star rain) → cover A
+// 0.0 s cover B2, the main cover (first frame) → night 1: hidden in the basket, mum's flashlight sweeps right past ("Phew!")
+// → snowy chalet: a cookie grab (sparkle) → hiding while a grown-up walks by → a 3-star win (star rain) → cover B2
+// About 18 s.
 import { chromium, GL_ARGS } from '../pw.mjs';
 import { mkdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -13,14 +14,14 @@ rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true });
 
 const CLIPS = [
-  { still: 'view=cover3&v=A&t=4', dur: 0.6 },
+  { still: 'view=cover3&v=B2&t=4', dur: 0.6 },
   // night 1: the kid is in the basket at once; mum comes by and sweeps over the basket
   { q: 'level=0-0&seed=3', setup: 'basket', from: 1.1, dur: 3.3 },
   // snowy chalet, night 5, seed 9 (scripts/submission/find-clips-v3.ts): cookie grab, close call, 3-star win
   { q: 'level=3-4&autoplay=good&seed=9', from: 8.3, dur: 2.4 },
   { q: 'level=3-4&autoplay=good&seed=9', from: 24.3, dur: 3.2 },
   { q: 'level=3-4&autoplay=good&seed=9', from: 34.6, dur: 6.4 },
-  { still: 'view=cover3&v=A&t=4', dur: 1.2 },
+  { still: 'view=cover3&v=B2&t=4', dur: 2.1 },
 ];
 
 const browser = await chromium.launch({ args: GL_ARGS });

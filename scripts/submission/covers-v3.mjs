@@ -1,8 +1,10 @@
-// v3 store covers A / B / C (3 sizes each) rendered from the real 3D scene, + a contact sheet at real thumbnail
-// sizes (200 px and 400 px wide) to pick one.   node scripts/submission/covers-v3.mjs <base>
-// Out: submission/covers-v3/{A,B,C}/cover-{1920x1080,800x1200,800x800}.png, docs/media/covers-v3-sheet.png
+// v3 store covers A / B / C / B2 (3 sizes each) rendered from the real 3D scene, + a contact sheet at real thumbnail
+// sizes (200 px and 400 px wide). B2 is the main cover: also copied to submission/cover-<size>.png.
+//   node scripts/submission/covers-v3.mjs <base>
+// Out: submission/covers-v3/{A,B,C,B2}/cover-{1920x1080,800x1200,800x800}.png, submission/cover-*.png,
+// docs/media/covers-v3-sheet.png
 import { chromium, GL_ARGS } from '../pw.mjs';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, copyFileSync } from 'node:fs';
 
 const base = process.argv[2] ?? 'http://127.0.0.1:4174/';
 const SIZES = [
@@ -10,7 +12,8 @@ const SIZES = [
   [800, 1200],
   [800, 800],
 ];
-const VARIANTS = ['A', 'B', 'C'];
+const VARIANTS = ['A', 'B', 'C', 'B2'];
+const MAIN = 'B2';
 const browser = await chromium.launch({ args: GL_ARGS });
 for (const v of VARIANTS) {
   mkdirSync(`submission/covers-v3/${v}`, { recursive: true });
@@ -26,6 +29,9 @@ for (const v of VARIANTS) {
     await ctx.close();
   }
 }
+
+for (const [w, h] of SIZES) copyFileSync(`submission/covers-v3/${MAIN}/cover-${w}x${h}.png`, `submission/cover-${w}x${h}.png`);
+console.log(`main cover ${MAIN} copied to submission/cover-*.png`);
 
 // contact sheet: each cover downscaled (high quality, in steps) to 200 px and 400 px wide, as portals show them
 mkdirSync('docs/media', { recursive: true });
@@ -45,7 +51,7 @@ await page.setContent(`<!doctype html><html><head><style>
 </style></head><body><div class="sheet"><h1>Cookie Heist — covers v3</h1><p class="sub">Each cover at real thumbnail sizes: 200 px and 400 px wide (1920×1080 · 800×1200 · 800×800). Top-left corner kept clear.</p><div id="rows"></div></div></body></html>`);
 await page.evaluate(
   async ({ imgs, VARIANTS, SIZES }) => {
-    const NOTES = { A: 'Close-up: guilty grin, giant glowing cookie, beam behind', B: 'Under the table: mum’s legs + flashlight, glowing jar', C: 'Top-down: past sleeping dad, beam almost touching' };
+    const NOTES = { A: 'Close-up: guilty grin, giant glowing cookie, beam behind', B: 'Under the table: mum’s legs + flashlight, glowing jar', C: 'Top-down: past sleeping dad, beam almost touching', B2: 'MAIN COVER — B with the kid big and clear: guilty grin to camera, cookie at the side, lit by the jar' };
     const shrink = async (src, tw) => {
       const img = new Image();
       img.src = src;

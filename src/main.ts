@@ -39,7 +39,7 @@ async function artView(name: string) {
       view = (await import('./art/coverView')).coverView();
       break;
     case 'cover3': {
-      const v = (params.get('v') ?? 'A').toUpperCase() as 'A' | 'B' | 'C';
+      const v = (params.get('v') ?? 'A').toUpperCase() as 'A' | 'B' | 'B2' | 'C';
       view = { ...(await import('./art/cover3View')).cover3View(v), overlay: [(await import('./art/coverView')).coverLogo()] };
       document.body.dataset.variant = v;
       break;
