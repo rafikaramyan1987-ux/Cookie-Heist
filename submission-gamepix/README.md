@@ -1,6 +1,6 @@
 # Cookie Heist — GamePix submission
 
-- **Build:** `cookie-heist-gamepix-v1.zip` — a single `index.html` at the root of the zip (all code, art and sounds
+- **Build:** `cookie-heist-gamepix-v2.zip` — a single `index.html` at the root of the zip (all code, art and sounds
   inlined, relative paths only). The only external script is the GamePix SDK
   (`integration.gamepix.com/sdk/v3/gamepix.sdk.js`, manual lifecycle), loaded before the game bundle.
 - **Icon / cover:** `icon-512x512.png`, `cover-1280x720.png` — scaled from the store covers rendered from the real 3D
@@ -50,7 +50,9 @@ Puzzle
 - `window.GamePixConfig = { lifecycle: 'manual' }`, then the SDK script, in `<head>` before the game bundle.
 - `lifecycle.loading(10 → 30 → 100)` while the game boots behind its loading screen, `await lifecycle.loaded()`
   before the menu shows, `lifecycle.gameStart()` once, when the first night starts.
-- `events.on('pause' | 'resume')` and `visibilitychange` (hidden / visible): pause the night (pause menu, timers,
+- `events.on('soundOff' | 'soundOn')` and the legacy `GamePix.soundOff` / `GamePix.soundOn` properties (same
+  handlers, idempotent): mute / unmute all audio; a soundOn never unmutes while the game is paused.
+- `events.on('pause' | 'resume')` (also assigned as the legacy `GamePix.pause` / `GamePix.resume`) and `visibilitychange` (hidden / visible): pause the night (pause menu, timers,
   physics and input stop) and mute all audio; resume restores the player's own sound / music settings. Both are
   idempotent. A window blur (click outside the iframe) does not pause.
 - Interstitials (`ads.interstitial()`) only after a click at natural breaks: Next / Retry / Menu on the result
@@ -60,8 +62,8 @@ Puzzle
   fails), always optional and never limited by the 2-minute gap; the reward is granted only when `success === true`. Otherwise (no fill, cancel, error,
   or no ad within 8 s) the button says "No ad available right now, try later" for 2.5 s and can be tried again.
 - `happyMoment('level_complete')` on every night won, `sadMoment('game_over')` when caught,
-  `sadMoment('level_failed')` on a missed bed check. Language from `GamePix.lang()` (English / French, else
-  English). Progress in plain `localStorage` (one known key).
+  `sadMoment('level_failed')` on a missed bed check. Language from `GamePix.lang()` (read once at boot; English / French, else
+  English) unless the player picked one in Settings. Progress in plain `localStorage` (one known key).
 - No external links, no other SDK, no analytics, no quit button, no rotate prompt.
 
 Regenerate with `npm run build:gamepix && npm run submission:gamepix`.

@@ -5,7 +5,8 @@ import { mkdirSync, rmSync, statSync } from 'node:fs';
 
 const out = 'submission-gamepix';
 mkdirSync(out, { recursive: true });
-const zip = `${out}/cookie-heist-gamepix-v1.zip`;
+// bump the version for every new submission; older zips are kept as they are
+const zip = `${out}/cookie-heist-gamepix-v2.zip`;
 rmSync(zip, { force: true });
 // -j: index.html sits at the root of the zip; -9: smallest; -X: no extra file attributes
 execFileSync('zip', ['-j', '-9', '-X', '-q', zip, 'dist-gamepix/index.html'], { stdio: 'inherit' });

@@ -50,6 +50,18 @@ jobs:
           zip -j -9 -X -q ci-gamepix/cookie-heist-gamepix-v1.zip dist-gamepix/index.html
           node scripts/submission/check-gamepix.mjs ci-gamepix/cookie-heist-gamepix-v1.zip
           test $(stat -c%s dist-gamepix/index.html) -lt 10000000
+      - name: GamePix legacy handlers + language (GamePix.soundOff= / GamePix.soundOn= / GamePix.lang() in the bundle and the newest zip)
+        run: |
+          check() {
+            grep -qE 'GamePix\.soundOff[[:space:]]*=[^=]' "$1" || { echo "::error::$2: no GamePix.soundOff= assignment"; exit 1; }
+            grep -qE 'GamePix\.soundOn[[:space:]]*=[^=]' "$1" || { echo "::error::$2: no GamePix.soundOn= assignment"; exit 1; }
+            grep -qE 'GamePix\.lang\(\)' "$1" || { echo "::error::$2: no GamePix.lang() call"; exit 1; }
+          }
+          check dist-gamepix/index.html dist-gamepix/index.html
+          zip=$(ls submission-gamepix/cookie-heist-gamepix-v*.zip | sort -V | tail -n 1)
+          unzip -p "$zip" index.html > ci-gamepix/newest.html
+          check ci-gamepix/newest.html "$zip"
+          node scripts/submission/check-gamepix.mjs "$zip"
 
   e2e:
     runs-on: ubuntu-latest
