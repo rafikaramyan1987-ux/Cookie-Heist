@@ -26,7 +26,7 @@
     "check:locales": "node scripts/check-locales.mjs",
     "perf": "node scripts/perf/measure.mjs dist 3",
     "covers": "node scripts/submission/covers-v3.mjs http://127.0.0.1:4174/",
-    "trailers": "node scripts/submission/trailer-v3.mjs http://127.0.0.1:4174/ 1920 1080 submission/videos/trailer-v3-1920x1080.mp4 && node scripts/submission/trailer-v3.mjs http://127.0.0.1:4174/ 1080 1920 submission/videos/trailer-v3-1080x1920.mp4",
+    "trailers": "node scripts/submission/trailer-v3.mjs http://127.0.0.1:4174/ 1920 1080 submission/videos/trailer-v3-1920x1080.mp4 && node scripts/submission/trailer-v3.mjs http://127.0.0.1:4174/ 1080 1620 submission/videos/trailer-v3-1080x1620.mp4",
     "media:first-minute": "tsx scripts/media/first-minute.ts http://127.0.0.1:4174/ docs/media/first-minute-v3-390x844.mp4"
   },
   "license": "UNLICENSED",

@@ -41,8 +41,9 @@ PEGI 3–7 friendly: no violence, being caught means being carried back to bed.
   behind; **B** hiding under the kitchen table next to mum's legs and flashlight, the cookie jar glowing; **C** top-down,
   sneaking past sleeping dad with mum's beam almost touching him. The cat watches in each. Title only, top-left corner
   kept clear. Contact sheet at real thumbnail sizes: `docs/media/covers-v3-sheet.png`. (`covers/` = the v2 covers.)
-- `videos/trailer-v3-1920x1080.mp4`, `videos/trailer-v3-1080x1920.mp4` — about 17 s, no sound, real play: cover A
-  as the first frame, a flashlight near miss in the first 2 s, hiding, a cookie grab, the Snowy Chalet, a 3-star win.
+- `videos/trailer-v3-1920x1080.mp4`, `videos/trailer-v3-1080x1620.mp4` (portrait 2:3, as CrazyGames requires) —
+  about 17 s, no sound, real play: cover A as the first frame, a flashlight near miss in the first 2 s, hiding, a
+  cookie grab, the Snowy Chalet, a 3-star win.
   (`trailer-1920x1080.mp4` / `trailer-1080x1920.mp4` = the v2 trailers.)
 
 Regenerate: `npm run build && npm run submission`, and with `npx vite preview --host 127.0.0.1 --port 4174` running:
