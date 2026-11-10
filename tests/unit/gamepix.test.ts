@@ -3,7 +3,8 @@ import { GamePixPlatform, REWARD_GRACE, type GamePixAdResult } from '../../src/a
 import { AD_TIMEOUT, MIDGAME_GAP } from '../../src/app/platform/types';
 
 /** a GamePix SDK stand-in: `ad` decides what an ad does (it may emit the SDK's pause / resume events) */
-type Emit = (name: 'pause' | 'resume' | 'soundOff' | 'soundOn') => void;
+type Signal = 'pause' | 'resume' | 'soundOff' | 'soundOn';
+type Emit = (name: Signal) => void;
 async function setup(ad: (kind: 'interstitial' | 'reward', emit: Emit) => Promise<GamePixAdResult>) {
   const handlers: Record<string, (() => void)[]> = {};
   const emit: Emit = (n) => handlers[n]?.forEach((f) => f());
@@ -18,10 +19,10 @@ async function setup(ad: (kind: 'interstitial' | 'reward', emit: Emit) => Promis
     },
     events: { on: (n: string, f: () => void) => (handlers[n] ??= []).push(f) },
     ads: { interstitial: vi.fn(() => ad('interstitial', emit)), reward: vi.fn(() => ad('reward', emit)) },
-    lang: () => 'fr',
+    lang: vi.fn(() => 'fr'),
     happyMoment: vi.fn((n: string) => calls.push(`happy ${n}`)),
     sadMoment: vi.fn((n: string) => calls.push(`sad ${n}`)),
-  } as Record<string, unknown> & { soundOff?: () => void; soundOn?: () => void; ads: { interstitial: ReturnType<typeof vi.fn>; reward: ReturnType<typeof vi.fn> }; lifecycle: Record<string, ReturnType<typeof vi.fn>> };
+  } as Record<string, unknown> & { soundOff?: () => void; soundOn?: () => void; pause?: () => void; resume?: () => void; lang: ReturnType<typeof vi.fn>; ads: { interstitial: ReturnType<typeof vi.fn>; reward: ReturnType<typeof vi.fn> }; lifecycle: Record<string, ReturnType<typeof vi.fn>> };
   vi.stubGlobal('window', { GamePix });
   vi.stubGlobal('document', doc);
   const gp = new GamePixPlatform();
@@ -33,7 +34,9 @@ async function setup(ad: (kind: 'interstitial' | 'reward', emit: Emit) => Promis
     doc.hidden = hidden;
     docListeners.forEach((f) => f());
   };
-  return { gp, GamePix, emit, log, calls, visibility };
+  /** the legacy property the GamePix player calls (GamePix.soundOff() etc.), read at call time */
+  const legacy = (n: Signal) => (GamePix[n] as () => void)();
+  return { gp, GamePix, emit, legacy, log, calls, visibility };
 }
 const never = () => new Promise<GamePixAdResult>(() => {});
 
@@ -300,6 +303,130 @@ describe('GamePix platform', () => {
       GamePix.soundOn!();
       expect(gp.muted).toBe(false);
       expect(log).toEqual(['mute', 'unmute']);
+    });
+  });
+  it('lang() is called exactly once, during init, and returned (cached) as the locale', async () => {
+    const { gp, GamePix } = await setup(never);
+    expect(GamePix.lang).toHaveBeenCalledTimes(1);
+    expect(gp.locale()).toBe('fr');
+    expect(gp.locale()).toBe('fr');
+    await gp.ready();
+    expect(gp.locale()).toBe('fr');
+    expect(GamePix.lang).toHaveBeenCalledTimes(1);
+  });
+
+  it('a throwing, empty or non-string lang() gives no locale', async () => {
+    for (const impl of [
+      () => {
+        throw new Error('x');
+      },
+      () => undefined,
+      () => '',
+    ]) {
+      vi.stubGlobal('document', { hidden: false, addEventListener: () => {} });
+      vi.stubGlobal('window', { GamePix: { lifecycle: {}, events: { on: () => {} }, ads: {}, lang: impl } });
+      const gp = new GamePixPlatform();
+      await gp.init();
+      expect(gp.locale()).toBeNull();
+    }
+  });
+
+  describe('SDK event + legacy property: idempotent in any order', () => {
+    it('assigns GamePix.soundOff / soundOn / pause / resume', async () => {
+      const { GamePix } = await setup(never);
+      for (const n of ['soundOff', 'soundOn', 'pause', 'resume'] as const) expect(typeof GamePix[n], n).toBe('function');
+    });
+
+    type Src = 'emit' | 'legacy';
+    const orders: Src[][] = [
+      ['emit', 'legacy'],
+      ['legacy', 'emit'],
+      ['emit', 'emit'],
+      ['legacy', 'legacy'],
+      ['legacy', 'emit', 'legacy', 'emit'],
+    ];
+    for (const order of orders) {
+      const name = order.join(' then ');
+      it(`soundOff / soundOn: ${name}`, async () => {
+        const { gp, emit, legacy, log } = await setup(never);
+        const fire = (n: Signal) => order.forEach((src) => (src === 'emit' ? emit(n) : legacy(n)));
+        fire('soundOff');
+        expect(log).toEqual(['mute']);
+        expect(gp.muted).toBe(true);
+        fire('soundOn');
+        expect(log).toEqual(['mute', 'unmute']);
+        expect(gp.muted).toBe(false);
+      });
+
+      it(`pause / resume: ${name}`, async () => {
+        const { gp, emit, legacy, log } = await setup(never);
+        const fire = (n: Signal) => order.forEach((src) => (src === 'emit' ? emit(n) : legacy(n)));
+        fire('pause');
+        expect(log).toEqual(['mute', 'pause']);
+        expect(gp.muted).toBe(true);
+        fire('resume');
+        expect(log).toEqual(['mute', 'pause', 'unmute', 'resume']);
+        expect(gp.muted).toBe(false);
+      });
+    }
+
+    it('interleaved: a portal soundOn (event or legacy) does not unmute while still paused', async () => {
+      const { gp, emit, legacy, log } = await setup(never);
+      emit('pause');
+      legacy('soundOff');
+      legacy('pause');
+      emit('soundOff');
+      expect(log).toEqual(['mute', 'pause']);
+      emit('soundOn');
+      legacy('soundOn');
+      expect(log).toEqual(['mute', 'pause']);
+      expect(gp.muted).toBe(true);
+      legacy('resume');
+      emit('resume');
+      expect(log).toEqual(['mute', 'pause', 'unmute', 'resume']);
+      expect(gp.muted).toBe(false);
+    });
+
+    it('interleaved: soundOff outlives a pause / resume; soundOn then unmutes once', async () => {
+      const { gp, emit, legacy, log } = await setup(never);
+      legacy('soundOff');
+      emit('soundOff');
+      emit('pause');
+      legacy('pause');
+      expect(log).toEqual(['mute', 'pause']);
+      emit('resume');
+      legacy('resume');
+      expect(log).toEqual(['mute', 'pause', 'resume']);
+      expect(gp.muted).toBe(true);
+      emit('soundOn');
+      legacy('soundOn');
+      expect(log).toEqual(['mute', 'pause', 'resume', 'unmute']);
+      expect(gp.muted).toBe(false);
+    });
+
+    it('pause twice (event + legacy), resume once: resumed; a late duplicate resume changes nothing', async () => {
+      const { gp, emit, legacy, log } = await setup(never);
+      emit('pause');
+      legacy('pause');
+      legacy('resume');
+      expect(log).toEqual(['mute', 'pause', 'unmute', 'resume']);
+      expect(gp.muted).toBe(false);
+      emit('resume');
+      expect(log).toEqual(['mute', 'pause', 'unmute', 'resume']);
+    });
+
+    it('a rewarded ad whose pause / resume arrive as both event and legacy call settles once', async () => {
+      const s = await setup(async (_k, emit) => {
+        emit('pause');
+        s.legacy('pause');
+        s.legacy('resume');
+        emit('resume');
+        return { success: true };
+      });
+      await s.gp.ready();
+      expect(await s.gp.rewarded()).toBe(true);
+      expect(s.log).toEqual(['mute', 'pause', 'resume', 'unmute']);
+      expect(s.gp.muted).toBe(false);
     });
   });
 });

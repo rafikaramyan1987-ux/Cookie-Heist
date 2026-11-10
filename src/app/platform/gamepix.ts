@@ -8,13 +8,16 @@
  * - `soundOff` / `soundOn` SDK events (and the legacy `GamePix.soundOff()` / `GamePix.soundOn()` hooks): soundOff
  *   mutes without pausing; soundOn lifts only the portal's sound-off — audio comes back only when no pause or ad is
  *   active, and then through the player's own sound / music settings. Idempotent.
+ * - the same four handlers are also assigned as the legacy properties `GamePix.soundOff / soundOn / pause / resume`
+ *   (the GamePix player checks for them); every handler is idempotent, so the event and the property may both fire,
+ *   in any order, without a double mute / pause / resume.
  * - interstitials (`GamePix.ads.interstitial()`) only at natural breaks after a click (Next / Retry / Menu on the
  *   result screens), at most one per ~2 minutes (none in the first ~2 minutes after loading); never during a level,
  *   one at a time. No pre-roll (the Play slot continues at once).
  * - rewarded (`GamePix.ads.reward()`): the reward is granted only when `success === true`; never rate-limited (a
  *   completed one counts as the interstitial break, as in the GD build)
  * - every ad request settles exactly once (result, rejection, or not started within 8 s)
- * - happyMoment / sadMoment signals, GamePix.lang() as the locale, plain localStorage for saves
+ * - happyMoment / sadMoment signals, GamePix.lang() (called once in init, cached) as the locale, plain localStorage for saves
  */
 
 import { AD_TIMEOUT, MIDGAME_GAP, type AdSlot, type Platform } from './types';
@@ -34,9 +37,11 @@ export interface GamePixSdk {
   lang?(): string;
   happyMoment?(name: string): void;
   sadMoment?(name: string): void;
-  /** legacy sound hooks: the portal calls these when set by the game */
+  /** legacy hooks: the portal calls these when set by the game */
   soundOff?: () => void;
   soundOn?: () => void;
+  pause?: () => void;
+  resume?: () => void;
 }
 
 declare global {
@@ -67,6 +72,8 @@ export class GamePixPlatform implements Platform {
   private paused = false;
   /** the portal asked for silence (soundOff), independent of pauses */
   private soundOff = false;
+  /** GamePix.lang(), read once in init */
+  private lang: string | null = null;
   private pending: Pending | null = null;
   muted = false;
   onMute: (m: boolean) => void = () => {};
@@ -76,24 +83,43 @@ export class GamePixPlatform implements Platform {
     const s = typeof window !== 'undefined' ? window.GamePix : undefined;
     if (s?.lifecycle && s.events && s.ads) {
       this.s = s;
+      // one handler per signal, shared by the SDK event and the legacy property (all idempotent)
+      const pause = () => this.onPause();
+      const resume = () => this.onResume();
+      const soundOff = () => this.setSound(false);
+      const soundOn = () => this.setSound(true);
       try {
-        s.events.on('pause', () => {
-          this.pending?.start();
-          this.setPaused('sdk', true);
-        });
-        s.events.on('resume', () => this.onResume());
+        s.events.on('pause', pause);
+        s.events.on('resume', resume);
       } catch {
         /* no events: play on */
       }
       try {
-        s.events.on('soundOff', () => this.setSound(false));
-        s.events.on('soundOn', () => this.setSound(true));
+        s.events.on('soundOff', soundOff);
+        s.events.on('soundOn', soundOn);
       } catch {
         /* older SDK: legacy hooks below */
       }
-      // legacy hooks (older SDKs call GamePix.soundOff() / GamePix.soundOn() when the game defines them)
-      if (typeof s.soundOff !== 'function') s.soundOff = () => this.setSound(false);
-      if (typeof s.soundOn !== 'function') s.soundOn = () => this.setSound(true);
+      // legacy hooks: the GamePix player checks (and older SDKs call) GamePix.soundOff / soundOn / pause / resume.
+      // Written as `window.GamePix.x = ...` on purpose: the minified bundle keeps the literal `GamePix.soundOff=`
+      // (the CI check greps for it).
+      try {
+        if (window.GamePix) {
+          window.GamePix.soundOff = soundOff;
+          window.GamePix.soundOn = soundOn;
+          window.GamePix.pause = pause;
+          window.GamePix.resume = resume;
+        }
+      } catch {
+        /* frozen SDK object: the events still work */
+      }
+      // the portal language, read once during boot (before loaded()); locale() returns this
+      try {
+        const l = window.GamePix && typeof window.GamePix.lang === 'function' ? window.GamePix.lang() : null;
+        this.lang = typeof l === 'string' && l ? l : null;
+      } catch {
+        this.lang = null;
+      }
     }
     if (typeof document !== 'undefined')
       document.addEventListener('visibilitychange', () => this.setPaused('hidden', document.hidden));
@@ -118,6 +144,7 @@ export class GamePixPlatform implements Platform {
 
   /** the SDK's pause / document hidden: pause the level + mute; idempotent */
   setPaused(reason: PauseReason, on: boolean) {
+    if (on === this.pausedBy.has(reason)) return;
     if (on) this.pausedBy.add(reason);
     else this.pausedBy.delete(reason);
     const p = this.pausedBy.size > 0;
@@ -129,6 +156,7 @@ export class GamePixPlatform implements Platform {
 
   /** the portal's sound setting: off mutes (no pause), on restores only if nothing else keeps the game silent */
   setSound(on: boolean) {
+    if (this.soundOff === !on) return;
     this.soundOff = !on;
     this.updateMute();
   }
@@ -141,17 +169,20 @@ export class GamePixPlatform implements Platform {
     this.onMute(m);
   }
 
+  /** the SDK's pause (event or legacy property): an ad that was requested has started; pause + mute */
+  private onPause() {
+    this.pending?.start();
+    this.setPaused('sdk', true);
+  }
+
   private onResume() {
     this.setPaused('sdk', false);
     this.pending?.resumed();
   }
 
+  /** GamePix.lang() as read once in init (null without the SDK or without a language) */
   locale() {
-    try {
-      return this.s?.lang?.() ?? null;
-    } catch {
-      return null;
-    }
+    return this.lang;
   }
   data() {
     return null;
