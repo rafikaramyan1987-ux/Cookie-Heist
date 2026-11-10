@@ -1,4 +1,4 @@
-// Load-time measurement: node scripts/perf/measure.mjs <dir> [runs] [--profile 4g|slow4g] [--json out.json]
+// Load-time measurement: node scripts/perf/measure.mjs <dir> [runs] [--profile 4g|slow4g] [--query k=v] [--json out.json]
 // Serves <dir> gzip-compressed (as portals / CDNs do) and loads it in Chromium with mid-range-phone throttling
 // (--profile 4g: 9 Mbps / 170 ms RTT, default; --profile slow4g: 1.6 Mbps / 150 ms; both with a 4x CPU slowdown),
 // 390x844 touch viewport, SwiftShader (software) WebGL. External requests (portal SDKs) are blocked so only the game's own bytes are measured.
@@ -21,6 +21,7 @@ const PROFILES = {
   // stress case: Lighthouse 'Slow 4G' (1.6 Mbps, 150 ms), 4x CPU
   'slow4g': { latency: 150, down: 1.6 * 1024 * 1024, up: 750 * 1024, cpu: 4 },
 };
+const query = args.includes('--query') ? args[args.indexOf('--query') + 1] : '';
 const prof = PROFILES[args.includes('--profile') ? args[args.indexOf('--profile') + 1] : '4g'];
 const jsonOut = args.includes('--json') ? args[args.indexOf('--json') + 1] : null;
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' };
@@ -52,10 +53,19 @@ for (let i = 0; i < runs; i++) {
   const files = new Set();
   cdp.on('Network.loadingFinished', (e) => (bytes += e.encodedDataLength));
   cdp.on('Network.responseReceived', (e) => e.response.url.startsWith('http') && files.add(new URL(e.response.url).pathname));
+  if (args.includes('--cpuprofile') && i === 0) {
+    await cdp.send('Profiler.enable');
+    await cdp.send('Profiler.setSamplingInterval', { interval: 500 });
+    await cdp.send('Profiler.start');
+  }
   const t0 = Date.now();
-  await page.goto(`${base}?low`, { waitUntil: 'commit' });
+  await page.goto(`${base}?low${query ? '&' + query : ''}`, { waitUntil: 'commit' });
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 300000, polling: 50 });
   const tti = Date.now() - t0;
+  if (args.includes('--cpuprofile') && i === 0) {
+    const { profile } = await cdp.send('Profiler.stop');
+    writeFileSync(args[args.indexOf('--cpuprofile') + 1], JSON.stringify(profile));
+  }
   const bytesTti = bytes;
   const fcp = await page.evaluate(() => performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? null);
   const marks = await page.evaluate(() => performance.getEntriesByType('mark').filter((m) => m.name.startsWith('ch:')).map((m) => `${m.name.slice(3)} ${Math.round(m.startTime)}`).join(', '));
@@ -73,6 +83,6 @@ const diskBytes = (d) => readdirSync(d).reduce((s, f) => {
   return s + (statSync(p).isDirectory() ? diskBytes(p) : statSync(p).size);
 }, 0);
 const raw = diskBytes(dir);
-const summary = { dir, runs, profile: prof, firstFrameMs: med('fcp'), interactiveMs: med('tti'), kbToInteractive: Math.round(med('bytesTti') / 1024), kbTotalTransferred: Math.round(med('bytesTotal') / 1024), kbOnDisk: Math.round(raw / 1024), files: results[0].files };
+const summary = { dir, runs, query, profile: prof, firstFrameMs: med('fcp'), interactiveMs: med('tti'), kbToInteractive: Math.round(med('bytesTti') / 1024), kbTotalTransferred: Math.round(med('bytesTotal') / 1024), kbOnDisk: Math.round(raw / 1024), files: results[0].files };
 console.log(JSON.stringify(summary, null, 2));
 if (jsonOut) writeFileSync(jsonOut, JSON.stringify(summary, null, 2) + '\n');

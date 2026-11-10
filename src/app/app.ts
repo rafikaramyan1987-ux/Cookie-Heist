@@ -140,8 +140,8 @@ export class App {
         if (sdk.autoResume && this.mode === 'paused') this.resume();
       }
     };
-    // the UI font: wait a little for it, never long (the loader is already on screen)
-    await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]);
+    // the UI font: wait a moment for it, never long (the loader is already on screen; text swaps in when it lands)
+    await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 250))]);
     performance.mark('ch:fonts');
     this.stage = createStage(this.canvas, { low: params.has('low') });
     performance.mark('ch:stage');

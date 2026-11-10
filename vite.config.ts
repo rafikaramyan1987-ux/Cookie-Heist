@@ -50,6 +50,21 @@ function bootStrings(): Plugin {
   };
 }
 
+/** multi-file builds: preload the two Fredoka weights the HUD / tutorial use, in parallel with the scripts */
+function preloadFonts(): Plugin {
+  return {
+    name: 'preload-fonts',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler: (_html, ctx) =>
+        Object.keys(ctx.bundle ?? {})
+          .filter((f) => /fredoka-latin-(600|700)-normal-.*\.woff2$/.test(f))
+          .map((f) => ({ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `./${f}`, crossorigin: '' }, injectTo: 'head' as const })),
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const platform = platformFor(mode);
   // CrazyGames / web: index.html (with the loading screen) + split, lazily loaded chunks — playable fast, smallest
@@ -57,7 +72,7 @@ export default defineConfig(({ mode }) => {
   const single = platform === 'gd' || platform === 'gamepix';
   return {
     base: './',
-    plugins: [bootStrings(), ...(platform === 'gamepix' ? [gamepixSdk()] : []), ...(single ? [viteSingleFile()] : [])],
+    plugins: [bootStrings(), ...(platform === 'gamepix' ? [gamepixSdk()] : []), ...(single ? [viteSingleFile()] : [preloadFonts()])],
     define: { __PLATFORM__: JSON.stringify(platform) },
     build: {
       target: 'es2020',

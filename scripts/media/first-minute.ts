@@ -1,7 +1,7 @@
 /**
  * Records a brand-new player's first 60 seconds at 390×844: the loading screen (real time, 4G throttling), then
  * night 1 with the in-game tutorial played with real joystick drags, the first end screen (next-unlock teaser +
- * daily reward), claiming day 1 of the calendar, and night 2 (the playtest bot plays it).
+ * daily reward), claiming day 1 of the calendar, night 2 (played by the playtest bot) and the menu.
  *   npx tsx scripts/media/first-minute.ts <base> <out.mp4>
  */
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -94,7 +94,14 @@ await hold(0.8);
 await page.locator('.result .next').click();
 await hold(2.2);
 await page.locator('.intro-ui').click({ force: true });
-await page.evaluate(() => window.__game.autopilot('good'));
+await page.evaluate(() => window.__game.autopilot('average'));
+for (let i = 0; i < 40 * FPS && (await mode()) !== 'result' && elapsed() < TOTAL - 6; i++) await step(1 / FPS);
+// the second end screen, then the menu (daily gift, missions progress, midnight snack)
+await hold(2.4);
+if ((await page.locator('.result .menu').count()) && elapsed() < TOTAL - 2) {
+  await page.locator('.result .menu').click();
+  await page.waitForFunction(() => window.__game.mode === 'title', null, { timeout: 30000 });
+}
 while (elapsed() < TOTAL) await step(1 / FPS);
 await browser.close();
 
