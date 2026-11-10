@@ -1,10 +1,11 @@
-// CrazyGames submission v3: the multi-file build in a zip that unzips to cookie-heist-v3/ (index.html + assets/).
+// CrazyGames submission: the multi-file build in a zip that unzips to <name>/ (index.html + assets/), default
+// cookie-heist-v3 (`node scripts/submission/build.mjs cookie-heist-v3.2` for the v3.2 update).
 // Run `npm run build` first. Covers: scripts/submission/covers-v3.mjs; trailers: scripts/submission/trailer-v3.mjs
 // (both need `npx vite preview --host 127.0.0.1 --port 4174` on the built dist).
 import { execFileSync } from 'node:child_process';
 import { cpSync, rmSync, mkdirSync, statSync, readdirSync } from 'node:fs';
 
-const name = 'cookie-heist-v3';
+const name = process.argv[2] ?? 'cookie-heist-v3';
 const tmp = '/tmp/claude-0/submission-cg';
 rmSync(tmp, { recursive: true, force: true });
 mkdirSync(tmp, { recursive: true });

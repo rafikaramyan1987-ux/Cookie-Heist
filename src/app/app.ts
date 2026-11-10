@@ -8,7 +8,7 @@ import { SKINS, CapId } from '../render/characters';
 import { HOUSES, HIDE } from '../game/level';
 import { GameHud } from '../ui/gameHud';
 import { buildIntro } from '../ui/intro';
-import { buildTitle } from '../ui/title';
+import { buildTitle, fitTitle } from '../ui/title';
 import { houseMap, shopScreen, dailyScreen, missionsScreen, settingsScreen, pauseScreen, winScreen, failScreen, retentionStrip } from '../ui/screens';
 import { Tutorial } from '../ui/tutorial';
 import { sparkle, phew, catchBurst, starRain } from '../ui/juice';
@@ -194,6 +194,7 @@ export class App {
     document.body.classList.toggle('portrait', this.h > this.w);
     this.stage.resize(this.w, this.h);
     this.title?.resize(this.w, this.h);
+    if (this.titleEl) fitTitle(this.titleEl, this.w, this.h);
     if (this.run) {
       this.run.scene.resize(this.w, this.h);
       this.run.hud.layout(this.w, this.h);
@@ -251,6 +252,10 @@ export class App {
       snack: this.save.tutorialDone ? snackAvailable(this.save) : undefined,
     });
     this.ui.appendChild(this.titleEl);
+    // logo and buttons never overlap: fit now, and again once the title font has loaded (it changes the sizes)
+    const fit = () => this.titleEl && fitTitle(this.titleEl, this.w, this.h);
+    fit();
+    void document.fonts?.ready.then(fit);
     this.stage.setScene(this.title.scene, this.title.camera);
     this.title.resize(this.w, this.h);
     this.titleEl.addEventListener('pointerdown', (e) => e.stopPropagation());

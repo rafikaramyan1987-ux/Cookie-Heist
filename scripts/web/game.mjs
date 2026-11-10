@@ -33,7 +33,7 @@ export default {
   icon: 'submission-gamepix/icon-512x512.png',
   /** 1280x720 shots of the web build; nights played by the built-in bot, the player's save is a returning player's */
   shots: [
-    { name: 'start: night 1 for a new player, with the in-game tutorial', query: '', run: async (f) => { await f.waitForFunction(() => window.__game?.mode === 'play'); await f.locator('.tutorial .tut-line').waitFor(); await f.waitForTimeout(3500); } },
+    { name: 'start: the title screen (menu) of a returning player', query: '', save: returning, run: async (f) => { await f.locator('.play-btn').waitFor(); await f.evaluate(() => document.fonts.ready); await f.waitForTimeout(6000); } },
     { name: 'mid-level: Family House, night 3', query: '?level=1-2&autoplay=good&notips&manual', save: returning, run: (f) => sim(f, 9) },
     { name: 'a mechanic: hiding in a laundry basket while a grown-up walks past', query: '?level=0-3&autoplay=good&notips&manual', save: returning, run: (f) => sim(f, 60, () => window.__game.run.world.player.hidden) },
     { name: 'win screen: night 1, three stars', query: '?level=0-0&autoplay=good&notips&manual', save: returning, run: async (f) => { await sim(f, 90, () => !!document.querySelector('.result.win')); await f.waitForTimeout(2600); } },

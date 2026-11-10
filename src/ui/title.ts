@@ -65,3 +65,89 @@ function cookieO() {
     <path d="M86 30 l8 -4 M88 44 l9 0" stroke="#fff4dc" stroke-width="5" stroke-linecap="round"/>
   </svg></span>`;
 }
+
+/** space kept between the logo, the top bar, the button column and the screen edges (px) */
+const FIT_GAP = 14;
+
+/**
+ * Fit the logo and the button column on the title screen so they never overlap and every button stays on screen,
+ * at any size and aspect. The logo keeps its CSS size and place when there is room; otherwise it shrinks into the
+ * space between the top bar and the buttons (the buttons shrink a little too when the logo would get too small). On
+ * short landscape screens (phones held sideways) the logo moves beside the button column. Call after the title is in
+ * the DOM and on every resize.
+ */
+export function fitTitle(el: HTMLElement, w: number, h: number) {
+  const logo = el.querySelector<HTMLElement>('.logo');
+  const top = el.querySelector<HTMLElement>('.title-top');
+  const bottom = el.querySelector<HTMLElement>('.title-bottom');
+  if (!logo || !top || !bottom) return;
+  const portrait = h > w;
+  const base = el.getBoundingClientRect();
+  // back to the CSS layout, then measure it
+  for (const e of [logo, bottom]) e.removeAttribute('style');
+  const rel = (r: DOMRect) => ({ l: r.left - base.left, t: r.top - base.top, r: r.right - base.left, b: r.bottom - base.top, w: r.width, h: r.height });
+  const topEnd = rel(top.getBoundingClientRect()).b + FIT_GAP;
+  const nb = rel(bottom.getBoundingClientRect());
+  const floor = nb.b; // the button column's bottom edge stays where the CSS puts it
+  const bw = bottom.offsetWidth,
+    bh = bottom.offsetHeight;
+
+  // the button column: never taller than the screen below the top bar, never wider than the screen
+  let sB = Math.min(1, (floor - topEnd) / bh, (portrait ? w - 2 * FIT_GAP : w - nb.l - FIT_GAP) / bw);
+  const placeBottom = (s: number) => {
+    bottom.style.transform = portrait ? `translateX(-50%) scale(${s})` : `scale(${s})`;
+    bottom.style.transformOrigin = portrait ? '50% 100%' : '0 100%';
+  };
+  // the logo, scaled about its own top-left (landscape) / top-centre (portrait) corner, then moved to (x, y)
+  const placeLogo = (s: number, x: number | null, y: number) => {
+    logo.style.transformOrigin = portrait ? '50% 0' : '0 0';
+    logo.style.transform = `${portrait ? 'translateX(-50%) ' : ''}rotate(-4deg) scale(${s})`;
+    logo.style.top = `${y}px`;
+    if (x !== null) logo.style.left = `${x}px`;
+    // the rotated box: shift it so its visible top sits at y
+    const r = rel(logo.getBoundingClientRect());
+    logo.style.top = `${y + (y - r.t)}px`;
+    if (x !== null) logo.style.left = `${x + (x - r.l)}px`;
+    return rel(logo.getBoundingClientRect());
+  };
+  /** the largest logo scale (≤ max) whose box fits the region, with the box's top-left at the region's top-left */
+  const fitLogo = (x: number | null, y: number, maxR: number, maxB: number, max = 1) => {
+    let s = max;
+    let r = placeLogo(s, x, y);
+    for (let i = 0; i < 6 && (r.b > maxB + 0.5 || r.r > maxR + 0.5); i++) {
+      s *= Math.min((maxB - y) / r.h, (maxR - r.l) / r.w) * 0.995;
+      r = placeLogo(s, x, y);
+    }
+    return { s, r };
+  };
+
+  placeBottom(sB);
+  let colTop = floor - bh * sB - FIT_GAP;
+  const natural = rel(logo.getBoundingClientRect());
+  // room as laid out by the CSS: nothing to do
+  if (sB === 1 && natural.t >= topEnd && natural.b <= colTop && natural.r <= w - FIT_GAP) return;
+
+  const maxR = w - FIT_GAP;
+  let fit = fitLogo(null, Math.max(topEnd, Math.min(natural.t, colTop - natural.h)), maxR, colTop);
+  // the logo got small: give it some of the buttons' height (down to 80 %)
+  if (fit.s < 0.7 && sB > 0.8) {
+    sB = Math.max(0.8, Math.min(sB, (floor - topEnd - FIT_GAP - fit.r.h * (0.7 / fit.s)) / bh));
+    placeBottom(sB);
+    colTop = floor - bh * sB - FIT_GAP;
+    fit = fitLogo(null, topEnd, maxR, colTop);
+  }
+  if (portrait || fit.s >= 0.45) return;
+
+  // short landscape screen: buttons on the left at full available height, logo centred in the space to their right
+  sB = Math.min(1, (floor - topEnd) / bh, (w * 0.55 - nb.l) / bw);
+  placeBottom(sB);
+  const colRight = nb.l + bw * sB + FIT_GAP;
+  const region = { l: colRight, t: topEnd, r: maxR, b: floor };
+  // beside the buttons the logo stays modest (it shares the screen with the scene)
+  const side = fitLogo(region.l, region.t, region.r, region.b, 0.65);
+  // centre it in the region
+  const dx = (region.r - side.r.r) / 2;
+  const dy = (region.b - side.r.b) / 2;
+  logo.style.left = `${parseFloat(logo.style.left) + dx}px`;
+  logo.style.top = `${parseFloat(logo.style.top) + dy}px`;
+}
