@@ -58,6 +58,8 @@ for (let i = 0; i < runs; i++) {
   const tti = Date.now() - t0;
   const bytesTti = bytes;
   const fcp = await page.evaluate(() => performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? null);
+  const marks = await page.evaluate(() => performance.getEntriesByType('mark').filter((m) => m.name.startsWith('ch:')).map((m) => `${m.name.slice(3)} ${Math.round(m.startTime)}`).join(', '));
+  if (marks) console.log(`  boot marks (ms since navigation): ${marks}`);
   await page.waitForTimeout(15000);
   results.push({ fcp: Math.round(fcp), tti, bytesTti, bytesTotal: bytes, files: [...files].sort() });
   console.log(`run ${i + 1}: first frame ${Math.round(fcp)} ms, interactive ${tti} ms, ${(bytesTti / 1024).toFixed(0)} KB to interactive, ${(bytes / 1024).toFixed(0)} KB total, ${files.size} files`);

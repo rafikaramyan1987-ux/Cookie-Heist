@@ -52,7 +52,8 @@ async function boot(page: Page, query = '', sdk: 'mock' | 'blocked' = 'mock') {
     } as typeof AudioContext;
   });
   await page.route(GD_SDK, (r) => (sdk === 'mock' ? r.fulfill({ contentType: 'application/javascript', body: MOCK }) : r.abort()));
-  await page.goto(`/?low&${query}`);
+  // ?menu: the returning-player path (first-time players go straight into the night-1 tutorial)
+  await page.goto(`/?low&menu&${query}`);
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 120_000 });
   return { errors, requests };
 }

@@ -12,7 +12,6 @@ import { buildTitle } from '../ui/title';
 import { houseMap, shopScreen, dailyScreen, missionsScreen, settingsScreen, pauseScreen, winScreen, failScreen, retentionStrip } from '../ui/screens';
 import { Tutorial } from '../ui/tutorial';
 import { sparkle, phew, catchBurst, starRain } from '../ui/juice';
-import { titleView } from '../art/titleView';
 import type { View } from '../art/view';
 import { InputCtl } from './input';
 import { audio } from './audio';
@@ -113,9 +112,11 @@ export class App {
   }
 
   async boot() {
+    performance.mark('ch:boot');
     loader.progress(0.3);
     await sdk.init(params.has('nosdk') ? 1 : 3500);
     sdk.loadingStart();
+    performance.mark('ch:sdk');
     loader.progress(0.5);
     this.save = loadSave();
     await useLang(this.save.lang ?? detectLang(sdk.locale()));
@@ -141,7 +142,9 @@ export class App {
     };
     // the UI font: wait a little for it, never long (the loader is already on screen)
     await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]);
+    performance.mark('ch:fonts');
     this.stage = createStage(this.canvas, { low: params.has('low') });
+    performance.mark('ch:stage');
     loader.progress(0.8);
     this.input.onAnyInput = () => audio.unlock();
     window.addEventListener('resize', () => this.resize());
@@ -166,9 +169,11 @@ export class App {
       await loadHouses();
       this.showTitle();
     }
+    performance.mark('ch:level');
     this.resize();
     // render the first frame before the loader fades
     this.tick(0);
+    performance.mark('ch:frame');
     sdk.loadingStop();
     loader.done();
     if (!this.capture) requestAnimationFrame(this.frame);
@@ -219,11 +224,18 @@ export class App {
       void loadHouses().then(() => this.showTitle());
       return;
     }
+    if (!this.title) {
+      // the 3D title scene is a lazy chunk (first-time players go straight into night 1)
+      void import('../art/titleView').then((m) => {
+        this.title ??= m.titleView();
+        this.showTitle();
+      });
+      return;
+    }
     this.disposeRun();
     this.clearUi();
     this.mode = 'title';
     sdk.gameplayStop();
-    if (!this.title) this.title = titleView();
     this.title.overlay?.forEach((o) => o.remove());
     const [h, i] = this.nextLevel();
     this.titleEl = buildTitle({

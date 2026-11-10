@@ -6,4 +6,6 @@ export interface View {
   overlay?: HTMLElement[];
   resize(w: number, h: number): void;
   update(dt: number, t: number, w: number, h: number): void;
+  /** bloom strength override (store covers) */
+  bloom?: number;
 }

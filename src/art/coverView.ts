@@ -4,9 +4,19 @@ import type { View } from './view';
 /** Store cover: the title scene at its best moment + logo only (top-left corner kept clear). */
 export function coverView(): View {
   const v = titleView();
+  const logo = coverLogo();
+  return coverWith(v, logo);
+}
+
+/** the "COOKIE HEIST" title block of the store covers (no other text) */
+export function coverLogo() {
   const logo = document.createElement('div');
   logo.className = 'cover-logo';
   logo.innerHTML = `<div class="logo"><div class="logo-line l1"><span>C</span><span class="cookie-o">${COOKIE}</span><span>O</span><span>K</span><span>I</span><span>E</span></div><div class="logo-line l2"><span>H</span><span>E</span><span>I</span><span>S</span><span>T</span></div></div>`;
+  return logo;
+}
+
+function coverWith(v: View, logo: HTMLElement): View {
   return {
     ...v,
     overlay: [logo],

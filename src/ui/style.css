@@ -560,3 +560,10 @@ body.shake #game { animation: shake .5s ease-out; }
 .goal-line svg { width: 24px; height: 24px; }
 .hud.portrait .goal-line { top: calc(108px + var(--safe-t)); font-size: 13px; }
 :lang(ru) body, :lang(ru) button, :lang(pl) button, :lang(tr) button { font-family: Fredoka, 'Nunito', 'Arial Rounded MT Bold', system-ui, sans-serif; }
+.side-btn > span { min-width: 0; flex: 1 1 auto; }
+.side-btn b, .side-btn small { overflow-wrap: anywhere; hyphens: auto; }
+
+/* ---------- v3 covers: poster grade (saturated, contrasty), title only ---------- */
+body[data-view='cover3'] #game { filter: saturate(1.35) contrast(1.08) brightness(1.04); }
+body[data-view='cover3'] .cover-logo .logo { right: 3.5%; bottom: 6%; transform: rotate(-4deg); }
+body[data-view='cover3'] .cover-logo.square .logo, body[data-view='cover3'] .cover-logo.tall .logo { right: 50%; bottom: 4%; transform: translateX(50%) rotate(-4deg); }

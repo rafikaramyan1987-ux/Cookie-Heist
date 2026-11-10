@@ -21,6 +21,7 @@ if (viewName) void artView(viewName);
 else void new App().boot();
 
 async function artView(name: string) {
+  document.getElementById('boot')?.remove();
   const frozen = params.has('t') ? parseFloat(params.get('t')!) : null;
   await document.fonts.ready;
   const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -37,6 +38,12 @@ async function artView(name: string) {
     case 'cover':
       view = (await import('./art/coverView')).coverView();
       break;
+    case 'cover3': {
+      const v = (params.get('v') ?? 'A').toUpperCase() as 'A' | 'B' | 'C';
+      view = { ...(await import('./art/cover3View')).cover3View(v), overlay: [(await import('./art/coverView')).coverLogo()] };
+      document.body.dataset.variant = v;
+      break;
+    }
     case 'level':
     case 'hud':
       view = (await import('./art/levelView')).levelView(name === 'hud');
@@ -46,6 +53,7 @@ async function artView(name: string) {
   }
   document.body.dataset.view = name;
   view.overlay?.forEach((el) => ui.appendChild(el));
+  if (view.bloom !== undefined) stage.bloom.strength = view.bloom;
   stage.setScene(view.scene, view.camera);
   const resize = () => {
     const w = window.innerWidth,
