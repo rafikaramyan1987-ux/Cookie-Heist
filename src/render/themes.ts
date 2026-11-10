@@ -17,7 +17,6 @@ import {
 /** Per-house look: diorama base, exterior, outside decoration, sky. */
 export interface HouseTheme {
   id: HouseId;
-  name: { en: string; fr: string };
   slabTop: number;
   slabSide: number;
   slabEdge: number;
@@ -32,7 +31,6 @@ export interface HouseTheme {
 export const THEMES: Record<HouseId, HouseTheme> = {
   apartment: {
     id: 'apartment',
-    name: { en: 'City Apartment', fr: 'Appartement en ville' },
     slabTop: 0x6c6f8f,
     slabSide: 0x3b3d5c,
     slabEdge: 0x8a8db0,
@@ -45,7 +43,6 @@ export const THEMES: Record<HouseId, HouseTheme> = {
   },
   family: {
     id: 'family',
-    name: { en: 'Family House', fr: 'Maison familiale' },
     slabTop: 0x3f8f6a,
     slabSide: 0x6b4434,
     slabEdge: 0x56a77d,
@@ -58,7 +55,6 @@ export const THEMES: Record<HouseId, HouseTheme> = {
   },
   cottage: {
     id: 'cottage',
-    name: { en: "Grandma's Cottage", fr: 'La chaumière de Mamie' },
     slabTop: 0x5a9a54,
     slabSide: 0x6b4a34,
     slabEdge: 0x77b46a,
@@ -71,7 +67,6 @@ export const THEMES: Record<HouseId, HouseTheme> = {
   },
   chalet: {
     id: 'chalet',
-    name: { en: 'Snowy Chalet', fr: 'Chalet enneigé' },
     slabTop: 0xeef4ff,
     slabSide: 0x5d6a8a,
     slabEdge: 0xffffff,
@@ -84,7 +79,6 @@ export const THEMES: Record<HouseId, HouseTheme> = {
   },
   mansion: {
     id: 'mansion',
-    name: { en: 'Grand Mansion', fr: 'Le grand manoir' },
     slabTop: 0x3b7a52,
     slabSide: 0x4a4458,
     slabEdge: 0xd8d0c0,

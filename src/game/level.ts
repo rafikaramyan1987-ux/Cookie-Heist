@@ -352,6 +352,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
       speed: g.speed ?? 1,
       delay: g.delay ?? 0,
       sight: g.sight ?? 1,
+      cue: !!g.cue,
     };
   });
 
@@ -379,7 +380,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
   const def: LevelDef = {
     id,
     house,
-    name: { en: src.name[0], fr: src.name[1] },
+    nameKey: `lv_${house}_${index + 1}`,
     w,
     d,
     rooms,
@@ -403,7 +404,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
     house,
     houseIndex: HOUSES.indexOf(house),
     index,
-    name: src.name,
+    nameKey: `lv_${house}_${index + 1}`,
     w,
     d,
     room,

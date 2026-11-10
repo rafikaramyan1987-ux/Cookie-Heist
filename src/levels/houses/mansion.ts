@@ -48,13 +48,11 @@ const M2: Plan = {
 
 export const MANSION: LevelSrc[] = [
   night(M1, {
-    name: ['Welcome to the Manor', 'Bienvenue au manoir'],
     put: 'j 0,0; c 9,3',
     guards: [{ k: 'vacuum', p: '1,4 9,5', w: 1 }],
     par: 35,
   }),
   night(M1, {
-    name: ['The Butler’s Night Off', 'Le soir de congé du majordome'],
     boost: 1.3,
     put: 'j 0,0; c 7,1; Q 3,5',
     guards: [
@@ -65,7 +63,6 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M1, {
     pace: 0.85,
-    name: ['Library Shadows', 'Ombres de la bibliothèque'],
     boost: 1.3,
     put: 'j 0,0; c 3,8; s 5,6; c 8,5',
     guards: [
@@ -75,7 +72,6 @@ export const MANSION: LevelSrc[] = [
     par: 45,
   }),
   night(M1, {
-    name: ['Ballroom Dash', 'Course dans la salle de bal'],
     put: 'j 1,0; c 10,1; c 6,3; Q 8,5',
     guards: [
       { k: 'dad', p: '5,1 9,3', w: 2.5, speed: 0.6 },
@@ -85,7 +81,6 @@ export const MANSION: LevelSrc[] = [
     toys: 1,
   }),
   night(M2, {
-    name: ['Grand Gallery', 'La grande galerie'],
     boost: 1.3,
     put: 'j 1,0; c 11,1; Q 6,3; c 7,4',
     guards: [
@@ -98,7 +93,6 @@ export const MANSION: LevelSrc[] = [
     pace: 1.32,
     sight: 1.15,
     toys: 1,
-    name: ['The Silver Key', "La clé d'argent"],
     boost: 1.3,
     put: 'j 1,0; k 10,7; c 3,2',
     doors: '2,3nL 5,1wL',
@@ -111,7 +105,6 @@ export const MANSION: LevelSrc[] = [
   night(M2, {
     pace: 1.15,
     linger: 0.7,
-    name: ['Midnight Bell', 'La cloche de minuit'],
     put: 'j 1,0; c 11,2; p 9,6; Q 6,4',
     bedCheck: 50,
     guards: [
@@ -122,7 +115,6 @@ export const MANSION: LevelSrc[] = [
     toys: 1,
   }),
   night(M2, {
-    name: ['Chandelier Glow', 'La lueur du lustre'],
     boost: 1.4,
     put: 'j 1,0; c 11,1; s 3,4; Q 9,4; c 6,4',
     guards: [
@@ -135,7 +127,6 @@ export const MANSION: LevelSrc[] = [
   night(M1, {
     pace: 1.15,
     linger: 1.3,
-    name: ['Everyone’s Awake', 'Tout le monde est debout'],
     put: 'j 0,0; c 10,3; Q 5,5; ~ 3,4 7,5',
     guards: [
       { k: 'mum', p: '0,5 10,5', w: 2, speed: 0.75 },
@@ -147,7 +138,6 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M1, {
     linger: 0.7,
-    name: ['Secret Passage', 'Passage secret'],
     put: 'j 0,0; k 9,11; g 10,1; c 6,3; Q 5,5',
     doors: '4,1wL',
     guards: [
@@ -160,7 +150,6 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M2, {
     linger: 1.3,
-    name: ['Masquerade', 'Bal masqué'],
     boost: 1.3,
     put: 'j 1,0; k 10,7; c 11,2; p 0,6; Q 6,4',
     doors: '5,1wL',
@@ -175,7 +164,6 @@ export const MANSION: LevelSrc[] = [
   }),
   night(M2, {
     pace: 1.5,
-    name: ['Grand Finale', 'La grande finale'],
     put: 'j 1,0; c 11,2; c 0,7; p 6,8; s 3,5; Q 6,4; Q 0,4; ~ 9,3',
     bedCheck: 100,
     guards: [

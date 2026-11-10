@@ -2,6 +2,12 @@ import * as THREE from 'three';
 import { makeCharacter, animateRig, optimizeRig, SKINS, CapId, Rig } from '../render/characters';
 import { ball, rbox, cyl, mesh, torusGeo } from '../render/geom';
 import { toon } from '../render/toon';
+import { PREVIEWS } from '../levels/previews';
+import { buildHouse } from '../render/house';
+import { THEMES } from '../render/themes';
+import { fitDiorama } from '../render/camera';
+import { nightLights } from '../render/stage';
+import type { HouseId } from '../levels/types';
 
 /**
  * Shop visuals: a rotating 3D Pip wearing the tried-on pyjamas / cap / trail, and rendered thumbnails
@@ -166,6 +172,35 @@ export class PipPreview {
     this.renderer.render(scene, cam);
     const url = this.canvas.toDataURL('image/png');
     this.thumbs.set(key, url);
+    return url;
+  }
+
+  /** a still render of a house's corner diorama (next-unlock teaser), w×h px, cached */
+  houseThumb(id: HouseId, w = 240, h = 150): string {
+    const key = `house:${id}:${w}x${h}`;
+    const hit = this.thumbs.get(key);
+    if (hit) return hit;
+    const scene = new THREE.Scene();
+    const def = PREVIEWS[id];
+    const house = buildHouse(def, THEMES[id], { outside: false });
+    scene.add(house.root);
+    // a tiny Pip sneaking in the corner, wearing the starry pyjamas
+    const kid = makeCharacter('kid', SKINS[0]);
+    optimizeRig(kid);
+    kid.mode = 'tiptoe';
+    animateRig(kid, 0.016, 0.4);
+    kid.root.position.set(def.w * 0.45, 0, def.d * 0.62);
+    kid.root.rotation.y = 0.6;
+    scene.add(kid.root);
+    const c = new THREE.Vector3(def.w / 2, 0, def.d / 2);
+    nightLights(scene, { size: Math.max(def.w, def.d) * 1.6, center: c, moon: 1.3, fill: 1.4 }).moon.castShadow = false;
+    const cam = new THREE.PerspectiveCamera(30, w / h, 0.1, 200);
+    fitDiorama(cam, new THREE.Vector3(0, 0, 0), new THREE.Vector3(def.w, 0, def.d), w / h, { margin: [0.03, 0.03, 0.03, 0.03], yaw: -0.5 });
+    this.renderer.setSize(w, h, false);
+    this.renderer.render(scene, cam);
+    const url = this.canvas.toDataURL('image/png');
+    this.thumbs.set(key, url);
+    scene.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
     return url;
   }
 

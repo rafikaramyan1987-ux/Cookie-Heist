@@ -19,14 +19,12 @@ const C2: Plan = {
 
 export const COTTAGE: LevelSrc[] = [
   night(C1, {
-    name: ["Nana's Lamp", 'La lampe de Mamie'],
     put: 'j 0,0; c 7,2',
     guards: [{ k: 'grandma', p: '6,5 0,5', w: 1.05, speed: 1.1 }],
     par: 30,
     tip: 'grandma',
   }),
   night(C1, {
-    name: ['Sleepy Nana', 'Mamie dort'],
     put: 'j 0,0; c 7,7; ~ 5,7 5,5',
     guards: [
       { k: 'grandma', p: '6,9', sleep: true, face: 270 },
@@ -35,7 +33,6 @@ export const COTTAGE: LevelSrc[] = [
     par: 30,
   }),
   night(C1, {
-    name: ['Tea Time', "L'heure du thé"],
     put: 'j 3,0; c 7,3',
     guards: [
       { k: 'grandma', p: '1,1 6,1', w: 2, speed: 0.9 },
@@ -47,7 +44,6 @@ export const COTTAGE: LevelSrc[] = [
     pace: 1.95,
     linger: 0.49,
     sight: 1.3,
-    name: ['Moonlit Parlour', 'Salon au clair de lune'],
     boost: 1.3,
     put: 'j 0,0; c 7,3; s 5,3',
     guards: [
@@ -58,7 +54,6 @@ export const COTTAGE: LevelSrc[] = [
   night(C2, {
     pace: 1.5,
     linger: 0.91,
-    name: ["Nana's Pantry Key", 'La clé du garde-manger'],
     boost: 1.6,
     put: 'j 1,0; k 3,7; c 3,2; c 8,3',
     doors: '2,3nL 5,1wL',
@@ -66,7 +61,6 @@ export const COTTAGE: LevelSrc[] = [
     par: 45,
   }),
   night(C2, {
-    name: ['Cat Nap Corridor', 'Le couloir du chat'],
     boost: 1.6,
     put: 'j 1,0; c 9,2; Q 4,3; c 6,3',
     guards: [
@@ -78,7 +72,6 @@ export const COTTAGE: LevelSrc[] = [
   }),
   night(C2, {
     pace: 1.5,
-    name: ['Mum Visits', 'Maman en visite'],
     boost: 1.3,
     put: 'j 1,0; c 9,1; ~ 3,4 6,3; c 4,4',
     guards: [
@@ -98,7 +91,6 @@ export const COTTAGE: LevelSrc[] = [
   night(C2, {
     pace: 1.72,
     linger: 1.3,
-    name: ['Laundry Day', 'Jour de lessive'],
     boost: 1.6,
     put: 'j 1,0; c 8,11; Q 4,4; Q 0,8; Q 9,3; c 5,6',
     guards: [{ k: 'grandma', p: '1,3 8,3 8,7 1,7 1,3', w: 1, speed: 0.75 }],
@@ -106,7 +98,6 @@ export const COTTAGE: LevelSrc[] = [
   }),
   night(C1, {
     pace: 1.5,
-    name: ['Night Owls', 'Oiseaux de nuit'],
     boost: 1.3,
     put: 'j 0,0; c 7,1; ~ 2,5 6,5',
     guards: [
@@ -119,7 +110,6 @@ export const COTTAGE: LevelSrc[] = [
   night(C1, {
     linger: 0.7,
     sight: 1.3,
-    name: ['Two Lamps', 'Deux lampes'],
     put: 'j 2,0; c 4,1; Q 7,4; c 4,5',
     guards: [
       { k: 'grandma', p: '3,6 7,5', w: 2.5, speed: 0.6 },
@@ -129,7 +119,6 @@ export const COTTAGE: LevelSrc[] = [
     toys: 2,
   }),
   night(C2, {
-    name: ['Cosy Chaos', 'Joyeux désordre'],
     put: 'j 1,0; k 3,7; c 9,1; Q 4,3; c 7,4',
     doors: '5,1wL',
     guards: [
@@ -143,7 +132,6 @@ export const COTTAGE: LevelSrc[] = [
   night(C2, {
     linger: 1.3,
     sight: 1.15,
-    name: ['Cottage Finale', 'Finale de la chaumière'],
     put: 'j 1,0; k 0,7; g 9,2; c 4,11; s 2,5; Q 4,3; Q 0,3',
     doors: '2,3nL',
     dark: '',

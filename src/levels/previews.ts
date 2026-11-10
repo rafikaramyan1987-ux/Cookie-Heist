@@ -1,10 +1,10 @@
 import type { HouseId, LevelDef } from './types';
 
 /** Small corner dioramas showing each house's look (art test). */
-const base = (house: HouseId, name: string, fr: string): Pick<LevelDef, 'id' | 'house' | 'name' | 'bed' | 'start' | 'creaky' | 'guards' | 'open' | 'cookies'> => ({
+const base = (house: HouseId): Pick<LevelDef, 'id' | 'house' | 'nameKey' | 'bed' | 'start' | 'creaky' | 'guards' | 'open' | 'cookies'> => ({
   id: 'preview-' + house,
   house,
-  name: { en: name, fr },
+  nameKey: `house_${house}`,
   bed: { x: -1, z: -1 },
   start: [1, 1],
   creaky: [],
@@ -15,7 +15,7 @@ const base = (house: HouseId, name: string, fr: string): Pick<LevelDef, 'id' | '
 
 export const PREVIEWS: Record<HouseId, LevelDef> = {
   apartment: {
-    ...base('apartment', 'City Apartment', 'Appartement en ville'),
+    ...base('apartment'),
     w: 5,
     d: 4,
     rooms: [{ id: 'living', x: 0, z: 0, w: 5, d: 4, floor: 'parquet', wall: 'paintGrey' }],
@@ -35,7 +35,7 @@ export const PREVIEWS: Record<HouseId, LevelDef> = {
     ],
   },
   family: {
-    ...base('family', 'Family House', 'Maison familiale'),
+    ...base('family'),
     w: 5,
     d: 4,
     rooms: [{ id: 'kitchen', x: 0, z: 0, w: 5, d: 4, floor: 'checker', wall: 'stripesCream' }],
@@ -54,7 +54,7 @@ export const PREVIEWS: Record<HouseId, LevelDef> = {
     ],
   },
   cottage: {
-    ...base('cottage', "Grandma's Cottage", 'La chaumière de Mamie'),
+    ...base('cottage'),
     w: 5,
     d: 4,
     rooms: [{ id: 'parlour', x: 0, z: 0, w: 5, d: 4, floor: 'pine', wall: 'floral' }],
@@ -70,7 +70,7 @@ export const PREVIEWS: Record<HouseId, LevelDef> = {
     ],
   },
   chalet: {
-    ...base('chalet', 'Snowy Chalet', 'Chalet enneigé'),
+    ...base('chalet'),
     w: 5,
     d: 4,
     rooms: [{ id: 'lodge', x: 0, z: 0, w: 5, d: 4, floor: 'oak', wall: 'logs' }],
@@ -89,7 +89,7 @@ export const PREVIEWS: Record<HouseId, LevelDef> = {
     ],
   },
   mansion: {
-    ...base('mansion', 'Grand Mansion', 'Le grand manoir'),
+    ...base('mansion'),
     w: 5,
     d: 4,
     rooms: [{ id: 'hall', x: 0, z: 0, w: 5, d: 4, floor: 'marble', wall: 'damask' }],

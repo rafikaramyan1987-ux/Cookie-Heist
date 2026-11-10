@@ -4,7 +4,7 @@ import type { LevelDef } from './types';
 export const ART_LEVEL: LevelDef = {
   id: 'art-family',
   house: 'family',
-  name: { en: 'Midnight Snack', fr: 'Petit creux de minuit' },
+  nameKey: 'lv_snack_1',
   w: 9,
   d: 14,
   rooms: [

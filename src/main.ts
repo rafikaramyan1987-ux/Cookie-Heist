@@ -1,6 +1,10 @@
 import '@fontsource/fredoka/latin-400.css';
 import '@fontsource/fredoka/latin-600.css';
 import '@fontsource/fredoka/latin-700.css';
+// Polish / Turkish letters (downloaded only when such text is on screen: unicode-range)
+import '@fontsource/fredoka/latin-ext-400.css';
+import '@fontsource/fredoka/latin-ext-600.css';
+import '@fontsource/fredoka/latin-ext-700.css';
 import './ui/style.css';
 import { createStage } from './render/stage';
 import type { View } from './art/view';

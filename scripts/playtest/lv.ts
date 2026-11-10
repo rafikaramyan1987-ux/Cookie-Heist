@@ -1,4 +1,4 @@
-import { getLevel } from '../../src/levels/index';
+import { getLevel } from '../../src/levels/all';
 import { World } from '../../src/game/world';
 import { Bot, PROFILES } from '../../src/game/bot';
 const [h, i, prof, only] = process.argv.slice(2);

@@ -29,14 +29,6 @@ export const SHOP: ShopItem[] = [
   { id: 'trail:bubbles', kind: 'trail', key: 'bubbles', price: 350 },
 ];
 
-export const TRAIL_NAMES: Record<string, { en: string; fr: string }> = {
-  none: { en: 'No trail', fr: 'Aucune' },
-  crumbs: { en: 'Crumbs', fr: 'Miettes' },
-  stars: { en: 'Stardust', fr: 'Poussière d’étoiles' },
-  hearts: { en: 'Hearts', fr: 'Cœurs' },
-  bubbles: { en: 'Bubbles', fr: 'Bulles' },
-};
-
 export function buy(save: SaveData, item: ShopItem): boolean {
   if (save.owned.includes(item.id) || save.coins < item.price) return false;
   save.coins -= item.price;
@@ -81,25 +73,91 @@ export function levelCoins(stars: number, firstTime: boolean, cookies: number): 
   return firstTime ? base : Math.round(base / 2);
 }
 
-// ------------------------------------------------------------------ daily reward
+// ------------------------------------------------------------------ daily reward calendar (7 days, growing)
+/** coins for days 1–7; day 7 is the Golden Moon pyjama (coins instead once it is owned) */
 export const DAILY = [50, 75, 100, 125, 150, 200, 300];
+export const DAILY_SKIN = 'skin:moon';
+
+export interface DailyReward {
+  day: number; // 1..7
+  coins: number;
+  skin?: string;
+}
 
 export const today = (d = new Date()) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+const yesterday = (now: Date) => {
+  const y = new Date(now);
+  y.setDate(y.getDate() - 1);
+  return today(y);
+};
 
 export function dailyAvailable(save: SaveData, now = new Date()) {
   return save.daily.last !== today(now);
 }
 
-/** Returns the coins granted (0 if already claimed today). */
-export function claimDaily(save: SaveData, now = new Date()): number {
-  if (!dailyAvailable(save, now)) return 0;
-  const y = new Date(now);
-  y.setDate(y.getDate() - 1);
-  const streak = save.daily.last === today(y) ? save.daily.streak + 1 : 1;
-  const coins = DAILY[(streak - 1) % DAILY.length];
+/** the streak as it stands now: claimed today or yesterday keeps it, otherwise it is broken (0) */
+export function currentStreak(save: SaveData, now = new Date()) {
+  return save.daily.last === today(now) || save.daily.last === yesterday(now) ? save.daily.streak : 0;
+}
+
+/** what day `n` (1..7) of the calendar gives */
+export function rewardFor(save: SaveData, day: number): DailyReward {
+  if (day === 7 && !save.owned.includes(DAILY_SKIN)) return { day, coins: 0, skin: DAILY_SKIN };
+  return { day, coins: DAILY[day - 1] };
+}
+
+/** the calendar day the next claim lands on (1..7) */
+export function nextDailyDay(save: SaveData, now = new Date()) {
+  // claimed today: tomorrow's day; not yet: today's (the streak continues from yesterday, or restarts at day 1)
+  return (currentStreak(save, now) % 7) + 1;
+}
+
+/** reward of the next claim: today's if still unclaimed, else tomorrow's */
+export function nextDaily(save: SaveData, now = new Date()): DailyReward & { today: boolean } {
+  return { ...rewardFor(save, nextDailyDay(save, now)), today: dailyAvailable(save, now) };
+}
+
+/** claim today's reward (null if already claimed today); a pyjama is owned and equipped */
+export function claimDaily(save: SaveData, now = new Date()): DailyReward | null {
+  if (!dailyAvailable(save, now)) return null;
+  const streak = save.daily.last === yesterday(now) ? save.daily.streak + 1 : 1;
+  const r = rewardFor(save, ((streak - 1) % 7) + 1);
   save.daily = { last: today(now), streak };
-  save.coins += coins;
-  return coins;
+  save.coins += r.coins;
+  if (r.skin && !save.owned.includes(r.skin)) {
+    save.owned.push(r.skin);
+    save.skin = r.skin.split(':')[1];
+  }
+  return r;
+}
+
+// ------------------------------------------------------------------ midnight snack (bonus night, once a day)
+export const SNACK_VARIANTS = 3;
+export const SNACK_COINS = 15;
+export function snackAvailable(save: SaveData, now = new Date()) {
+  return save.tutorialDone && save.snack !== today(now);
+}
+/** today's snack variant (0..2), rotating daily */
+export function snackIndex(now = new Date()) {
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now.getTime() - start.getTime()) / 86_400_000) % SNACK_VARIANTS;
+}
+
+// ------------------------------------------------------------------ next-unlock teaser
+export type Teaser = { kind: 'house'; house: number; n: number } | { kind: 'skin'; key: string; n: number };
+
+/**
+ * What the player unlocks next: the next locked house (nights left to finish before it opens), else the cheapest
+ * pyjama not yet owned and not yet affordable (coins left). null when nothing is left to unlock.
+ */
+export function nextUnlock(save: SaveData, isDone: (h: number, i: number) => boolean, houses: number, perHouse: number): Teaser | null {
+  let left = 0;
+  for (let h = 0; h < houses; h++) {
+    if (h > 0 && !isDone(h - 1, perHouse - 1)) return { kind: 'house', house: h, n: left };
+    for (let i = 0; i < perHouse; i++) if (!isDone(h, i)) left++;
+  }
+  const skin = SHOP.filter((it) => it.kind === 'skin' && !save.owned.includes(it.id) && it.price > save.coins).sort((a, b) => a.price - b.price)[0];
+  return skin ? { kind: 'skin', key: skin.key, n: skin.price - save.coins } : null;
 }
 
 // ------------------------------------------------------------------ missions
@@ -132,6 +190,14 @@ export function ensureMissions(save: SaveData, now = new Date()) {
 
 export function progressMission(save: SaveData, id: MissionId, amount: number) {
   for (const m of save.missions.list) if (m.id === id && !m.claimed) m.progress = Math.min(m.n, m.progress + amount);
+}
+
+/** missions summary for the menu: claimed-or-done count and overall progress 0..1 */
+export function missionsProgress(save: SaveData) {
+  const l = save.missions.list;
+  const done = l.filter((m) => m.progress >= m.n).length;
+  const frac = l.length ? l.reduce((a, m) => a + Math.min(1, m.progress / m.n), 0) / l.length : 0;
+  return { done, total: l.length, frac, claimable: l.filter((m) => m.progress >= m.n && !m.claimed).length };
 }
 
 export function claimMission(save: SaveData, i: number): number {

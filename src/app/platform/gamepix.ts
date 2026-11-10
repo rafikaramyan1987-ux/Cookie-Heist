@@ -5,6 +5,9 @@
  *   first level starts
  * - `pause` / `resume` SDK events and document visibility (hidden / visible): pause the level and mute all audio;
  *   resume restores audio only through the player's own sound settings. Idempotent, reasons are tracked separately.
+ * - `soundOff` / `soundOn` SDK events (and the legacy `GamePix.soundOff()` / `GamePix.soundOn()` hooks): soundOff
+ *   mutes without pausing; soundOn lifts only the portal's sound-off — audio comes back only when no pause or ad is
+ *   active, and then through the player's own sound / music settings. Idempotent.
  * - interstitials (`GamePix.ads.interstitial()`) only at natural breaks after a click (Next / Retry / Menu on the
  *   result screens), at most one per ~2 minutes (none in the first ~2 minutes after loading); never during a level,
  *   one at a time. No pre-roll (the Play slot continues at once).
@@ -26,11 +29,14 @@ export interface GamePixAdResult {
 }
 export interface GamePixSdk {
   lifecycle: { loading(p: number): void; loaded(): Promise<unknown>; gameStart(): void };
-  events: { on(name: 'pause' | 'resume', fn: () => void): void };
+  events: { on(name: 'pause' | 'resume' | 'soundOff' | 'soundOn', fn: () => void): void };
   ads: { interstitial(): Promise<GamePixAdResult>; reward(): Promise<GamePixAdResult> };
   lang?(): string;
   happyMoment?(name: string): void;
   sadMoment?(name: string): void;
+  /** legacy sound hooks: the portal calls these when set by the game */
+  soundOff?: () => void;
+  soundOn?: () => void;
 }
 
 declare global {
@@ -59,6 +65,8 @@ export class GamePixPlatform implements Platform {
   private lastMidgame = Date.now(); // no interstitial right after loading (as in the other builds)
   private pausedBy = new Set<PauseReason>();
   private paused = false;
+  /** the portal asked for silence (soundOff), independent of pauses */
+  private soundOff = false;
   private pending: Pending | null = null;
   muted = false;
   onMute: (m: boolean) => void = () => {};
@@ -77,6 +85,15 @@ export class GamePixPlatform implements Platform {
       } catch {
         /* no events: play on */
       }
+      try {
+        s.events.on('soundOff', () => this.setSound(false));
+        s.events.on('soundOn', () => this.setSound(true));
+      } catch {
+        /* older SDK: legacy hooks below */
+      }
+      // legacy hooks (older SDKs call GamePix.soundOff() / GamePix.soundOn() when the game defines them)
+      if (typeof s.soundOff !== 'function') s.soundOff = () => this.setSound(false);
+      if (typeof s.soundOn !== 'function') s.soundOn = () => this.setSound(true);
     }
     if (typeof document !== 'undefined')
       document.addEventListener('visibilitychange', () => this.setPaused('hidden', document.hidden));
@@ -106,9 +123,22 @@ export class GamePixPlatform implements Platform {
     const p = this.pausedBy.size > 0;
     if (p === this.paused) return;
     this.paused = p;
-    this.muted = p;
-    this.onMute(p);
+    this.updateMute();
     this.onAdPause(p);
+  }
+
+  /** the portal's sound setting: off mutes (no pause), on restores only if nothing else keeps the game silent */
+  setSound(on: boolean) {
+    this.soundOff = !on;
+    this.updateMute();
+  }
+
+  /** silent while paused, while an ad plays, or while the portal's sound is off; reports changes only */
+  private updateMute() {
+    const m = this.paused || this.soundOff || !!this.pending?.started;
+    if (m === this.muted) return;
+    this.muted = m;
+    this.onMute(m);
   }
 
   private onResume() {
@@ -193,6 +223,7 @@ export class GamePixPlatform implements Platform {
         clearTimeout(grace);
         if (this.pending === pending) this.pending = null;
         this.setPaused('sdk', false);
+        this.updateMute();
         res(ok);
       };
       const pending: Pending = {
@@ -201,6 +232,7 @@ export class GamePixPlatform implements Platform {
         start: () => {
           pending.started = true;
           clearTimeout(timer);
+          this.updateMute();
         },
         resumed: () => {
           if (!pending.started || done || grace !== undefined) return;

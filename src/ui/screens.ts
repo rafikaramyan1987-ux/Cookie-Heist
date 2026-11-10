@@ -1,12 +1,11 @@
 import { ICONS } from './icons';
-import { t, getLang } from '../app/i18n';
-import { SHOP, ShopItem, TRAIL_NAMES, DAILY, MISSION_KEY, dailyAvailable, BOOSTS, BoostId } from '../app/meta';
-import { sharedPreview } from './pipPreview';
+import { t, getLang, LANGS, type Lang } from '../app/i18n';
+import { SHOP, ShopItem, MISSION_KEY, BOOSTS, BoostId, rewardFor, currentStreak, nextDailyDay, dailyAvailable, type DailyReward } from '../app/meta';
+import { preview as sharedPreview } from './previewHandle';
 import { adUnavailable } from './adButton';
 export { adUnavailable };
 import type { Key } from '../app/i18n';
 import type { SaveData } from '../app/save';
-import { SKINS, CAPS } from '../render/characters';
 import { THEMES } from '../render/themes';
 import { HOUSES } from '../game/level';
 
@@ -25,7 +24,6 @@ const starRow = (n: number, size = 20) => `<span class="stars" style="--s:${size
 
 // ------------------------------------------------------------------ house map
 export function houseMap(save: SaveData, onPlay: (h: number, i: number) => void, levelIds: (h: number, i: number) => string, unlocked: (h: number, i: number) => boolean): HTMLDivElement {
-  const lang = getLang();
   let body = '<div class="houses">';
   HOUSES.forEach((id, h) => {
     const th = THEMES[id];
@@ -40,7 +38,7 @@ export function houseMap(save: SaveData, onPlay: (h: number, i: number) => void,
     }
     const open = unlocked(h, 0);
     body += `<div class="house-card ${open ? '' : 'locked'}" style="--c1:#${th.slabTop.toString(16).padStart(6, '0')};--c2:#${th.skyBottom.toString(16).padStart(6, '0')}">
-      <div class="house-head"><span class="hnum">${h + 1}</span><b>${th.name[lang]}</b><span class="hstars">${ICONS.star(true)} ${stars}/36</span></div>
+      <div class="house-head"><span class="hnum">${h + 1}</span><b>${t(`house_${id}`)}</b><span class="hstars">${ICONS.star(true)} ${stars}/36</span></div>
       <div class="nights">${Array.from({ length: 12 }, (_, i) => {
         const s = save.stars[levelIds(h, i)];
         const ok = unlocked(h, i);
@@ -67,7 +65,6 @@ export function houseMap(save: SaveData, onPlay: (h: number, i: number) => void,
 type ShopTab = 'boost' | ShopItem['kind'];
 
 export function shopScreen(save: SaveData, onChange: () => void, onBuy: (item: ShopItem) => boolean, onBuyBoost: (id: BoostId) => boolean): HTMLDivElement {
-  const lang = getLang();
   const el = modal(
     t('shop'),
     `<div class="coins-line">${ICONS.coin}<b class="coin-val">${save.coins}</b></div>
@@ -85,7 +82,7 @@ export function shopScreen(save: SaveData, onChange: () => void, onBuy: (item: S
   const look = { skin: save.skin, cap: save.cap, trail: save.trail };
   const keyOf = (k: ShopItem['kind']) => (k === 'skin' ? 'skin' : k === 'cap' ? 'cap' : 'trail') as 'skin' | 'cap' | 'trail';
   const equipped = (it: ShopItem) => save[keyOf(it.kind)] === it.key;
-  const nameOf = (it: ShopItem) => (it.kind === 'skin' ? SKINS.find((k) => k.id === it.key)!.name[lang] : it.kind === 'cap' ? CAPS.find((c) => c.id === it.key)!.name[lang] : TRAIL_NAMES[it.key][lang]);
+  const nameOf = (it: ShopItem) => t(`${it.kind}_${it.key}`);
   const thumbFor = (it: ShopItem) => {
     if (!preview) return '';
     const l = { skin: save.skin, cap: save.cap, trail: 'none' };
@@ -173,23 +170,66 @@ export function shopScreen(save: SaveData, onChange: () => void, onBuy: (item: S
   return el;
 }
 
-// ------------------------------------------------------------------ daily reward
-export function dailyScreen(save: SaveData, onClaim: () => number): HTMLDivElement {
+// ------------------------------------------------------------------ rewarded-ad label
+/** every rewarded-ad button: a TV icon + "Ad", then what it gives */
+export const adLabel = (text: string) => `<span class="ad-tag">${ICONS.tv}<small>${t('ad')}</small></span><span class="ad-text">${text}</span>`;
+
+// ------------------------------------------------------------------ daily reward calendar
+/** picture of a calendar reward: coins, or the day-7 pyjama (rendered Pip) */
+export function rewardPic(r: DailyReward, size = 72) {
+  if (r.skin) {
+    const img = sharedPreview()?.thumb({ skin: r.skin.split(':')[1], cap: 'classic', trail: 'none' }, size * 2);
+    return img ? `<img class="pj" alt="" src="${img}">` : ICONS.gift;
+  }
+  return `${ICONS.coin}<b>${r.coins}</b>`;
+}
+
+export function dailyScreen(save: SaveData, onClaim: () => DailyReward | null): HTMLDivElement {
   const avail = dailyAvailable(save);
-  const next = avail ? (save.daily.streak % 7) + 1 : ((save.daily.streak - 1) % 7) + 1;
-  const body = `<p class="sub">${t('dailyText')}</p><div class="days">${DAILY.map(
-    (c, i) => `<div class="day ${i + 1 < next || (!avail && i + 1 === next) ? 'got' : ''} ${avail && i + 1 === next ? 'today' : ''}"><small>${t('day', { n: i + 1 })}</small>${ICONS.coin}<b>${c}</b></div>`,
-  ).join('')}</div><button class="big-btn claim" ${avail ? '' : 'disabled'}>${avail ? t('claim') : t('claimed')}</button>`;
+  const next = nextDailyDay(save);
+  const streak = currentStreak(save);
+  const days = [1, 2, 3, 4, 5, 6, 7]
+    .map((d) => {
+      const r = rewardFor(save, d);
+      // claimed this week: the days before the next one (a week just completed today shows all 7)
+      const got = d < next || (!avail && next === 1);
+      const cls = `${got ? 'got' : ''} ${avail && d === next ? 'today' : ''} ${!avail && d === next ? 'tomorrow' : ''} ${d === 7 ? 'big' : ''}`;
+      return `<div class="day ${cls}"><small>${t('day', { n: d })}</small>${rewardPic(r)}${d === 7 && r.skin ? `<em>${t('dailySpecial')}</em>` : ''}</div>`;
+    })
+    .join('');
+  const body = `<div class="streak-line">${ICONS.flame}<b>${t('streak')}: ${t('streakDays', { n: streak })}</b></div>
+    <p class="sub">${avail ? t('dailyReady') : t('tomorrow')}</p>
+    <div class="days">${days}</div>
+    <button class="big-btn claim" ${avail ? '' : 'disabled'}>${avail ? t('claim') : t('claimed')}</button>`;
   const el = modal(t('daily'), body, 'daily-modal');
   el.querySelector('.claim')!.addEventListener('click', () => {
-    const c = onClaim();
-    if (c > 0) {
-      el.querySelector('.claim')!.textContent = `+${c}`;
-      (el.querySelector('.claim') as HTMLButtonElement).disabled = true;
-      el.querySelector('.today')?.classList.add('got');
-    }
+    const r = onClaim();
+    if (!r) return;
+    const btn = el.querySelector<HTMLButtonElement>('.claim')!;
+    btn.innerHTML = r.skin ? `✓ ${t('skin_moon')}` : `+${r.coins} ${ICONS.coin}`;
+    btn.disabled = true;
+    el.querySelector('.today')?.classList.add('got');
+    el.querySelector('.streak-line b')!.textContent = `${t('streak')}: ${t('streakDays', { n: currentStreak(save) })}`;
   });
   return el;
+}
+
+// ------------------------------------------------------------------ end-screen retention strip
+export interface StripInfo {
+  /** next unlock: picture, name, "N more nights to unlock" */
+  teaser: { img: string; name: string; line: string } | null;
+  /** the next daily reward (today's if unclaimed) */
+  daily: DailyReward & { today: boolean };
+  streak: number;
+}
+
+/** next-unlock teaser + "come back tomorrow for X" / "your daily gift is ready" (+ streak) */
+export function retentionStrip(o: StripInfo) {
+  const tz = o.teaser
+    ? `<div class="teaser"><img alt="" src="${o.teaser.img}"><div><small>${t('nextUnlock')}</small><b>${o.teaser.name}</b><span>${o.teaser.line}</span></div></div>`
+    : '';
+  const d = `<button class="daily-peek ${o.daily.today ? 'ready' : ''}" data-act="daily"><span class="dp-pic">${rewardPic(o.daily, 40)}</span><span class="dp-text"><small>${ICONS.flame}${t('streak')}: ${o.streak}</small><b>${o.daily.today ? t('dailyReady') : t('tomorrow')}</b>${o.daily.skin ? `<em>${t('skin_moon')}</em>` : ''}</span></button>`;
+  return `<div class="strip">${tz}${d}</div>`;
 }
 
 // ------------------------------------------------------------------ missions
@@ -216,11 +256,15 @@ export function missionsScreen(save: SaveData, onClaim: (i: number) => number): 
 }
 
 // ------------------------------------------------------------------ settings / pause
+/** each language's own name (the `langName` string of its JSON file, copied here so the list needs no extra loads) */
+export const LANG_NAMES: Record<Lang, string> = { en: 'English', fr: 'Français', de: 'Deutsch', it: 'Italiano', es: 'Español', pt: 'Português', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe', ru: 'Русский' };
+
 export function settingsScreen(save: SaveData, onChange: () => void, extra = ''): HTMLDivElement {
   const body = `<div class="settings">
     <label class="row"><span>${ICONS.sound}${t('sound')}</span><input type="checkbox" data-k="sound" ${save.sound ? 'checked' : ''}><i class="sw"></i></label>
     <label class="row"><span>${ICONS.music}${t('music')}</span><input type="checkbox" data-k="music" ${save.music ? 'checked' : ''}><i class="sw"></i></label>
-    <div class="row"><span>${ICONS.globe}${t('language')}</span><div class="lang"><b data-l="en" class="${getLang() === 'en' ? 'on' : ''}">EN</b><b data-l="fr" class="${getLang() === 'fr' ? 'on' : ''}">FR</b></div></div>
+    <div class="row lang-row"><span>${ICONS.globe}${t('language')}</span></div>
+    <div class="lang-grid">${LANGS.map((l) => `<button data-l="${l}" class="${getLang() === l ? 'on' : ''}">${LANG_NAMES[l]}</button>`).join('')}</div>
   </div>${extra}`;
   const el = modal(t('settings'), body, 'settings-modal');
   el.querySelectorAll<HTMLInputElement>('input[data-k]').forEach((i) =>
@@ -230,9 +274,9 @@ export function settingsScreen(save: SaveData, onChange: () => void, extra = '')
       onChange();
     }),
   );
-  el.querySelectorAll<HTMLElement>('.lang b').forEach((b) =>
+  el.querySelectorAll<HTMLElement>('.lang-grid button').forEach((b) =>
     b.addEventListener('click', () => {
-      save.lang = b.dataset.l as 'en' | 'fr';
+      save.lang = b.dataset.l as Lang;
       onChange();
     }),
   );
@@ -268,6 +312,12 @@ export interface WinInfo {
   newBest: boolean;
   houseDone: boolean;
   last: boolean;
+  /** retention strip under the reward */
+  strip?: string;
+  /** midnight snack: no stars, its own title */
+  snack?: { cookies: number };
+  /** rewarded ads can be offered (the platform has them) */
+  ads?: boolean;
 }
 
 export function winScreen(w: WinInfo, onDouble: () => Promise<boolean>, onNext: () => void, onMenu: () => void, onReplay: () => void) {
@@ -275,19 +325,21 @@ export function winScreen(w: WinInfo, onDouble: () => Promise<boolean>, onNext: 
   const el = document.createElement('div');
   el.className = 'modal-wrap result win';
   el.innerHTML = `<div class="modal result-card">
-    <div class="result-title">${w.houseDone ? t('houseDone') : t('winTitle')}</div>
-    <div class="big-stars">${w.stars.map((s, i) => `<div class="bs ${s ? 'on' : ''}" style="--d:${0.25 + i * 0.25}s">${ICONS.star(s)}<small>${labels[i]}</small></div>`).join('')}</div>
+    <div class="result-title">${w.snack ? t('snackWin') : w.stars.every(Boolean) ? t('perfect') : w.houseDone ? t('houseDone') : t('winTitle')}</div>
+    ${w.snack ? `<div class="snack-got">${ICONS.cookie(true)}<b>${t('snackCookies', { n: w.snack.cookies })}</b></div>` : `<div class="big-stars">${w.stars.map((s, i) => `<div class="bs ${s ? 'on' : ''}" style="--d:${0.25 + i * 0.25}s">${ICONS.star(s)}<small>${labels[i]}</small></div>`).join('')}</div>`}
     <div class="reward">${ICONS.coin}<b class="coin-amt">+${w.coins}</b>${w.newBest ? `<span class="best">${t('newBest')}</span>` : ''}</div>
-    <button class="ad-btn double">▶ ${t('double')}</button>
+    ${w.ads === false ? '' : `<button class="ad-btn double">${adLabel(t('double'))}</button>`}
     <div class="row2">
-      <button class="mid-btn menu">⌂</button>
-      <button class="mid-btn replay">↻</button>
-      <button class="big-btn next">${w.last ? '⌂ ' + t('menu') : t('next') + ' ▶'}</button>
+      <button class="mid-btn menu" aria-label="${t('menu')}">⌂</button>
+      ${w.snack ? '' : `<button class="mid-btn replay" aria-label="${t('retry')}">↻</button>`}
+      <button class="big-btn next">${w.last || w.snack ? '⌂ ' + t('menu') : t('next') + ' ▶'}</button>
     </div>
+    ${w.strip ?? ''}
   </div>`;
   el.addEventListener('pointerdown', (e) => e.stopPropagation());
-  const dbl = el.querySelector<HTMLButtonElement>('.double')!;
-  dbl.addEventListener('click', async () => {
+  const dbl = el.querySelector<HTMLButtonElement>('.double');
+  dbl?.addEventListener('click', async () => {
+    if (!dbl) return;
     const label = dbl.innerHTML;
     dbl.disabled = true;
     if (await onDouble()) {
@@ -303,14 +355,14 @@ export function winScreen(w: WinInfo, onDouble: () => Promise<boolean>, onNext: 
     el.remove();
     onMenu();
   });
-  el.querySelector('.replay')!.addEventListener('click', () => {
+  el.querySelector('.replay')?.addEventListener('click', () => {
     el.remove();
     onReplay();
   });
   return el;
 }
 
-export function failScreen(o: { bedcheck: boolean; fails: number; canSkip: boolean; freeHint?: boolean }, onRetry: (extraToy: boolean, hint: boolean) => void, onSkip: () => Promise<boolean>, onToyAd: () => Promise<boolean>, onMenu: () => void) {
+export function failScreen(o: { bedcheck: boolean; fails: number; canSkip: boolean; freeHint?: boolean; strip?: string; ads?: boolean }, onRetry: (extraToy: boolean, hint: boolean) => void, onSkip: () => Promise<boolean>, onToyAd: () => Promise<boolean>, onMenu: () => void) {
   const el = document.createElement('div');
   el.className = 'modal-wrap result fail';
   el.innerHTML = `<div class="modal result-card">
@@ -319,9 +371,10 @@ export function failScreen(o: { bedcheck: boolean; fails: number; canSkip: boole
     <div class="sleepy">${ICONS.moon}</div>
     ${o.freeHint ? `<button class="big-btn hint-retry">${ICONS.bulb}<span>${t('retryHint')}</span></button>` : ''}
     <button class="${o.freeHint ? 'mid-btn' : 'big-btn'} retry">↻ ${t('retry')}</button>
-    <button class="ad-btn toy">▶ ${t('extraToyAd')}</button>
-    ${o.canSkip ? `<button class="ad-btn skip">▶ ${t('skipAd')}</button>` : ''}
+    ${o.ads === false ? '' : `<button class="ad-btn toy">${adLabel(t('extraToyAd'))}</button>`}
+    ${o.canSkip && o.ads !== false ? `<button class="ad-btn skip">${adLabel(t('skipAd'))}</button>` : ''}
     <button class="mid-btn menu">⌂ ${t('menu')}</button>
+    ${o.strip ?? ''}
   </div>`;
   el.addEventListener('pointerdown', (e) => e.stopPropagation());
   let extra = false;
@@ -333,8 +386,9 @@ export function failScreen(o: { bedcheck: boolean; fails: number; canSkip: boole
     el.remove();
     onRetry(extra, true);
   });
-  const toy = el.querySelector<HTMLButtonElement>('.toy')!;
-  toy.addEventListener('click', async () => {
+  const toy = el.querySelector<HTMLButtonElement>('.toy');
+  toy?.addEventListener('click', async () => {
+    if (!toy) return;
     const label = toy.innerHTML;
     toy.disabled = true;
     if (await onToyAd()) {

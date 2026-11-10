@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { readdirSync, readFileSync } from 'node:fs';
 
 const PLATFORMS = ['crazygames', 'gd', 'web', 'gamepix'] as const;
 type PlatformName = (typeof PLATFORMS)[number];
@@ -31,17 +32,47 @@ function gamepixSdk(): Plugin {
   };
 }
 
+/** the loading screen's tips + "Loading…" in every language, from src/locales/*.json (no hard-coded strings) */
+function bootStrings(): Plugin {
+  return {
+    name: 'boot-strings',
+    transformIndexHtml: {
+      order: 'pre',
+      handler: (html) => {
+        const out: Record<string, { tips: string[]; loading: string }> = {};
+        for (const f of readdirSync('src/locales').filter((f) => f.endsWith('.json'))) {
+          const d = JSON.parse(readFileSync(`src/locales/${f}`, 'utf8')) as Record<string, string>;
+          out[f.replace('.json', '')] = { tips: Object.keys(d).filter((k) => k.startsWith('loadTip_')).map((k) => d[k]), loading: d.loading };
+        }
+        return html.replace('__BOOT_STRINGS__', JSON.stringify(out));
+      },
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const platform = platformFor(mode);
+  // CrazyGames / web: index.html (with the loading screen) + split, lazily loaded chunks — playable fast, smallest
+  // download. GameDistribution / GamePix keep their single-file upload (one index.html, everything inlined).
+  const single = platform === 'gd' || platform === 'gamepix';
   return {
     base: './',
-    plugins: [...(platform === 'gamepix' ? [gamepixSdk()] : []), viteSingleFile()],
+    plugins: [bootStrings(), ...(platform === 'gamepix' ? [gamepixSdk()] : []), ...(single ? [viteSingleFile()] : [])],
     define: { __PLATFORM__: JSON.stringify(platform) },
     build: {
       target: 'es2020',
       outDir: platform === 'crazygames' ? 'dist' : `dist-${platform}`,
-      assetsInlineLimit: 100_000_000,
+      assetsInlineLimit: single ? 100_000_000 : 4096,
       chunkSizeWarningLimit: 4000,
+      modulePreload: { polyfill: false },
+      rollupOptions: single
+        ? undefined
+        : {
+            output: {
+              // three.js in its own long-cached chunk, loaded in parallel with the game code
+              manualChunks: (id) => (id.includes('node_modules/three/') ? 'three' : undefined),
+            },
+          },
     },
     server: { host: true },
   };

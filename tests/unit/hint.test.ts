@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getLevel } from '../../src/levels/index';
+import { getLevel } from '../../src/levels/all';
 import { findHint, followHint, recordHint } from '../../src/game/hint';
 
 describe('hints', () => {

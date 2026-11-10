@@ -3,7 +3,7 @@
  * usage: npx tsx scripts/playtest/run.ts [--runs N] [--house H] [--level L] [--md docs/playtest.md]
  */
 import { writeFileSync } from 'node:fs';
-import { getLevel, levelId, LEVEL_SRC } from '../../src/levels/index';
+import { getLevel, levelId, LEVEL_SRC } from '../../src/levels/all';
 import { World } from '../../src/game/world';
 import { simulate, PROFILES } from '../../src/game/bot';
 import { hiddenRequiredCookies } from '../../src/game/visibility';

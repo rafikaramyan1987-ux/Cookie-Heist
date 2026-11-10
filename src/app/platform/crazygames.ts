@@ -137,10 +137,9 @@ export class CrazyGamesPlatform implements Platform {
 
   /** Rewarded ad; resolves true only if the ad completed (false on error / timeout). Always optional for the player. */
   async rewarded(): Promise<boolean> {
-    if (!this.s) {
-      // no SDK (local dev / tests): grant the reward so the flow can be tested
-      return true;
-    }
+    // no SDK (blocked, offline, not on CrazyGames): no ad, so no reward. The game only offers rewarded buttons when
+    // the SDK is there (or with ?fakeads in dev / tests, see app.ts)
+    if (!this.s) return import.meta.env.DEV || new URLSearchParams(location.search).has('fakeads');
     const ok = await this.requestAd('rewarded');
     // a finished rewarded ad also counts as the midgame break
     if (ok) this.lastMidgame = Date.now();
