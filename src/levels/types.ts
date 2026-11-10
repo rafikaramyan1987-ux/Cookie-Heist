@@ -73,7 +73,8 @@ export interface GuardDef {
 export interface LevelDef {
   id: string;
   house: HouseId;
-  name: { en: string; fr: string };
+  /** i18n key of the night's name */
+  nameKey: string;
   w: number;
   d: number;
   rooms: RoomDef[];

@@ -16,10 +16,13 @@ class Audio {
   musicOn = true;
   sdkMuted = false;
   private musicTimer: number | null = null;
-  private musicHouse = -1;
-  private nextNote = 0;
-  private step = 0;
   tension = 0;
+  /** lazy chunk: lullabies and extra sounds (null until loaded: they are skipped) */
+  private extra: typeof import('./audioExtra') | null = null;
+  /** @internal music state, used by audioExtra */
+  nextNote = 0;
+  step = 0;
+  musicHouse = -1;
 
   /** must be called from a user gesture */
   unlock() {
@@ -28,7 +31,14 @@ class Audio {
       if (!AC) return;
       this.ctx = new AC();
       this.master = this.ctx.createGain();
-      this.master.connect(this.ctx.destination);
+      // gentle limiter: every sound and the music land at a consistent loudness
+      const comp = this.ctx.createDynamicsCompressor();
+      comp.threshold.value = -14;
+      comp.knee.value = 10;
+      comp.ratio.value = 4;
+      comp.attack.value = 0.004;
+      comp.release.value = 0.2;
+      this.master.connect(comp).connect(this.ctx.destination);
       this.sfx = this.ctx.createGain();
       this.sfx.gain.value = 0.9;
       this.sfx.connect(this.master);
@@ -40,6 +50,8 @@ class Audio {
       const d = this.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.apply();
+      // music + the extra (juice) sounds: a separate chunk, loaded in the background
+      void import('./audioExtra').then((m) => (this.extra = m)).catch(() => {});
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
@@ -64,7 +76,8 @@ class Audio {
     g.gain.exponentialRampToValueAtTime(peak, t + a);
     g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec);
   }
-  private osc(type: OscillatorType, f: number, t: number, dur: number, peak: number, out: AudioNode, bend?: [number, number][]) {
+  /** @internal */
+  osc(type: OscillatorType, f: number, t: number, dur: number, peak: number, out: AudioNode, bend?: [number, number][]) {
     const c = this.ctx!;
     const o = c.createOscillator();
     o.type = type;
@@ -77,7 +90,8 @@ class Audio {
     o.stop(t + dur + 0.05);
     return o;
   }
-  private noise(t: number, dur: number, peak: number, filter: BiquadFilterType, freq: number, q = 1, out?: AudioNode, sweep?: number) {
+  /** @internal */
+  noise(t: number, dur: number, peak: number, filter: BiquadFilterType, freq: number, q = 1, out?: AudioNode, sweep?: number) {
     const c = this.ctx!;
     const s = c.createBufferSource();
     s.buffer = this.noiseBuf;
@@ -118,11 +132,15 @@ class Audio {
     mix.connect(out).connect(this.sfx);
   }
 
-  play(name: SoundName, vol = 1) {
+  play(name: SoundName | ExtraSound, vol = 1) {
     if (!this.ctx || !this.soundOn || this.sdkMuted) return;
     const t = this.ctx.currentTime + 0.01;
     const s = this.sfx;
-    switch (name) {
+    if (EXTRA.includes(name as ExtraSound)) {
+      this.extra?.extraSound(this, name as ExtraSound, t, s, vol);
+      return;
+    }
+    switch (name as SoundName) {
       case 'tiptoe':
         this.noise(t, 0.05, 0.05 * vol, 'bandpass', 2400 + Math.random() * 600, 3);
         break;
@@ -246,56 +264,8 @@ class Audio {
   }
   private schedule() {
     const c = this.ctx;
-    if (!c || this.musicHouse < 0) return;
-    const SONGS = [
-      { root: 60, bpm: 84, scale: [0, 2, 4, 7, 9], prog: [0, 9, 5, 7] }, // apartment
-      { root: 62, bpm: 76, scale: [0, 2, 4, 7, 9], prog: [0, 5, 9, 7] }, // family
-      { root: 57, bpm: 70, scale: [0, 2, 3, 7, 8], prog: [0, 5, 3, 7] }, // cottage (minor-ish)
-      { root: 64, bpm: 72, scale: [0, 2, 4, 7, 11], prog: [0, 4, 9, 5] }, // chalet
-      { root: 55, bpm: 66, scale: [0, 2, 4, 5, 7, 9], prog: [0, 9, 2, 7] }, // mansion
-    ];
-    const song = SONGS[this.musicHouse % SONGS.length];
-    const beat = 60 / (song.bpm * (1 + this.tension * 0.35));
-    while (this.nextNote < c.currentTime + 0.5) {
-      const t = this.nextNote;
-      const bar = Math.floor(this.step / 8) % song.prog.length;
-      const chordRoot = song.root + song.prog[bar];
-      const inBar = this.step % 8;
-      // bass on beats 0 and 4
-      if (inBar === 0 || inBar === 4) this.musicNote(chordRoot - 12, t, beat * 3.5, 0.18, 'sine');
-      // melody: gentle pseudo-random walk over the pentatonic scale
-      const r = Math.sin(this.step * 12.9898 + this.musicHouse * 7.1) * 43758.5453;
-      const pick = Math.floor((r - Math.floor(r)) * song.scale.length);
-      if (inBar % 2 === 0 || (r - Math.floor(r)) > 0.6) {
-        const note = song.root + 12 + song.scale[pick] + (inBar === 0 ? 0 : 0);
-        this.musicNote(note, t, beat * 1.6, 0.11, 'triangle');
-      }
-      this.nextNote += beat / 2;
-      this.step++;
-    }
-  }
-  private musicNote(midi: number, t: number, dur: number, peak: number, type: OscillatorType) {
-    const c = this.ctx!;
-    const f = 440 * Math.pow(2, (midi - 69) / 12);
-    const o = c.createOscillator();
-    o.type = type;
-    o.frequency.value = f;
-    const o2 = c.createOscillator();
-    o2.type = 'sine';
-    o2.frequency.value = f * 2.01;
-    const g = c.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(peak, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    const g2 = c.createGain();
-    g2.gain.value = 0.25;
-    o.connect(g);
-    o2.connect(g2).connect(g);
-    g.connect(this.musicBus);
-    o.start(t);
-    o2.start(t);
-    o.stop(t + dur + 0.05);
-    o2.stop(t + dur + 0.05);
+    if (!c || this.musicHouse < 0 || !this.extra) return;
+    this.extra.scheduleMusic(this, c, this.musicBus);
   }
 }
 
@@ -321,4 +291,9 @@ export type SoundName =
   | 'coin'
   | 'snore';
 
+/** juice sounds, synthesised in the lazy audioExtra chunk */
+export const EXTRA = ['sparkle', 'phew', 'whoosh', 'stars', 'boing'] as const;
+export type ExtraSound = (typeof EXTRA)[number];
+
+export type AudioCore = Audio;
 export const audio = new Audio();

@@ -1,3 +1,4 @@
+import { t } from '../app/i18n';
 import * as THREE from 'three';
 import { ART_LEVEL } from '../levels/artLevel';
 import { buildHouse } from '../render/house';
@@ -86,7 +87,7 @@ export function levelView(withHud: boolean): View {
   if (withHud) {
     hud = buildHud({ house: 1, level: 3, cookies: 1, total: 3, time: 23.4, toys: 2, coins: 125 });
     overlay.push(hud.el);
-  } else overlay.push(buildIntro({ house: theme.name.en, night: 3, name: level.name.en, cookies: 2, par: 35 }));
+  } else overlay.push(buildIntro({ house: t(`house_${level.house}`), night: 3, name: t(level.nameKey), cookies: 2, par: 35 }));
 
   const tmp = new THREE.Vector3();
   const rigs: Rig[] = [kid, mum, cat, vac];

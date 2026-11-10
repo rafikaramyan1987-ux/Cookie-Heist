@@ -1,34 +1,57 @@
 import * as THREE from 'three';
 import { createStage, Stage } from '../render/stage';
-import { getLevel, levelId, HOUSE_COUNT, LEVELS_PER_HOUSE } from '../levels/index';
+import { getLevel, levelId, HOUSE_COUNT, LEVELS_PER_HOUSE, loadHouses, housesLoaded, getSnackLevel } from '../levels/index';
 import { World, GameEvent, Input } from '../game/world';
 import { Bot, PROFILES } from '../game/bot';
 import { GameScene, TrailId } from '../game3d/gameScene';
 import { SKINS, CapId } from '../render/characters';
-import { THEMES } from '../render/themes';
+import { HOUSES, HIDE } from '../game/level';
 import { GameHud } from '../ui/gameHud';
 import { buildIntro } from '../ui/intro';
 import { buildTitle } from '../ui/title';
-import { houseMap, shopScreen, dailyScreen, missionsScreen, settingsScreen, pauseScreen, winScreen, failScreen } from '../ui/screens';
-import { titleView } from '../art/titleView';
+import { houseMap, shopScreen, dailyScreen, missionsScreen, settingsScreen, pauseScreen, winScreen, failScreen, retentionStrip } from '../ui/screens';
+import { Tutorial } from '../ui/tutorial';
+import { sparkle, phew, catchBurst, starRain } from '../ui/juice';
 import type { View } from '../art/view';
 import { InputCtl } from './input';
 import { audio } from './audio';
 import { sdk, type AdSlot } from './sdk';
-import { loadSave, saveSoon, SaveData } from './save';
-import { t, setLang, detectLang, getLang } from './i18n';
-import { buy, levelCoins, claimDaily, dailyAvailable, ensureMissions, progressMission, claimMission, useBoost, buyBoost, BoostId } from './meta';
+import { loadSave, saveSoon, saveNow, SaveData } from './save';
+import { t, useLang, detectLang, getLang } from './i18n';
+import { loader } from './loader';
+import {
+  buy,
+  levelCoins,
+  claimDaily,
+  dailyAvailable,
+  ensureMissions,
+  progressMission,
+  claimMission,
+  useBoost,
+  buyBoost,
+  BoostId,
+  currentStreak,
+  nextDaily,
+  nextUnlock,
+  missionsProgress,
+  snackAvailable,
+  snackIndex,
+  today,
+  SNACK_COINS,
+} from './meta';
 import { findHint, HintFollower } from '../game/hint';
 import { ICONS } from '../ui/icons';
-import { sharedPreview } from '../ui/pipPreview';
+import { preview, loadPreview } from '../ui/previewHandle';
 import type { IntroBoost } from '../ui/intro';
 import type { Level } from '../game/types';
 
 type Mode = 'title' | 'intro-wait' | 'intro' | 'play' | 'paused' | 'result' | 'cinematic';
+type RunKind = 'normal' | 'tutorial' | 'snack';
 
 interface Run {
   h: number;
   i: number;
+  kind: RunKind;
   level: Level;
   world: World;
   scene: GameScene;
@@ -40,10 +63,27 @@ interface Run {
   snoreT: number;
   /** this attempt is played with a hint */
   hinted: boolean;
+  /** first-visit tutorial overlay (night 1) */
+  tut: Tutorial | null;
+  /** near-miss tracking: a grown-up came close (s since), cooldown before the next "Phew!" */
+  near: number;
+  phewCd: number;
+}
+
+export interface OpenOpts {
+  extraToys?: number;
+  hint?: boolean;
+  /** start playing at once (retry, tutorial): no intro card */
+  quick?: boolean;
+  tutorial?: boolean;
+  /** the midnight-snack bonus night (variant) */
+  snack?: number;
 }
 
 const DT = 1 / 60;
 const params = new URLSearchParams(location.search);
+/** rewarded-ad buttons are offered only where real ads exist (dev / tests: `?fakeads`) */
+const FAKE_ADS = import.meta.env.DEV || params.has('fakeads');
 
 export class App {
   stage!: Stage;
@@ -66,15 +106,21 @@ export class App {
   private adPausedPlay = false;
   private adBusy = false;
 
+  /** rewarded ads available on this platform */
+  get adsOn() {
+    return sdk.available || FAKE_ADS;
+  }
+
   async boot() {
-    const loading = document.createElement('div');
-    loading.className = 'loading';
-    loading.innerHTML = ICONS.cookie(true);
-    document.body.appendChild(loading);
+    performance.mark('ch:boot');
+    loader.progress(0.3);
     await sdk.init(params.has('nosdk') ? 1 : 3500);
     sdk.loadingStart();
+    performance.mark('ch:sdk');
+    loader.progress(0.5);
     this.save = loadSave();
-    setLang(this.save.lang ?? detectLang(sdk.locale()));
+    await useLang(this.save.lang ?? detectLang(sdk.locale()));
+    loader.progress(0.6);
     ensureMissions(this.save);
     audio.soundOn = this.save.sound;
     audio.musicOn = this.save.music;
@@ -94,28 +140,50 @@ export class App {
         if (sdk.autoResume && this.mode === 'paused') this.resume();
       }
     };
-    await document.fonts.ready;
+    // the UI font: wait a moment for it, never long (the loader is already on screen; text swaps in when it lands)
+    await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 250))]);
+    performance.mark('ch:fonts');
     this.stage = createStage(this.canvas, { low: params.has('low') });
+    performance.mark('ch:stage');
+    loader.progress(0.8);
     this.input.onAnyInput = () => audio.unlock();
     window.addEventListener('resize', () => this.resize());
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.mode === 'play' && !this.capture) this.pause();
+      if (document.hidden) {
+        saveNow(this.save);
+        if (this.mode === 'play' && !this.capture) this.pause();
+      }
     });
     (window as unknown as { __game: unknown }).__game = this;
     // GamePix: loading 100 %, then `await lifecycle.loaded()` before the menu shows (the loading screen stays up)
     if (__PLATFORM__ === 'gamepix') await sdk.ready?.();
     const lv = params.get('level');
+    // first visit: no menu, straight into night 1 with the in-game tutorial
+    const first = !this.save.tutorialDone && !params.has('menu');
     if (lv) {
       const [h, i] = lv.split('-').map(Number);
-      this.openLevel(h, i, { hint: params.has('hint') });
-    } else this.showTitle();
+      if (h > 0) await loadHouses();
+      this.openLevel(h, i, { hint: params.has('hint'), tutorial: h === 0 && i === 0 && first && !this.autoplay && !this.capture });
+    } else if (first) this.openLevel(0, 0, { tutorial: true, quick: true });
+    else {
+      await loadHouses();
+      this.showTitle();
+    }
+    performance.mark('ch:level');
     this.resize();
+    // render the first frame before the loader fades
+    this.tick(0);
+    performance.mark('ch:frame');
     sdk.loadingStop();
-    loading.style.opacity = '0';
-    loading.style.pointerEvents = 'none';
-    setTimeout(() => loading.remove(), 400);
-    if (!this.capture) requestAnimationFrame(this.frame);
+    loader.done();
+    // ?capture / ?manual: frames are driven from outside (tick), for recordings; ?manual keeps the normal player flow
+    if (!this.capture && !params.has('manual')) requestAnimationFrame(this.frame);
     (window as unknown as { __ready: boolean }).__ready = true;
+    // everything else streams in the background once night 1 / the menu is up
+    setTimeout(() => {
+      void loadHouses();
+      void loadPreview();
+    }, 600);
   }
 
   resize() {
@@ -152,15 +220,34 @@ export class App {
 
   // ------------------------------------------------------------------ title
   showTitle() {
+    if (!housesLoaded()) {
+      // houses 2–5 are a lazy chunk (normally long loaded by now)
+      void loadHouses().then(() => this.showTitle());
+      return;
+    }
+    if (!this.title) {
+      // the 3D title scene is a lazy chunk (first-time players go straight into night 1)
+      void import('../art/titleView').then((m) => {
+        this.title ??= m.titleView();
+        this.showTitle();
+      });
+      return;
+    }
     this.disposeRun();
     this.clearUi();
     this.mode = 'title';
     sdk.gameplayStop();
-    if (!this.title) this.title = titleView();
     this.title.overlay?.forEach((o) => o.remove());
     const [h, i] = this.nextLevel();
-    const unclaimed = this.save.missions.list.filter((m) => m.progress >= m.n && !m.claimed).length;
-    this.titleEl = buildTitle({ coins: this.save.coins, sub: `${THEMES[getLevel(h, i).house].name[getLang()]} · ${t('night')} ${i + 1}`, dailyDot: dailyAvailable(this.save), missionsBadge: unclaimed, soundOn: this.save.sound });
+    this.titleEl = buildTitle({
+      coins: this.save.coins,
+      sub: `${t(`house_${HOUSES[h]}`)} · ${t('night')} ${i + 1}`,
+      dailyReady: dailyAvailable(this.save),
+      streak: currentStreak(this.save),
+      missions: missionsProgress(this.save),
+      soundOn: this.save.sound,
+      snack: this.save.tutorialDone ? snackAvailable(this.save) : undefined,
+    });
     this.ui.appendChild(this.titleEl);
     this.stage.setScene(this.title.scene, this.title.camera);
     this.title.resize(this.w, this.h);
@@ -182,40 +269,38 @@ export class App {
         this.between(() => this.openLevel(h, i), 'preroll');
         break;
       }
+      case 'snack':
+        if (snackAvailable(this.save)) this.openLevel(0, 0, { snack: snackIndex() });
+        break;
       case 'map':
         this.ui.appendChild(houseMap(this.save, (h, i) => this.openLevel(h, i), levelId, (h, i) => this.unlocked(h, i)));
         break;
       case 'shop':
-        this.ui.appendChild(
-          shopScreen(
-            this.save,
-            () => {
-              this.persist();
-              this.refreshTitle();
-            },
-            (item) => {
-              const ok = buy(this.save, item);
-              if (ok) audio.play('coin');
-              return ok;
-            },
-            (id) => {
-              const ok = buyBoost(this.save, id);
-              if (ok) audio.play('coin');
-              return ok;
-            },
-          ),
-        );
+        void loadPreview().then(() => {
+          if (this.mode !== 'title') return;
+          this.ui.appendChild(
+            shopScreen(
+              this.save,
+              () => {
+                this.persist();
+                this.refreshTitle();
+              },
+              (item) => {
+                const ok = buy(this.save, item);
+                if (ok) audio.play('coin');
+                return ok;
+              },
+              (id) => {
+                const ok = buyBoost(this.save, id);
+                if (ok) audio.play('coin');
+                return ok;
+              },
+            ),
+          );
+        });
         break;
       case 'daily':
-        this.ui.appendChild(
-          dailyScreen(this.save, () => {
-            const c = claimDaily(this.save);
-            if (c) audio.play('coin');
-            this.persist();
-            this.refreshTitle();
-            return c;
-          }),
-        );
+        this.openDaily();
         break;
       case 'missions':
         this.ui.appendChild(
@@ -236,12 +321,22 @@ export class App {
         this.save.music = this.save.sound;
         this.applySettings();
         break;
-      case 'lang-en':
-      case 'lang-fr':
-        this.save.lang = act === 'lang-en' ? 'en' : 'fr';
-        this.applySettings();
-        break;
     }
+  }
+
+  /** the 7-day calendar (title, or from the end screens) */
+  private openDaily() {
+    void loadPreview().then(() =>
+      this.ui.appendChild(
+        dailyScreen(this.save, () => {
+          const r = claimDaily(this.save);
+          if (r) audio.play('coin');
+          this.persist();
+          this.refreshTitle();
+          return r;
+        }),
+      ),
+    );
   }
 
   private refreshTitle() {
@@ -256,17 +351,28 @@ export class App {
     audio.soundOn = this.save.sound;
     audio.musicOn = this.save.music;
     audio.apply();
-    const langChanged = this.save.lang && this.save.lang !== getLang();
-    if (this.save.lang) setLang(this.save.lang);
     this.persist();
-    if (langChanged) {
-      this.ui.querySelectorAll('.settings-modal').forEach((m) => m.remove());
-      if (this.mode === 'title') this.showTitle();
+    const lang = this.save.lang;
+    if (lang && lang !== getLang()) {
+      void useLang(lang).then(() => {
+        this.ui.querySelectorAll('.settings-modal:not(.pause-modal)').forEach((m) => m.remove());
+        if (this.mode === 'title') this.showTitle();
+        else if (this.mode === 'paused') {
+          // rebuild the pause menu in the new language
+          this.ui.querySelectorAll('.pause-modal').forEach((m) => m.remove());
+          this.mode = 'play';
+          this.pause();
+        }
+      });
     } else if (this.mode === 'title') this.refreshTitle();
   }
 
   // ------------------------------------------------------------------ level lifecycle
-  openLevel(h: number, i: number, opts: { extraToys?: number; hint?: boolean } = {}) {
+  openLevel(h: number, i: number, opts: OpenOpts = {}) {
+    if (opts.snack === undefined && h > 0 && !housesLoaded()) {
+      void loadHouses().then(() => this.openLevel(h, i, opts));
+      return;
+    }
     if (opts.hint && this.mode !== 'intro-wait') {
       // finding a hint takes a moment: show a card first, then compute
       this.disposeRun();
@@ -281,7 +387,8 @@ export class App {
     }
     this.disposeRun();
     this.clearUi();
-    const level = getLevel(h, i);
+    const kind: RunKind = opts.snack !== undefined ? 'snack' : opts.tutorial ? 'tutorial' : 'normal';
+    const level = opts.snack !== undefined ? getSnackLevel(opts.snack) : getLevel(h, i);
     let seed = params.has('seed') ? +params.get('seed')! : (Date.now() & 0xffff) + 1;
     // hint: a safe route for this exact attempt (the attempt is played on the hint's seed)
     const hint = opts.hint ? findHint(level, seed, 6, 3) : null;
@@ -290,9 +397,9 @@ export class App {
     const skin = SKINS.find((s) => s.id === this.save.skin) ?? SKINS[0];
     const scene = new GameScene(level, world, { skin, cap: this.save.cap as CapId, trail: this.save.trail as TrailId });
     if (hint) scene.setHint(hint, { wait: t('hintWait'), go: t('hintGoLabel') });
-    const theme = THEMES[level.house];
+    const houseName = kind === 'snack' ? t('snackTitle') : t(`house_${level.house}`);
     const hud = new GameHud({
-      houseName: theme.name[getLang()],
+      houseName,
       night: i + 1,
       total: level.cookies.length,
       need: level.need,
@@ -323,7 +430,12 @@ export class App {
         if (!hud.zoomOn) scene.camera.overview = false;
       }, 2000);
     };
-    this.run = { h, i, level, world, scene, hud, bot: null, acc: 0, endT: 0, stepT: 0, snoreT: 2, hinted: !!hint };
+    const tut = kind === 'tutorial' ? new Tutorial(this.touch) : null;
+    this.run = { h, i, kind, level, world, scene, hud, bot: null, acc: 0, endT: 0, stepT: 0, snoreT: 2, hinted: !!hint, tut, near: 0, phewCd: 0 };
+    if (tut) {
+      hud.el.appendChild(tut.el);
+      tut.onSkip = () => audio.play('ui');
+    }
     // ?autoplay=hint: Pip follows the hint like a person would (demo / capture)
     if (this.autoplay === 'hint') this.run.bot = hint ? new HintFollower(world, hint, 1) : new Bot(world, PROFILES.good, 7);
     else if (this.autoplay) this.run.bot = new Bot(world, PROFILES[this.autoplay], 7);
@@ -345,23 +457,64 @@ export class App {
     this.stage.setScene(scene.scene, scene.camera.cam);
     scene.resize(this.w, this.h);
     hud.layout(this.w, this.h);
-    // intro: whole-level overview + goals card (+ the hint replay and boosts)
+    audio.startMusic(kind === 'snack' ? 0 : h);
+    const chosen = new Set<string>();
+    let intro: HTMLElement | null = null;
+    const startPlay = () => {
+      if (this.mode !== 'intro' || this.run?.world !== world) return;
+      audio.unlock();
+      intro?.remove();
+      this.overlay = null;
+      // boosts picked on the intro card are used now
+      if (chosen.has('toy') && useBoost(this.save, 'toy')) world.toys++;
+      if (chosen.has('pillow') && useBoost(this.save, 'pillow')) {
+        world.decoy = true;
+        hud.toast(t('pillowOn'));
+      }
+      if (chosen.size) this.persist();
+      this.ui.appendChild(hud.el);
+      scene.camera.overview = false;
+      scene.hintReplay = false;
+      this.mode = 'play';
+      this.input.clear();
+      sdk.gameplayStart();
+      const tip = level.tip;
+      if (kind === 'tutorial') {
+        if (tip && !this.save.tips.includes(tip)) this.save.tips.push(tip);
+      } else if (kind === 'snack') hud.toast(t('snackIntro'), ICONS.moon);
+      else if (tip && !params.has('notips') && !hint && (!this.save.tips.includes(tip) || this.autoplay)) {
+        hud.showTip(tip);
+        this.save.tips.push(tip);
+        this.persist();
+      }
+      window.removeEventListener('keydown', keyStart);
+    };
+    const keyStart = (e: KeyboardEvent) => {
+      if (e.code === 'Space' || e.code === 'Enter') startPlay();
+    };
     this.mode = 'intro';
+    // quick start (retry, tutorial): straight into play, the camera already on the kid
+    if (opts.quick && !hint) {
+      scene.camera.overview = false;
+      this.overlay = null;
+      startPlay();
+      return;
+    }
+    // intro: whole-level overview + goals card (+ the hint replay and boosts)
     scene.camera.overview = true;
     scene.hintReplay = !!hint;
-    const chosen = new Set<string>();
     const boosts: IntroBoost[] = [];
-    if (!this.autoplay && !this.capture) {
-      const prev = sharedPreview();
+    const prev = preview();
+    if (!this.autoplay && !this.capture && kind === 'normal') {
       const img = (id: BoostId) => prev?.boostThumb(id, 96) ?? '';
       if (this.save.items.toy > 0) boosts.push({ id: 'toy', name: t('b_toy'), count: this.save.items.toy, img: img('toy'), on: false });
       if (this.save.items.pillow > 0 && level.bedCheck > 0) boosts.push({ id: 'pillow', name: t('b_pillow'), count: this.save.items.pillow, img: img('pillow'), on: false });
       if (this.save.items.hint > 0 && !hint) boosts.push({ id: 'hint', name: t('b_hint'), count: this.save.items.hint, img: img('hint'), on: false });
     }
-    const intro = buildIntro({
-      house: theme.name[getLang()],
+    intro = buildIntro({
+      house: houseName,
       night: i + 1,
-      name: level.name[getLang() === 'fr' ? 1 : 0],
+      name: t(level.nameKey),
       cookies: level.need,
       bonus: level.bonus >= 0,
       par: level.par,
@@ -386,39 +539,9 @@ export class App {
     intro.classList.add('live-intro');
     this.overlay = intro;
     this.ui.appendChild(intro);
-    const startPlay = () => {
-      if (this.mode !== 'intro') return;
-      audio.unlock();
-      intro.remove();
-      this.overlay = null;
-      // boosts picked on the intro card are used now
-      if (chosen.has('toy') && useBoost(this.save, 'toy')) world.toys++;
-      if (chosen.has('pillow') && useBoost(this.save, 'pillow')) {
-        world.decoy = true;
-        hud.toast(t('pillowOn'));
-      }
-      if (chosen.size) this.persist();
-      this.ui.appendChild(hud.el);
-      scene.camera.overview = false;
-      scene.hintReplay = false;
-      this.mode = 'play';
-      this.input.clear();
-      sdk.gameplayStart();
-      const tip = level.tip;
-      if (tip && !params.has('notips') && !hint && (!this.save.tips.includes(tip) || this.autoplay)) {
-        hud.showTip(tip);
-        this.save.tips.push(tip);
-        this.persist();
-      }
-      window.removeEventListener('keydown', keyStart);
-    };
-    const keyStart = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.code === 'Enter') startPlay();
-    };
     intro.addEventListener('pointerdown', startPlay);
     this.canvas.addEventListener('pointerdown', startPlay, { once: true });
     window.addEventListener('keydown', keyStart);
-    audio.startMusic(h);
     if ((this.autoplay || this.capture) && !params.has('introhold')) setTimeout(startPlay, this.capture ? 0 : 1200);
   }
 
@@ -431,6 +554,19 @@ export class App {
   private clearUi() {
     this.ui.innerHTML = '';
     this.titleEl = null;
+  }
+
+  /** capture / test tool: the playtest bot takes over the current night */
+  autopilot(profile: 'beginner' | 'average' | 'good' = 'good') {
+    if (this.run) this.run.bot = new Bot(this.run.world, PROFILES[profile], 7);
+  }
+
+  /** replay the current night at once: one tap, no intro card, no ad */
+  retry(extraToy = false, hint = false) {
+    const r = this.run;
+    if (!r) return;
+    if (r.kind === 'snack') return this.showTitle();
+    this.openLevel(r.h, r.i, { extraToys: extraToy ? 1 : 0, hint, quick: true, tutorial: r.kind === 'tutorial' });
   }
 
   resume() {
@@ -450,7 +586,7 @@ export class App {
       pauseScreen(
         this.save,
         () => this.resume(),
-        () => this.openLevel(r.h, r.i, { hint: r.hinted }),
+        () => this.retry(false, r.hinted),
         () => this.showTitle(),
         () => this.applySettings(),
       ),
@@ -520,6 +656,7 @@ export class App {
       }
       this.handleEvents(events);
       this.footsteps(dt);
+      this.nearMiss(dt);
     }
     scene.update(dt, this.t, events);
     const alert = world.guards.some((g) => g.state === 'spot') ? 'chase' : world.guards.some((g) => g.state === 'suspicious' || g.state === 'look') ? 'sus' : 'calm';
@@ -542,10 +679,77 @@ export class App {
         },
         dt,
       );
-    if (this.mode === 'play') this.updateArrows();
+    if (this.mode === 'play') {
+      this.updateArrows();
+      this.updateTutorial(dt);
+    }
     if (this.mode === 'cinematic') {
       r.endT -= dt;
       if (r.endT <= 0) this.showResult();
+    }
+  }
+
+  /** world point → screen px */
+  private screen(x: number, y: number, z: number) {
+    const v = new THREE.Vector3(x, y, z).project(this.run!.scene.camera.cam);
+    return { x: ((v.x + 1) / 2) * this.w, y: ((1 - v.y) / 2) * this.h };
+  }
+
+  /** tutorial: move the hand pointer and advance the steps */
+  private updateTutorial(dt: number) {
+    const r = this.run!;
+    const tut = r.tut;
+    if (!tut || tut.step === 'done') return;
+    const { world, level } = r;
+    const p = world.player;
+    const kid = this.screen(p.x, 0.6, p.z);
+    let target: { x: number; z: number } | null = null;
+    if (tut.step === 'drag' || tut.step === 'hide' || tut.step === 'stay') {
+      // the nearest basket
+      let best = Infinity;
+      for (let k = 0; k < level.hide.length; k++)
+        if (level.hide[k] === HIDE.basket) {
+          const x = (k % level.w) + 0.5,
+            z = Math.floor(k / level.w) + 0.5;
+          const d = Math.hypot(x - p.x, z - p.z);
+          if (d < best) {
+            best = d;
+            target = { x, z };
+          }
+        }
+      if (tut.step === 'drag' && (Math.hypot(p.x - level.start.x, p.z - level.start.z) > 1 || tut.stepT > 4)) tut.set('hide');
+      // never hid: carry on to the cookie after a while (mum simply does not come)
+      if (tut.step === 'hide' && tut.stepT > 9) tut.set('cookie');
+    } else if (tut.step === 'cookie') {
+      const k = level.cookies.findIndex((_, j) => !world.cookies[j] && j !== level.bonus);
+      if (k >= 0) target = level.cookies[k];
+      else tut.set('bed');
+    }
+    if (tut.step === 'bed') target = { x: (level.bed.x0 + level.bed.x1) / 2, z: (level.bed.z0 + level.bed.z1) / 2 };
+    tut.update(dt, kid, target ? this.screen(target.x, 0.5, target.z) : null);
+  }
+
+  /** a grown-up came really close and the kid got away: "Phew!" (all nights; the tutorial has its scripted one) */
+  private nearMiss(dt: number) {
+    const r = this.run!;
+    if (r.kind === 'tutorial' || this.capture) return;
+    const w = r.world;
+    const p = w.player;
+    r.phewCd -= dt;
+    const danger = w.guards.some((g) => g.cfg.adult && g.delay <= 0 && g.state !== 'sleep' && g.coneOn && Math.hypot(g.x - p.x, g.z - p.z) < (p.hidden ? 1.7 : 1.4));
+    const wondering = w.guards.some((g) => g.state === 'suspicious' || g.state === 'look');
+    if (danger || wondering) r.near = Math.max(r.near, danger ? 2 : 1);
+    else if (r.near > 0 && w.status === 'play' && !w.spotted) {
+      const calm = w.guards.every((g) => !g.cfg.adult || g.state === 'sleep' || Math.hypot(g.x - p.x, g.z - p.z) > 2.6);
+      if (calm) {
+        if (r.phewCd <= 0) {
+          phew(r.hud.el, r.near >= 2 ? t('phew') : t('closeCall'));
+          audio.play('whoosh');
+          audio.play('phew');
+          r.phewCd = 7;
+        }
+        r.near = 0;
+      }
     }
   }
 
@@ -588,10 +792,8 @@ export class App {
   }
 
   private guardScreen(gi: number) {
-    const r = this.run!;
-    const g = r.world.guards[gi];
-    const v = new THREE.Vector3(g.x, 2.1, g.z).project(r.scene.camera.cam);
-    return { x: ((v.x + 1) / 2) * this.w, y: ((1 - v.y) / 2) * this.h };
+    const g = this.run!.world.guards[gi];
+    return this.screen(g.x, 2.1, g.z);
   }
 
   private handleEvents(events: GameEvent[]) {
@@ -604,12 +806,22 @@ export class App {
           else if (e.kind === 'step') audio.play('step');
           else if (e.kind === 'click') audio.play('click');
           break;
-        case 'cookie':
+        case 'cookie': {
           audio.play('crunch');
           audio.play('pickup');
+          audio.play('sparkle');
+          const s = this.screen(e.x, 0.7, e.z);
+          sparkle(r.hud.el, s.x, s.y);
+          try {
+            navigator.vibrate?.(20);
+          } catch {
+            /* no vibration */
+          }
           if (e.i === r.level.bonus) r.hud.toast(t('bonusGot'));
+          else if (r.kind === 'snack') r.hud.toast(` ${r.world.cookieCount}`, ICONS.cookie(true));
           else r.hud.toast(` ${r.world.cookies.filter((c, k) => c && k !== r.level.bonus).length}/${r.level.need}`, ICONS.cookie(true));
           break;
+        }
         case 'key':
         case 'toyPickup':
           audio.play('pickup');
@@ -641,23 +853,39 @@ export class App {
           audio.play('throw');
           break;
         case 'needCookies':
-          r.hud.toast(t('needCookies'));
+          // not while the kid is still standing by the bed at the start
+          if (Math.hypot(r.world.player.x - r.level.start.x, r.world.player.z - r.level.start.z) > 0.8) r.hud.toast(t('needCookies'));
+          break;
+        case 'cue':
+          // tutorial: mum comes by the basket
+          r.hud.toast(t('momComing'));
+          audio.play('hmm');
+          r.tut?.set('stay');
+          break;
+        case 'cueClear':
+          phew(r.hud.el, t('phew'));
+          audio.play('whoosh');
+          audio.play('phew');
+          if (r.tut && r.tut.step !== 'done') r.tut.set('cookie');
           break;
         case 'caught': {
           audio.play('gasp');
           audio.play('caught');
+          audio.play('boing');
           const s = this.guardScreen(e.g);
-          r.hud.shout(t('backToBedShout'), s.x, s.y);
+          catchBurst(r.hud.el, t('backToBedShout'), s.x, s.y);
           this.endRun(2.6);
           break;
         }
         case 'bedcheck':
           audio.play('gasp');
-          r.hud.toast(t('bedCheckShout'));
+          audio.play('boing');
+          catchBurst(r.hud.el, t('bedCheckShout'), this.w / 2, this.h * 0.4);
           this.endRun(1.6);
           break;
         case 'win':
           audio.play('win');
+          r.tut?.set('done');
           this.endRun(2.4);
           break;
       }
@@ -672,10 +900,28 @@ export class App {
     this.input.clear();
   }
 
+  /** next-unlock teaser + tomorrow's daily reward, for the end screens */
+  private strip() {
+    const tz = nextUnlock(this.save, (h, i) => this.isDone(h, i), HOUSE_COUNT, LEVELS_PER_HOUSE);
+    const prev = preview();
+    let teaser: Parameters<typeof retentionStrip>[0]['teaser'] = null;
+    if (tz?.kind === 'house') teaser = { img: prev?.houseThumb(HOUSES[tz.house], 192, 120) ?? '', name: t(`house_${HOUSES[tz.house]}`), line: t('nightsToUnlock', { n: tz.n }) };
+    else if (tz?.kind === 'skin') teaser = { img: prev?.thumb({ skin: tz.key, cap: this.save.cap, trail: 'none' }, 120) ?? '', name: t(`skin_${tz.key}`), line: t('coinsToUnlock', { n: tz.n }) };
+    return retentionStrip({ teaser, daily: nextDaily(this.save), streak: currentStreak(this.save) });
+  }
+
+  private wireStrip(el: HTMLElement) {
+    el.querySelector('.daily-peek')?.addEventListener('click', () => {
+      audio.play('ui');
+      this.openDaily();
+    });
+  }
+
   private showResult() {
     const r = this.run!;
     const w = r.world;
     this.mode = 'result';
+    if (r.kind === 'snack') return this.snackResult();
     const id = levelId(r.h, r.i);
     if (w.status === 'won') {
       const stars: [boolean, boolean, boolean] = [w.cookieCount === r.level.cookies.length, w.stats.spotted === 0, w.t <= r.level.par];
@@ -686,6 +932,7 @@ export class App {
       this.save.stars[id] = Math.max(n, this.save.stars[id] ?? 0);
       this.save.best[id] = Math.min(w.t, prevBest ?? Infinity);
       this.save.fails[id] = 0;
+      if (r.kind === 'tutorial') this.save.tutorialDone = true;
       // wins with a hint are tracked silently (stars are not affected)
       if (r.hinted) this.save.hinted[id] = true;
       const coins = levelCoins(n, first, w.cookieCount);
@@ -703,23 +950,27 @@ export class App {
       else if (__PLATFORM__ === 'gamepix') sdk.happytime(); // GamePix: a happy moment for every level complete
       this.persist();
       const last = r.h === HOUSE_COUNT - 1 && r.i === LEVELS_PER_HOUSE - 1;
-      this.ui.appendChild(
-        winScreen(
-          { stars, coins, time: w.t, par: r.level.par, newBest: newBest && !first, houseDone, last },
-          async () => {
-            const ok = await sdk.rewarded();
-            if (ok) {
-              this.save.coins += coins;
-              audio.play('coin');
-              this.persist();
-            }
-            return ok;
-          },
-          () => this.goNext(r.h, r.i),
-          () => this.between(() => this.showTitle(), 'menu'),
-          () => this.between(() => this.openLevel(r.h, r.i)),
-        ),
+      const el = winScreen(
+        { stars, coins, time: w.t, par: r.level.par, newBest: newBest && !first, houseDone, last, strip: this.strip(), ads: this.adsOn },
+        async () => {
+          const ok = await sdk.rewarded();
+          if (ok) {
+            this.save.coins += coins;
+            audio.play('coin');
+            this.persist();
+          }
+          return ok;
+        },
+        () => this.goNext(r.h, r.i),
+        () => this.between(() => this.showTitle(), 'menu'),
+        () => this.retry(),
       );
+      this.wireStrip(el);
+      this.ui.appendChild(el);
+      if (n === 3) {
+        starRain(el);
+        setTimeout(() => audio.play('stars'), 700);
+      }
     } else {
       this.save.fails[id] = (this.save.fails[id] ?? 0) + 1;
       if (__PLATFORM__ === 'gamepix') sdk.sadMoment?.(w.status === 'bedcheck' ? 'level_failed' : 'game_over');
@@ -727,23 +978,73 @@ export class App {
       progressMission(this.save, 'toys', w.stats.toysThrown);
       this.persist();
       const fails = this.save.fails[id];
-      this.ui.appendChild(
-        failScreen(
-          { bedcheck: w.status === 'bedcheck', fails, canSkip: fails >= 5, freeHint: fails >= 3 },
-          (extra, hintOn) => this.between(() => this.openLevel(r.h, r.i, { extraToys: extra ? 1 : 0, hint: hintOn })),
-          async () => {
-            const ok = await sdk.rewarded();
-            if (ok) {
-              this.save.skipped[id] = true;
-              this.persist();
-              this.goNext(r.h, r.i);
-            }
-            return ok;
-          },
-          () => sdk.rewarded(),
-          () => this.between(() => this.showTitle(), 'menu'),
-        ),
+      const el = failScreen(
+        { bedcheck: w.status === 'bedcheck', fails, canSkip: fails >= 5, freeHint: fails >= 3, strip: this.strip(), ads: this.adsOn },
+        (extra, hintOn) => this.retry(extra, hintOn),
+        async () => {
+          const ok = await sdk.rewarded();
+          if (ok) {
+            this.save.skipped[id] = true;
+            if (r.kind === 'tutorial') this.save.tutorialDone = true;
+            this.persist();
+            this.goNext(r.h, r.i);
+          }
+          return ok;
+        },
+        () => sdk.rewarded(),
+        () => {
+          if (r.kind === 'tutorial') this.save.tutorialDone = true;
+          this.between(() => this.showTitle(), 'menu');
+        },
       );
+      this.wireStrip(el);
+      this.ui.appendChild(el);
+    }
+  }
+
+  /** midnight snack: coins per cookie, once a day; never touches stars or progress */
+  private snackResult() {
+    const r = this.run!;
+    const w = r.world;
+    const won = w.status === 'won';
+    this.save.snack = today();
+    const coins = won ? w.cookieCount * SNACK_COINS : 0;
+    this.save.coins += coins;
+    if (won) {
+      this.save.totals.cookies += w.cookieCount;
+      progressMission(this.save, 'cookies', w.cookieCount);
+    }
+    this.persist();
+    if (won) {
+      const el = winScreen(
+        { stars: [true, true, true], coins, time: w.t, par: r.level.par, newBest: false, houseDone: false, last: false, snack: { cookies: w.cookieCount }, strip: this.strip(), ads: this.adsOn },
+        async () => {
+          const ok = await sdk.rewarded();
+          if (ok) {
+            this.save.coins += coins;
+            audio.play('coin');
+            this.persist();
+          }
+          return ok;
+        },
+        () => this.between(() => this.showTitle()),
+        () => this.between(() => this.showTitle(), 'menu'),
+        () => this.showTitle(),
+      );
+      this.wireStrip(el);
+      this.ui.appendChild(el);
+      if (w.cookieCount >= 5) starRain(el);
+    } else {
+      const el = failScreen(
+        { bedcheck: w.status === 'bedcheck', fails: 0, canSkip: false, strip: this.strip(), ads: false },
+        () => this.showTitle(),
+        async () => false,
+        async () => false,
+        () => this.showTitle(),
+      );
+      // the bonus night is once a day: "Try again" goes back to the menu
+      this.wireStrip(el);
+      this.ui.appendChild(el);
     }
   }
 

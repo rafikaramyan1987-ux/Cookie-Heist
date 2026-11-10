@@ -3,7 +3,7 @@ import { GamePixPlatform, REWARD_GRACE, type GamePixAdResult } from '../../src/a
 import { AD_TIMEOUT, MIDGAME_GAP } from '../../src/app/platform/types';
 
 /** a GamePix SDK stand-in: `ad` decides what an ad does (it may emit the SDK's pause / resume events) */
-type Emit = (name: 'pause' | 'resume') => void;
+type Emit = (name: 'pause' | 'resume' | 'soundOff' | 'soundOn') => void;
 async function setup(ad: (kind: 'interstitial' | 'reward', emit: Emit) => Promise<GamePixAdResult>) {
   const handlers: Record<string, (() => void)[]> = {};
   const emit: Emit = (n) => handlers[n]?.forEach((f) => f());
@@ -21,7 +21,7 @@ async function setup(ad: (kind: 'interstitial' | 'reward', emit: Emit) => Promis
     lang: () => 'fr',
     happyMoment: vi.fn((n: string) => calls.push(`happy ${n}`)),
     sadMoment: vi.fn((n: string) => calls.push(`sad ${n}`)),
-  };
+  } as Record<string, unknown> & { soundOff?: () => void; soundOn?: () => void; ads: { interstitial: ReturnType<typeof vi.fn>; reward: ReturnType<typeof vi.fn> }; lifecycle: Record<string, ReturnType<typeof vi.fn>> };
   vi.stubGlobal('window', { GamePix });
   vi.stubGlobal('document', doc);
   const gp = new GamePixPlatform();
@@ -78,7 +78,8 @@ describe('GamePix platform', () => {
     });
     await gp.ready();
     expect(await gp.rewarded()).toBe(true);
-    expect(log).toEqual(['mute', 'pause', 'unmute', 'resume']);
+    // audio stays muted until the ad has really settled (the SDK's resume comes just before the result)
+    expect(log).toEqual(['mute', 'pause', 'resume', 'unmute']);
     for (const r of [{ success: false }, { success: false, message: 'cancel' }, { success: 'yes' }, undefined, null]) {
       result = r as GamePixAdResult;
       expect(await gp.rewarded(), JSON.stringify(r)).toBe(false);
@@ -225,5 +226,80 @@ describe('GamePix platform', () => {
     await gp.midgame('between');
     gp.gameplayStart();
     gp.happytime();
+  });
+  describe('soundOff / soundOn', () => {
+    it('soundOff mutes without pausing; soundOn restores; both idempotent', async () => {
+      const { gp, emit, log } = await setup(async () => ({ success: true }));
+      emit('soundOff');
+      emit('soundOff');
+      expect(gp.muted).toBe(true);
+      expect(log).toEqual(['mute']); // no 'pause': the level keeps running
+      emit('soundOn');
+      emit('soundOn');
+      expect(gp.muted).toBe(false);
+      expect(log).toEqual(['mute', 'unmute']);
+    });
+
+    it('soundOn during a pause does not unmute until the pause ends', async () => {
+      const { gp, emit, log } = await setup(async () => ({ success: true }));
+      emit('pause');
+      emit('soundOff');
+      emit('soundOn');
+      expect(gp.muted).toBe(true);
+      emit('resume');
+      expect(gp.muted).toBe(false);
+      expect(log).toEqual(['mute', 'pause', 'unmute', 'resume']);
+    });
+
+    it('a resume while the portal sound is off keeps the game silent (pause → soundOff → resume → soundOn)', async () => {
+      const { gp, emit, log } = await setup(async () => ({ success: true }));
+      emit('pause');
+      emit('soundOff');
+      emit('resume');
+      expect(gp.muted).toBe(true);
+      expect(log).toEqual(['mute', 'pause', 'resume']);
+      emit('soundOn');
+      expect(gp.muted).toBe(false);
+    });
+
+    it('an ad over a sound-off stays silent afterwards; soundOn during the ad waits for the ad to end', async () => {
+      let finish: (r: GamePixAdResult) => void = () => {};
+      const { gp, emit } = await setup(
+        (_k, e) =>
+          new Promise<GamePixAdResult>((res) => {
+            e('pause');
+            finish = (r) => {
+              e('resume');
+              res(r);
+            };
+          }),
+      );
+      await gp.ready();
+      emit('soundOff');
+      const p = gp.rewarded();
+      await Promise.resolve();
+      expect(gp.muted).toBe(true);
+      emit('soundOn'); // the player turned the portal sound back on mid-ad
+      expect(gp.muted).toBe(true); // still silent: the ad is playing
+      finish({ success: true });
+      expect(await p).toBe(true);
+      expect(gp.muted).toBe(false);
+      // sound off again, then an ad: silent all along and after
+      emit('soundOff');
+      const q = gp.rewarded();
+      await Promise.resolve();
+      finish({ success: false });
+      expect(await q).toBe(false);
+      expect(gp.muted).toBe(true);
+    });
+
+    it('legacy hooks GamePix.soundOff() / soundOn() work the same', async () => {
+      const { gp, GamePix, log } = await setup(async () => ({ success: true }));
+      GamePix.soundOff!();
+      expect(gp.muted).toBe(true);
+      GamePix.soundOn!();
+      expect(gp.muted).toBe(false);
+      expect(log).toEqual(['mute', 'unmute']);
+    });
   });
 });

@@ -3,7 +3,8 @@
  * - drag anywhere = virtual joystick (screen-space vector). Tiptoe is the default: running needs the knob
  *   held at ≥ 85 % of the full drag for a moment, or a deliberate double-tap-and-hold
  * - toy button then tap = throw at that point; Space throws ahead
- * - WASD / arrows move (tiptoe), Shift runs
+ * - WASD / arrows move (tiptoe), Shift runs — by KeyboardEvent.code (physical keys: works on QWERTY and AZERTY);
+ *   no Escape, no Ctrl / Cmd shortcuts
  */
 export interface Joy {
   active: boolean;
@@ -136,9 +137,10 @@ export class InputCtl {
     let x = 0,
       y = 0;
     const k = this.keys;
-    if (k.has('KeyA') || k.has('ArrowLeft') || k.has('KeyQ')) x -= 1;
+    // physical keys (KeyboardEvent.code): WASD on QWERTY is ZQSD on AZERTY, same positions — no layout guessing
+    if (k.has('KeyA') || k.has('ArrowLeft')) x -= 1;
     if (k.has('KeyD') || k.has('ArrowRight')) x += 1;
-    if (k.has('KeyW') || k.has('ArrowUp') || k.has('KeyZ')) y += 1;
+    if (k.has('KeyW') || k.has('ArrowUp')) y += 1;
     if (k.has('KeyS') || k.has('ArrowDown')) y -= 1;
     this.run = k.has('ShiftLeft') || k.has('ShiftRight');
     if (x || y) {

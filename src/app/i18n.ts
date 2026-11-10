@@ -1,259 +1,78 @@
-/** EN / FR strings. Auto-detected from the SDK / browser, switchable in the menus. */
-export type Lang = 'en' | 'fr';
-
-const EN = {
-  play: 'PLAY',
-  shop: 'Shop',
-  houses: 'Houses',
-  missions: 'Missions',
-  night: 'Night',
-  house: 'House',
-  tagline: 'Sneak · Snack · Snooze',
-  tapToStart: 'Tap to start',
-  clickToStart: 'Click or press Space to start',
-  grab: 'Grab {n} cookie|Grab {n} cookies',
-  backToBed: 'Back to bed',
-  starAll: 'All cookies',
-  starSpotted: 'Never spotted',
-  starTime: 'Under {s}s',
-  hmm: 'Hmm?',
-  spotted: 'Spotted!',
-  adNotAvailable: 'No ad available right now, try later',
-  boosts: 'Boosts',
-  b_toy: 'Extra duck',
-  b_toy_d: '+1 squeaky toy for one night',
-  b_peek: 'Peek',
-  b_peek_d: '2 s map view with the grown-ups’ routes',
-  b_hint: 'Hint',
-  b_hint_d: 'Shows a safe route and when to go',
-  b_pillow: 'Pillow decoy',
-  b_pillow_d: 'Fools one bed check',
-  owned: 'You have {n}',
-  tryOn: 'Trying on',
-  freeHint: 'Free hint',
-  retryHint: 'Retry with a free hint',
-  hintGo: 'Go!',
-  hintWait: 'WAIT',
-  hintGoLabel: 'GO!',
-  hintTitle: 'Safe route: follow the dots, wait at the rings until they turn green',
-  findingHint: 'Finding a safe route…',
-  noHint: 'No hint for this night',
-  useBoost: 'Boosts for this night',
-  boostOn: 'On',
-  pillowOn: 'Pillow decoy ready: the bed check is covered',
-  peekLeft: '{n} peeks',
-  hidden: 'Hidden',
-  tiptoe: 'TIPTOE',
-  running: 'RUN!',
-  aim: 'Tap where to throw',
-  backToBedShout: 'Back to bed!',
-  bedCheckShout: 'Bed check!',
-  caughtTitle: 'Caught!',
-  bedCheckTitle: 'Bed check!',
-  caughtText: 'Off to bed you go…',
-  bedCheckText: 'Your bed was empty!',
-  retry: 'Try again',
-  skip: 'Skip level',
-  skipAd: 'Watch an ad to skip',
-  menu: 'Menu',
-  winTitle: 'Sweet dreams!',
-  next: 'Next night',
-  coins: 'coins',
-  double: '×2 coins',
-  watchAd: 'Watch ad',
-  needCookies: 'Get a cookie first!',
-  pause: 'Paused',
-  resume: 'Resume',
-  restart: 'Restart',
-  sound: 'Sound',
-  music: 'Music',
-  language: 'Language',
-  settings: 'Settings',
-  daily: 'Daily reward',
-  dailyText: 'Come back every day for a bigger treat!',
-  day: 'Day {n}',
-  claim: 'Claim',
-  claimed: 'Claimed',
-  missionsTitle: 'Daily missions',
-  pyjamas: 'Pyjamas',
-  caps: 'Caps',
-  trails: 'Trails',
-  equip: 'Equip',
-  equipped: 'Equipped',
-  locked: 'Locked',
-  finale: 'Finale',
-  extraToy: '+1 toy',
-  extraToyAd: 'Watch an ad: +1 toy',
-  close: 'Close',
-  houseDone: 'House complete!',
-  comingSoon: 'Finish the previous house to unlock',
-  stars: 'stars',
-  bedCheckIn: 'Bed check',
-  key: 'Key',
-  decoy: 'Pillow decoy placed!',
-  newBest: 'New best!',
-  free: 'Free',
-  zoom: 'Map',
-  m_cookies: 'Steal {n} cookies',
-  m_stars: 'Earn {n} stars',
-  m_nights: 'Finish {n} nights',
-  m_ghost: 'Finish {n} nights without being spotted',
-  m_toys: 'Throw {n} toys',
-  m_hide: 'Hide {n} times',
-  reward: 'Reward',
-  newTip: 'NEW!',
-  plusBonus: '+ 1 bonus ⭐',
-  bonusGot: '⭐ Bonus cookie!',
-  kbHint: 'WASD / arrows = move · Shift = run · Space = toy · hold Map = overview',
-} as const;
+/**
+ * Strings: one JSON file per language in src/locales/ (English is the reference and the fallback; every file has
+ * every English key, see tests/unit/locales.test.ts). English is bundled; the other languages are separate chunks
+ * loaded on demand. Language: the save, else the portal locale (CrazyGames SDK / GamePix.lang()), else the browser.
+ */
+import EN from '../locales/en.json';
 
 export type Key = keyof typeof EN;
+export const LANGS = ['en', 'fr', 'de', 'it', 'es', 'pt', 'nl', 'pl', 'tr', 'ru'] as const;
+export type Lang = (typeof LANGS)[number];
 
-const FR: Record<Key, string> = {
-  play: 'JOUER',
-  shop: 'Boutique',
-  houses: 'Maisons',
-  missions: 'Missions',
-  night: 'Nuit',
-  house: 'Maison',
-  tagline: 'Chut · Miam · Dodo',
-  tapToStart: 'Touche pour commencer',
-  clickToStart: 'Clique ou appuie sur Espace',
-  grab: 'Prends {n} cookie|Prends {n} cookies',
-  backToBed: 'Retour au lit',
-  starAll: 'Tous les cookies',
-  starSpotted: 'Jamais repéré',
-  starTime: 'Moins de {s} s',
-  hmm: 'Hein ?',
-  spotted: 'Vu !',
-  adNotAvailable: 'Pas de pub pour le moment, réessaie plus tard',
-  boosts: 'Bonus',
-  b_toy: 'Canard en plus',
-  b_toy_d: '+1 jouet qui couine pour une nuit',
-  b_peek: 'Coup d’œil',
-  b_peek_d: 'Vue du plan 2 s avec les rondes des adultes',
-  b_hint: 'Indice',
-  b_hint_d: 'Montre un chemin sûr et quand y aller',
-  b_pillow: 'Oreiller leurre',
-  b_pillow_d: 'Trompe une ronde du lit',
-  owned: 'Tu en as {n}',
-  tryOn: 'Essayage',
-  freeHint: 'Indice gratuit',
-  retryHint: 'Réessayer avec un indice gratuit',
-  hintGo: 'Vas-y !',
-  hintWait: 'ATTENDS',
-  hintGoLabel: 'VAS-Y !',
-  hintTitle: 'Chemin sûr : suis les points, attends dans les cercles jusqu’au vert',
-  findingHint: 'Recherche d’un chemin sûr…',
-  noHint: 'Pas d’indice pour cette nuit',
-  useBoost: 'Bonus pour cette nuit',
-  boostOn: 'Activé',
-  pillowOn: 'Oreiller leurre prêt : la ronde du lit est couverte',
-  peekLeft: '{n} coups d’œil',
-  hidden: 'Caché',
-  tiptoe: 'PAS DE LOUP',
-  running: 'COURS !',
-  aim: 'Touche où lancer',
-  backToBedShout: 'Au lit !',
-  bedCheckShout: 'Vérif du lit !',
-  caughtTitle: 'Attrapé !',
-  bedCheckTitle: 'Vérif du lit !',
-  caughtText: 'Allez, au lit…',
-  bedCheckText: 'Ton lit était vide !',
-  retry: 'Réessayer',
-  skip: 'Passer le niveau',
-  skipAd: 'Pub pour passer',
-  menu: 'Menu',
-  winTitle: 'Fais de beaux rêves !',
-  next: 'Nuit suivante',
-  coins: 'pièces',
-  double: 'Pièces ×2',
-  watchAd: 'Voir la pub',
-  needCookies: "Prends d'abord un cookie !",
-  pause: 'Pause',
-  resume: 'Reprendre',
-  restart: 'Recommencer',
-  sound: 'Sons',
-  music: 'Musique',
-  language: 'Langue',
-  settings: 'Réglages',
-  daily: 'Cadeau du jour',
-  dailyText: 'Reviens chaque jour pour un plus gros cadeau !',
-  day: 'Jour {n}',
-  claim: 'Prendre',
-  claimed: 'Pris',
-  missionsTitle: 'Missions du jour',
-  pyjamas: 'Pyjamas',
-  caps: 'Bonnets',
-  trails: 'Traînées',
-  equip: 'Mettre',
-  equipped: 'Porté',
-  locked: 'Verrouillé',
-  finale: 'Finale',
-  extraToy: '+1 jouet',
-  extraToyAd: 'Pub : +1 jouet',
-  close: 'Fermer',
-  houseDone: 'Maison terminée !',
-  comingSoon: 'Termine la maison précédente',
-  stars: 'étoiles',
-  bedCheckIn: 'Vérif du lit',
-  key: 'Clé',
-  decoy: "Leurre d'oreiller en place !",
-  newBest: 'Record !',
-  free: 'Gratuit',
-  zoom: 'Carte',
-  m_cookies: 'Vole {n} cookies',
-  m_stars: 'Gagne {n} étoiles',
-  m_nights: 'Termine {n} nuits',
-  m_ghost: 'Termine {n} nuits sans être repéré',
-  m_toys: 'Lance {n} jouets',
-  m_hide: 'Cache-toi {n} fois',
-  reward: 'Récompense',
-  newTip: 'NOUVEAU !',
-  plusBonus: '+ 1 bonus ⭐',
-  bonusGot: '⭐ Cookie bonus !',
-  kbHint: 'ZQSD / flèches = bouger · Maj = courir · Espace = jouet · Carte = vue d’ensemble',
-};
+const loaders = import.meta.glob<{ default: Record<string, string> }>(['../locales/*.json', '!../locales/en.json']);
+const dicts: Partial<Record<Lang, Record<string, string>>> = { en: EN };
 
 let lang: Lang = 'en';
-export function setLang(l: Lang) {
-  lang = l;
-  document.documentElement.lang = l;
-}
-export function getLang() {
-  return lang;
-}
-export function detectLang(sdkLocale?: string | null): Lang {
-  const l = (sdkLocale || navigator.language || 'en').toLowerCase();
-  return l.startsWith('fr') ? 'fr' : 'en';
+let plural = new Intl.PluralRules('en');
+let cats: string[] = ['one', 'other'];
+const ORDER = ['zero', 'one', 'two', 'few', 'many', 'other'];
+
+export const isLang = (l: unknown): l is Lang => typeof l === 'string' && (LANGS as readonly string[]).includes(l);
+
+/** load a language's strings (no-op if loaded); falls back to English if the file cannot be loaded */
+export async function loadLang(l: Lang): Promise<void> {
+  if (dicts[l]) return;
+  const ld = loaders[`../locales/${l}.json`];
+  if (!ld) return;
+  try {
+    dicts[l] = (await ld()).default;
+  } catch {
+    /* offline: English */
+  }
 }
 
-/** Translate; `{n}` style params; "singular|plural" picks by n. */
-export function t(key: Key, params: Record<string, string | number> = {}): string {
-  let s: string = lang === 'fr' ? FR[key] : EN[key];
-  if (s.includes('|')) {
-    const [one, many] = s.split('|');
-    s = Number(params.n ?? 0) === 1 ? one : many;
+export function setLang(l: Lang) {
+  lang = dicts[l] ? l : 'en';
+  plural = new Intl.PluralRules(lang);
+  cats = ORDER.filter((c) => (plural.resolvedOptions().pluralCategories as string[]).includes(c));
+  if (typeof document !== 'undefined') document.documentElement.lang = lang;
+}
+
+/** load + switch */
+export async function useLang(l: Lang) {
+  await loadLang(l);
+  setLang(l);
+}
+
+export function getLang(): Lang {
+  return lang;
+}
+
+export function detectLang(locale?: string | null): Lang {
+  const cands = [locale, ...(typeof navigator !== 'undefined' ? [...(navigator.languages ?? []), navigator.language] : [])];
+  for (const c of cands) {
+    const l = (c || '').toLowerCase().split(/[-_]/)[0];
+    if (isLang(l)) return l;
   }
+  return 'en';
+}
+
+/** pick a plural form: "a|b" (one|other) or "a|b|c|d" (the language's CLDR categories in order) */
+function pickPlural(s: string, n: number) {
+  const forms = s.split('|');
+  const i = cats.indexOf(plural.select(n));
+  return forms[Math.min(i < 0 ? forms.length - 1 : i, forms.length - 1)];
+}
+
+/** Translate; `{n}` style params; "singular|plural" picks by n. Missing keys fall back to English. */
+export function t(key: Key | string, params: Record<string, string | number> = {}): string {
+  let s: string = dicts[lang]?.[key] ?? (EN as Record<string, string>)[key] ?? key;
+  if (s.includes('|')) s = pickPlural(s, Number(params.n ?? 0));
   return s.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? ''));
 }
 
-export const TIPS: Record<string, { en: [string, string]; fr: [string, string] }> = {
-  move: { en: ['Sneak!', 'Drag anywhere to move. A small drag tiptoes silently.'], fr: ['En douce !', 'Glisse n’importe où pour bouger. Un petit geste = pointe des pieds.'] },
-  cookies: { en: ['Cookie time', 'Grab the glowing cookies, then get back into bed.'], fr: ['L’heure du cookie', 'Prends les cookies brillants puis retourne au lit.'] },
-  cones: { en: ['Flashlights', 'Stay out of the light! The beam’s edge or a dark room only makes them wonder (orange). Right in the light = spotted: back to bed!'], fr: ['Lampes de poche', 'Évite la lumière ! Au bord du faisceau ou dans le noir, on se méfie (orange). En pleine lumière : repéré, au lit !'] },
-  creaky: { en: ['Creaky boards', 'They always creak! Cross them only when nobody is near.'], fr: ['Planches qui grincent', 'Elles grincent toujours ! Passe quand personne n’est près.'] },
-  hide: { en: ['Hide!', 'Stop inside a basket, wardrobe, curtain or under a table to hide.'], fr: ['Cache-toi !', 'Arrête-toi dans un panier, une armoire, un rideau ou sous une table.'] },
-  run: { en: ['Running', 'A long drag runs fast — but your steps make noise.'], fr: ['Courir', 'Un grand geste fait courir vite — mais tes pas font du bruit.'] },
-  toys: { en: ['Toys', 'Tap the duck, then tap the floor: the squeak lures grown-ups away.'], fr: ['Jouets', 'Touche le canard puis le sol : le couinement attire les adultes.'] },
-  cat: { en: ['The cat', 'Mochi meows when it sees you — and everyone hears it!'], fr: ['Le chat', 'Mochi miaule quand il te voit — et tout le monde l’entend !'] },
-  switch: { en: ['Light switch', 'Step on a switch to turn a room’s lights off: they see less in the dark.'], fr: ['Interrupteur', 'Marche sur un interrupteur pour éteindre : on voit moins dans le noir.'] },
-  key: { en: ['Locked door', 'Find the golden key to open it.'], fr: ['Porte fermée', 'Trouve la clé dorée pour l’ouvrir.'] },
-  sleep: { en: ['Sleepy dad', 'Sleepers wake up if you make noise close by.'], fr: ['Papa dort', 'Les dormeurs se réveillent si tu fais du bruit près d’eux.'] },
-  vacuum: { en: ['Robot vacuum', 'Dusty beeps loudly when it bumps into you in its path.'], fr: ['Robot aspirateur', 'Dusty bipe fort s’il te voit sur son chemin.'] },
-  teen: { en: ['Big sibling', 'Jules is glued to the phone… but looks up now and then.'], fr: ['Grand frère', 'Jules est collé à son téléphone… mais lève parfois les yeux.'] },
-  grandma: { en: ['Nana Rose', 'Her lamp sees wide but not far. She is a little hard of hearing.'], fr: ['Mamie Rose', 'Sa lampe voit large mais pas loin. Elle entend un peu moins bien.'] },
-  dad: { en: ['Dad', 'Big flashlight, long reach… but he yawns a lot.'], fr: ['Papa', 'Grosse lampe, longue portée… mais il bâille souvent.'] },
-  pillow: { en: ['Bed check!', 'Someone checks your bed soon. Find the pillow decoy or be back in time!'], fr: ['Vérif du lit !', 'Quelqu’un va vérifier ton lit. Trouve le leurre d’oreiller ou rentre à temps !'] },
-  finale: { en: ['Finale!', 'Everyone is up tonight. Plan your route carefully.'], fr: ['Finale !', 'Tout le monde est debout ce soir. Prépare bien ton chemin.'] },
-};
+/** has this key a string (in English) */
+export const hasKey = (k: string) => k in EN;
+
+/** the tip card (title, text) of a level tip */
+export const tip = (id: string): [string, string] | null => (hasKey(`tip_${id}_t`) ? [t(`tip_${id}_t`), t(`tip_${id}_d`)] : null);

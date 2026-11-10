@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getLevel, LEVEL_SRC } from '../../src/levels/index';
+import { getLevel, LEVEL_SRC } from '../../src/levels/all';
 import { distanceField, walkable } from '../../src/game/grid';
 import { World } from '../../src/game/world';
 import { simulate, PROFILES } from '../../src/game/bot';

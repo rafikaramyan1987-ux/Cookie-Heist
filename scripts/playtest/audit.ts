@@ -4,7 +4,7 @@
  * corridors every route must take that do not open a crossing window at least every 10 s.
  * usage: npx tsx scripts/playtest/audit.ts [h-i]
  */
-import { getLevel, LEVEL_SRC } from '../../src/levels/index';
+import { getLevel, LEVEL_SRC } from '../../src/levels/all';
 import { closedTargets, startSightings, stationaryGuards, crossingWaits, MAX_CROSS_WAIT } from '../../src/game/audit';
 
 const only = process.argv[2];

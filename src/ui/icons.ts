@@ -53,4 +53,9 @@ export const ICONS = {
   gift: `<svg viewBox="0 0 48 48"><rect x="7" y="20" width="34" height="22" rx="4" fill="#ff7aa8"/><rect x="5" y="14" width="38" height="9" rx="3" fill="#ff5c8f"/><rect x="21" y="14" width="6" height="28" fill="#ffd25e"/><path d="M24 14c-4-8-13-8-11-2 1 3 7 2 11 2zm0 0c4-8 13-8 11-2-1 3-7 2-11 2z" fill="#ffd25e" stroke="#c9861f" stroke-width="2"/></svg>`,
   sound: `<svg viewBox="0 0 48 48"><path d="M8 18h8l10-8v28l-10-8H8z" fill="currentColor"/><path d="M32 16q6 8 0 16M37 11q10 13 0 26" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`,
   play: `<svg viewBox="0 0 48 48"><path d="M15 9l25 15-25 15z" fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`,
+  /** a TV: rewarded-ad buttons always carry it */
+  tv: `<svg viewBox="0 0 48 48" class="ic-tv"><path d="M17 6l7 7 7-7" stroke="currentColor" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="13" width="40" height="28" rx="6" fill="currentColor"/><rect x="9" y="18" width="30" height="18" rx="3" fill="#2a1a33" opacity=".85"/><path d="M21 22v10l8-5z" fill="#ffd25e"/></svg>`,
+  /** pointing hand (tutorial) */
+  hand: `<svg viewBox="0 0 64 64"><path d="M24 30V10a5 5 0 0 1 10 0v16l2-1a5 5 0 0 1 7 3l1 1a5 5 0 0 1 7 4l1 1a5 5 0 0 1 6 5v8c0 9-6 15-15 15H35c-5 0-8-2-11-6l-9-13a5 5 0 0 1 8-6z" fill="#fff4dc" stroke="#2a1a33" stroke-width="3.5" stroke-linejoin="round"/><path d="M34 27v9M43 30v7M51 34v5" stroke="#2a1a33" stroke-width="3" stroke-linecap="round"/></svg>`,
+  flame: `<svg viewBox="0 0 48 48"><path d="M24 4c3 8 13 12 13 25a13 13 0 0 1-26 0c0-7 4-11 6-14 1 4 3 6 5 7-1-7 1-13 2-18z" fill="#ff8a3d" stroke="#2a1a33" stroke-width="3" stroke-linejoin="round"/><path d="M24 26c2 3 6 5 6 10a6 6 0 0 1-12 0c0-3 2-5 3-6 1 2 2 2 3 2z" fill="#ffd25e"/></svg>`,
 };

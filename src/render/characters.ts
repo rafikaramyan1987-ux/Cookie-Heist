@@ -15,7 +15,6 @@ export type AnimMode = 'idle' | 'walk' | 'tiptoe' | 'run' | 'yawn' | 'look' | 'p
 
 export interface PyjamaSkin {
   id: string;
-  name: { en: string; fr: string };
   fabric: 'stars' | 'stripes' | 'dino' | 'dots' | 'check';
   a: number;
   b: number;
@@ -25,22 +24,18 @@ export interface PyjamaSkin {
 }
 
 export const SKINS: PyjamaSkin[] = [
-  { id: 'starry', name: { en: 'Starry Night', fr: 'Nuit étoilée' }, fabric: 'stars', a: 0x3346a8, b: 0xffd45c, cap: 0x3346a8, capTrim: 0xfff4dc },
-  { id: 'candy', name: { en: 'Candy Stripe', fr: 'Sucre d’orge' }, fabric: 'stripes', a: 0xff8fb3, b: 0xfff1f4, cap: 0xf0507e, capTrim: 0xffffff },
-  { id: 'dino', name: { en: 'Little Dino', fr: 'Petit dino' }, fabric: 'dino', a: 0x5cc46a, b: 0x3e9a55, cap: 0x5cc46a, capTrim: 0xfff2b0, hood: 'dino' },
-  { id: 'astro', name: { en: 'Space Cadet', fr: 'Petit astronaute' }, fabric: 'dots', a: 0x1f2a5c, b: 0xffd45c, cap: 0x1f2a5c, capTrim: 0xff8a3d },
-  { id: 'mint', name: { en: 'Mint Check', fr: 'Carreaux menthe' }, fabric: 'check', a: 0x7fdcc0, b: 0x2f9a80, cap: 0x2f9a80, capTrim: 0xffffff },
-  { id: 'sunny', name: { en: 'Sunny Stripes', fr: 'Rayures soleil' }, fabric: 'stripes', a: 0xffc23d, b: 0xff7a3d, cap: 0xff7a3d, capTrim: 0xfff4dc },
+  { id: 'starry', fabric: 'stars', a: 0x3346a8, b: 0xffd45c, cap: 0x3346a8, capTrim: 0xfff4dc },
+  { id: 'candy', fabric: 'stripes', a: 0xff8fb3, b: 0xfff1f4, cap: 0xf0507e, capTrim: 0xffffff },
+  { id: 'dino', fabric: 'dino', a: 0x5cc46a, b: 0x3e9a55, cap: 0x5cc46a, capTrim: 0xfff2b0, hood: 'dino' },
+  { id: 'astro', fabric: 'dots', a: 0x1f2a5c, b: 0xffd45c, cap: 0x1f2a5c, capTrim: 0xff8a3d },
+  { id: 'mint', fabric: 'check', a: 0x7fdcc0, b: 0x2f9a80, cap: 0x2f9a80, capTrim: 0xffffff },
+  { id: 'sunny', fabric: 'stripes', a: 0xffc23d, b: 0xff7a3d, cap: 0xff7a3d, capTrim: 0xfff4dc },
+  // day-7 daily reward (not sold in the shop)
+  { id: 'moon', fabric: 'stars', a: 0x5a2d91, b: 0xffd23f, cap: 0x5a2d91, capTrim: 0xffd23f },
 ];
 
 export type CapId = 'classic' | 'crown' | 'bunny' | 'propeller' | 'chef';
-export const CAPS: { id: CapId; name: { en: string; fr: string } }[] = [
-  { id: 'classic', name: { en: 'Nightcap', fr: 'Bonnet de nuit' } },
-  { id: 'bunny', name: { en: 'Bunny ears', fr: 'Oreilles de lapin' } },
-  { id: 'crown', name: { en: 'Paper crown', fr: 'Couronne en papier' } },
-  { id: 'propeller', name: { en: 'Propeller cap', fr: 'Casquette hélice' } },
-  { id: 'chef', name: { en: 'Cookie chef', fr: 'Toque de chef' } },
-];
+export const CAPS: { id: CapId }[] = [{ id: 'classic' }, { id: 'bunny' }, { id: 'crown' }, { id: 'propeller' }, { id: 'chef' }];
 
 export interface Rig {
   kind: CharKind;

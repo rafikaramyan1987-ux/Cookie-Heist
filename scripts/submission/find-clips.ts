@@ -2,7 +2,7 @@
  * Finds good moments for the trailer in REAL bot play (same seeds as ?capture&autoplay=good&seed=N):
  * a close call (hiding while an adult walks by) and clean wins.
  */
-import { getLevel } from '../../src/levels/index';
+import { getLevel } from '../../src/levels/all';
 import { World } from '../../src/game/world';
 import { Bot, PROFILES } from '../../src/game/bot';
 

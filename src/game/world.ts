@@ -119,6 +119,10 @@ export interface Guard {
   lookBase: number;
   moving: number; // 0..1 for animation
   delay: number;
+  /** scripted guard: 0 waiting off-stage, 1 on stage, 2 done (off-stage again) */
+  cueState: 0 | 1 | 2;
+  /** scripted guard has been in the kid's room */
+  cueVisited: boolean;
 }
 
 export interface Player {
@@ -164,7 +168,10 @@ export type GameEvent =
   | { type: 'caught'; g: number }
   | { type: 'bedcheck' }
   | { type: 'win' }
-  | { type: 'needCookies' };
+  | { type: 'needCookies' }
+  /** a scripted guard comes on stage / has left the hidden kid ("Phew!") */
+  | { type: 'cue'; g: number }
+  | { type: 'cueClear'; g: number };
 
 export interface Projectile {
   x0: number;
@@ -208,6 +215,8 @@ export class World {
   private passG: Passable;
   private needT = 0;
   private throwCd = 0;
+  /** a scripted guard is close to the hidden kid: the kid stays hidden */
+  cueHold = false;
 
   constructor(level: Level, opts: { seed?: number; jitter?: number; extraToys?: number } = {}) {
     this.L = level;
@@ -256,13 +265,15 @@ export class World {
         sees: false,
         range: cfg.range,
         half: cfg.half,
-        coneOn: !spec.sleep,
+        coneOn: !spec.sleep && !spec.cue,
         cooldown: 0,
         phase: this.rng() * 10,
         lookBase: spec.face,
         moving: 0,
         // playtest jitter only ever delays a guard (a designed safe start stays safe)
-        delay: spec.delay + (jit ? this.rng() * jit : 0),
+        delay: spec.cue ? Infinity : spec.delay + (jit ? this.rng() * jit : 0),
+        cueState: 0,
+        cueVisited: false,
       };
       return g;
     });
@@ -283,6 +294,7 @@ export class World {
 
   /** all required (non-bonus) cookies collected */
   get requiredDone() {
+    if (this.L.minCookies) return this.cookieCount >= this.L.minCookies;
     return this.cookies.every((got, i) => got || i === this.L.bonus);
   }
 
@@ -297,6 +309,7 @@ export class World {
     this.updatePlayer(dt, input);
     this.updateProjectiles(dt);
     for (let i = 0; i < this.guards.length; i++) this.updateGuard(i, dt);
+    this.updateCue();
     if (this.L.bedCheck > 0 && this.t >= this.L.bedCheck && !this.decoy && this.status === 'play' && !this.spotted) {
       this.status = 'bedcheck';
       this.events.push({ type: 'bedcheck' });
@@ -309,7 +322,7 @@ export class World {
     const L = this.L;
     let mag = Math.hypot(input.mx, input.mz);
     // spotted ("!"): the kid freezes like a deer in the headlights
-    if (mag < 0.08 || this.spotted) mag = 0;
+    if (mag < 0.08 || this.spotted || (this.cueHold && p.hidden)) mag = 0;
     const run = mag > 0 && (input.run || mag > RUN_THRESHOLD);
     const target = mag === 0 ? 0 : run ? RUN_SPEED : TIPTOE_SPEED;
     // snappy acceleration
@@ -339,6 +352,13 @@ export class World {
         p.hidden = true;
         this.stats.hides++;
         this.events.push({ type: 'hide' });
+        this.guards.forEach((g, gi) => {
+          if (g.spec.cue && g.cueState === 0) {
+            g.cueState = 1;
+            g.delay = 0.5;
+            this.events.push({ type: 'cue', g: gi });
+          }
+        });
       }
     } else {
       p.stillT = 0;
@@ -464,13 +484,29 @@ export class World {
     this.projectiles = this.projectiles.filter((p) => p.t < p.dur);
   }
 
+  /** scripted guards: hold the hidden kid while one is near, release with a "Phew!" */
+  private updateCue() {
+    const p = this.player;
+    let hold = -1;
+    this.guards.forEach((g, gi) => {
+      if (g.cueState !== 1) return;
+      const sameRoom = this.L.room[this.cellIndex(g)] === this.L.room[this.cellIndex(p)];
+      if (sameRoom) g.cueVisited = true;
+      // hold from the moment she comes until she has been by and left the room again
+      if (!g.cueVisited || sameRoom || Math.hypot(g.x - p.x, g.z - p.z) < 2.2) hold = gi;
+    });
+    const was = this.cueHold;
+    this.cueHold = hold >= 0 && p.hidden;
+    if (was && !this.cueHold) this.events.push({ type: 'cueClear', g: this.guards.findIndex((g) => g.spec.cue) });
+  }
+
   // ------------------------------------------------------------------ noise
   noise(x: number, z: number, r: number, kind: string, player: boolean, target?: Vec2) {
     this.events.push({ type: 'noise', x, z, r, kind, player });
     if (player) this.stats.noises++;
     const src = { x, z };
     this.guards.forEach((g, gi) => {
-      if (!g.cfg.adult) return;
+      if (!g.cfg.adult || g.delay === Infinity) return;
       const d = Math.hypot(g.x - x, g.z - z);
       const eff = r * g.cfg.hear * (los(this.L, this.E, g, src) ? 1 : 0.7);
       if (d > eff) return;
@@ -790,6 +826,14 @@ export class World {
     const done = this.moveAlong(g, dt, speed);
     if (done) {
       g.lookBase = g.dir;
+      if (g.spec.cue && g.pathIdx === 0) {
+        // the scripted walk is over: off-stage again
+        g.cueState = 2;
+        g.delay = Infinity;
+        g.coneOn = false;
+        g.state = 'wait';
+        return;
+      }
       // ping-pong along the path
       let ni = g.pathIdx + g.pathStep;
       if (ni >= pts.length || ni < 0) {

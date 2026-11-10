@@ -18,19 +18,23 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - name: Locales (every language file has every English key, placeholders, plural forms)
+        run: node scripts/check-locales.mjs
       - run: npm test
       - run: npm run build
       - name: GameDistribution build (no CrazyGames code inside)
         run: |
           npm run build:gd
           ! grep -qi crazygames dist-gd/index.html
-          ! grep -qi gamedistribution dist/index.html
+          ! grep -rqi gamedistribution dist/
       - name: Level audit (no stationary guards, safe starts, every patrol cycle opens a path)
         run: npm run check:audit
       - name: Playtest bot (solvable; 0 escapes after "!"; 0 sightings in the first 3 s; no camping)
         run: npx tsx scripts/playtest/run.ts --runs 6 --strict
-      - name: Check single-file build size (< 10 MB)
-        run: test $(stat -c%s dist/index.html) -lt 10000000 && test $(stat -c%s dist-gd/index.html) -lt 10000000
+      - name: Build sizes (CrazyGames multi-file build < 3 MB in all, GD single file < 10 MB)
+        run: test $(du -sb dist | cut -f1) -lt 3000000 && test $(stat -c%s dist-gd/index.html) -lt 10000000
+      - name: Web build
+        run: npm run build:web
 
   gamepix:
     runs-on: ubuntu-latest
@@ -47,8 +51,8 @@ jobs:
       - name: GamePix zip (index.html at the root, gamepix.sdk.js referenced, no CrazyGames / GameDistribution, no other links)
         run: |
           mkdir -p ci-gamepix
-          zip -j -9 -X -q ci-gamepix/cookie-heist-gamepix-v1.zip dist-gamepix/index.html
-          node scripts/submission/check-gamepix.mjs ci-gamepix/cookie-heist-gamepix-v1.zip
+          zip -j -9 -X -q ci-gamepix/cookie-heist-gamepix-v2.zip dist-gamepix/index.html
+          node scripts/submission/check-gamepix.mjs ci-gamepix/cookie-heist-gamepix-v2.zip
           test $(stat -c%s dist-gamepix/index.html) -lt 10000000
 
   e2e:

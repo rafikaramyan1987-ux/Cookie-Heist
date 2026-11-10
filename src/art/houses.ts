@@ -1,3 +1,4 @@
+import { t } from '../app/i18n';
 import * as THREE from 'three';
 import { PREVIEWS } from '../levels/previews';
 import { buildHouse, BuiltHouse } from '../render/house';
@@ -91,7 +92,7 @@ export function housesView(): View {
     }
     const label = document.createElement('div');
     label.className = 'label house-label';
-    label.innerHTML = `<b>${theme.name.en}</b><span>House ${ids.indexOf(id) + 1} · 12 nights</span>`;
+    label.innerHTML = `<b>${t(`house_${id}`)}</b><span>${t('house')} ${ids.indexOf(id) + 1} · 12 ${t('night')}</span>`;
     labels.appendChild(label);
     slots.push({ id, group, house, rigs, cones, label });
   }

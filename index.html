@@ -5,8 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#140f33" />
     <title>Cookie Heist</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #140f33; }
+      #boot { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: radial-gradient(ellipse at 50% 40%, #3a2c86 0%, #1c1550 55%, #0d0a28 100%); color: #fff4dc; font-family: Fredoka, 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif; transition: opacity .4s; text-align: center; padding: 0 16px; }
+      #boot.gone { opacity: 0; pointer-events: none; }
+      #boot .ck { width: 96px; height: 96px; animation: bob 1.1s ease-in-out infinite; filter: drop-shadow(0 0 22px rgba(255, 190, 90, .55)); }
+      #boot h1 { margin: 0; font-size: 44px; line-height: 1; font-weight: 700; color: #ffd25e; letter-spacing: 1px; -webkit-text-stroke: 7px #2a1a33; paint-order: stroke fill; }
+      #boot .bar { width: min(280px, 70vw); height: 16px; border-radius: 99px; background: rgba(255, 255, 255, .12); border: 3px solid #2a1a33; overflow: hidden; }
+      #boot .bar i { display: block; height: 100%; width: 8%; border-radius: 99px; background: linear-gradient(90deg, #ffb63b, #ffe38a); transition: width .35s; animation: creep 6s ease-out forwards; }
+      #boot p { margin: 0; max-width: 340px; font-size: 16px; font-weight: 600; opacity: .85; min-height: 2.4em; }
+      #boot small { font-size: 13px; opacity: .6; }
+      @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-12px) rotate(6deg); } }
+      @keyframes creep { from { width: 4%; } to { width: 28%; } }
+    </style>
   </head>
   <body>
+    <div id="boot">
+      <svg class="ck" viewBox="0 0 100 100"><circle cx="50" cy="54" r="42" fill="#5a2e1a"/><circle cx="50" cy="48" r="42" fill="#e9a55a" stroke="#5a2e1a" stroke-width="7"/><path d="M22 34 Q34 16 56 14" stroke="#ffd59a" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="36" cy="44" r="7" fill="#5a2e1a"/><circle cx="62" cy="34" r="6" fill="#5a2e1a"/><circle cx="66" cy="60" r="8" fill="#5a2e1a"/><circle cx="42" cy="68" r="5.5" fill="#5a2e1a"/><circle cx="52" cy="50" r="3.5" fill="#5a2e1a"/></svg>
+      <h1>Cookie Heist</h1>
+      <div class="bar"><i></i></div>
+      <p id="boot-tip"></p>
+      <small id="boot-load"></small>
+    </div>
+    <script>
+      // loading-screen strings, injected at build time from src/locales/*.json (see vite.config.ts)
+      (function () {
+        var S = __BOOT_STRINGS__;
+        var l = 'en';
+        try {
+          var sv = JSON.parse(localStorage.getItem('cookieheist.save.v1') || '{}').lang;
+          var c = [sv].concat(navigator.languages || [], navigator.language);
+          for (var i = 0; i < c.length; i++) { var k = String(c[i] || '').toLowerCase().split(/[-_]/)[0]; if (S[k]) { l = k; break; } }
+        } catch (e) {}
+        var s = S[l];
+        document.getElementById('boot-tip').textContent = s.tips[Math.floor(Math.random() * s.tips.length)];
+        document.getElementById('boot-load').textContent = s.loading;
+      })();
+    </script>
     <canvas id="game"></canvas>
     <div id="ui"></div>
     <script type="module" src="/src/main.ts"></script>

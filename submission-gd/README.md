@@ -1,7 +1,8 @@
 # Cookie Heist — GameDistribution submission
 
 - **Game ID:** `6aa8020129824d9c9fc5d2cfed7b2d99`
-- **Build:** `cookie-heist-gd-v1.zip` — a single `index.html` at the root of the zip (all code, art and sounds inlined),
+- **Build:** `cookie-heist-gd-v2.zip` (v3 of the game: tutorial, daily calendar, 10 languages from the browser
+  language, faster start; `cookie-heist-gd-v1.zip` = previous build, kept) — a single `index.html` at the root of the zip (all code, art and sounds inlined),
   about 1 MB. Loads only the GameDistribution SDK (`html5.api.gamedistribution.com/main.min.js`) at runtime.
 - **Orientation:** portrait and landscape (responsive), desktop and mobile.
 
@@ -46,7 +47,7 @@ Puzzle (stealth)
 Suitable for everyone (PEGI 3–7 friendly): no violence, no text chat, no external links, no logins.
 
 ## Assets in this folder
-- `cookie-heist-gd-v1.zip` — the build to upload (`index.html` at the root).
+- `cookie-heist-gd-v2.zip` — the build to upload (`index.html` at the root); `cookie-heist-gd-v1.zip` — previous build.
 - `thumbnails/thumb-512x384.jpg`, `thumb-512x512.jpg`, `thumb-200x120.jpg`, `thumb-1280x720.jpg`,
   `thumb-1280x550.jpg` — rendered from the real 3D title scene (game title and characters only).
 

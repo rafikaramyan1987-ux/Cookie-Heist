@@ -1,19 +1,33 @@
 import { ICONS } from './icons';
-import { t, getLang } from '../app/i18n';
+import { t } from '../app/i18n';
 
-/** Title screen overlay: logo, play, meta buttons, language switch. */
-export function buildTitle(o: { coins?: number; sub?: string; dailyDot?: boolean; missionsBadge?: number; soundOn?: boolean } = {}) {
+export interface TitleInfo {
+  coins?: number;
+  sub?: string;
+  /** daily reward ready: pulsing badge */
+  dailyReady?: boolean;
+  streak?: number;
+  /** daily missions: done / total, overall progress 0..1, rewards waiting */
+  missions?: { done: number; total: number; frac: number; claimable: number };
+  soundOn?: boolean;
+  /** midnight snack: available today (true), played today (false), not yet unlocked (undefined) */
+  snack?: boolean;
+}
+
+/** Title screen overlay: logo, play, daily gift (pulsing when ready), missions progress, midnight snack, menus. */
+export function buildTitle(o: TitleInfo = {}) {
   const el = document.createElement('div');
   el.className = 'title-ui';
-  const lang = getLang();
+  const m = o.missions ?? { done: 0, total: 3, frac: 0, claimable: 0 };
   el.innerHTML = `
     <div class="title-top">
-      <div class="coins chip">${ICONS.coin}<b>${(o.coins ?? 1250).toLocaleString('en-US')}</b><span class="plus">+</span></div>
+      <div class="top-left-chips">
+        <div class="coins chip">${ICONS.coin}<b>${(o.coins ?? 0).toLocaleString('en-US')}</b></div>
+        ${o.streak ? `<div class="chip streak-chip">${ICONS.flame}<b>${o.streak}</b></div>` : ''}
+      </div>
       <div class="top-right">
-        <button class="round-btn small gift" data-act="daily" aria-label="${t('daily')}">${ICONS.gift}${o.dailyDot === false ? '' : '<i class="dot"></i>'}</button>
         <button class="round-btn small ${o.soundOn === false ? 'off' : ''}" data-act="sound" aria-label="${t('sound')}">${ICONS.sound}</button>
         <button class="round-btn small" data-act="settings" aria-label="${t('settings')}">${ICONS.gear}</button>
-        <div class="lang"><b class="${lang === 'en' ? 'on' : ''}" data-act="lang-en">EN</b><b class="${lang === 'fr' ? 'on' : ''}" data-act="lang-fr">FR</b></div>
       </div>
     </div>
     <div class="logo">
@@ -22,11 +36,19 @@ export function buildTitle(o: { coins?: number; sub?: string; dailyDot?: boolean
       <div class="tagline">${t('tagline')}</div>
     </div>
     <div class="title-bottom">
-      <button class="play-btn" data-act="play"><span class="pi">${ICONS.play}</span><span><b>${t('play')}</b><small>${o.sub ?? 'Family House · Night 3'}</small></span></button>
+      <div class="side-row">
+        <button class="side-btn daily ${o.dailyReady ? 'ready' : ''}" data-act="daily">${ICONS.gift}<span><b>${t('daily')}</b><small>${o.dailyReady ? t('dailyReady') : `${t('streak')}: ${o.streak ?? 0}`}</small></span>${o.dailyReady ? '<i class="badge pulse">!</i>' : ''}</button>
+        ${
+          o.snack === undefined
+            ? ''
+            : `<button class="side-btn snack ${o.snack ? 'ready' : 'used'}" data-act="snack" ${o.snack ? '' : 'disabled'}>${ICONS.moon}<span><b>${t('snackTitle')}</b><small>${o.snack ? t('snackSub') : t('snackDone')}</small></span>${o.snack ? '<i class="badge pulse">★</i>' : ''}</button>`
+        }
+      </div>
+      <button class="play-btn" data-act="play"><span class="pi">${ICONS.play}</span><span><b>${t('play')}</b><small>${o.sub ?? ''}</small></span></button>
+      <button class="missions-bar" data-act="missions"><span class="mb-head"><b>${t('missionsTitle')}</b><em>${m.done}/${m.total}</em></span><span class="bar"><i style="width:${Math.round(m.frac * 100)}%"></i></span>${m.claimable ? `<i class="badge pulse">${m.claimable}</i>` : ''}</button>
       <div class="menu-row">
         <button class="menu-btn" data-act="shop"><span class="mi shop">${ICONS.bag}</span><b>${t('shop')}</b></button>
         <button class="menu-btn" data-act="map"><span class="mi map">${ICONS.map}</span><b>${t('houses')}</b></button>
-        <button class="menu-btn" data-act="missions"><span class="mi missions"><svg viewBox="0 0 48 48"><rect x="9" y="6" width="30" height="36" rx="5" fill="currentColor"/><path d="M15 17l3 3 5-6M15 28l3 3 5-6" stroke="#2a1a33" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M27 18h7M27 29h7" stroke="#2a1a33" stroke-width="3.5" stroke-linecap="round"/></svg></span><b>${t('missions')}</b>${(o.missionsBadge ?? 2) > 0 ? `<i class="badge">${o.missionsBadge ?? 2}</i>` : ''}</button>
       </div>
     </div>
   `;

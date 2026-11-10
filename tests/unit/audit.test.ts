@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getLevel } from '../../src/levels/index';
+import { getLevel } from '../../src/levels/all';
 import { closedTargets, startSightings, stationaryGuards, crossingWaits, MAX_CROSS_WAIT } from '../../src/game/audit';
 
 describe('level audit (real guard simulation)', () => {

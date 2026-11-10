@@ -1,3 +1,4 @@
+import { t } from '../app/i18n';
 import { ICONS } from './icons';
 
 /** In-game HUD (DOM overlay): level chip, cookie slots, timer, pause, toy button, joystick, tips. */
@@ -17,7 +18,7 @@ export function buildHud(s: HudState) {
   el.innerHTML = `
     <div class="alert-vignette suspicious"></div>
     <div class="hud-top">
-      <div class="chip level-chip">${ICONS.moon}<div><small>House ${s.house}</small><b>Night ${s.level}</b></div></div>
+      <div class="chip level-chip">${ICONS.moon}<div><small>${t('house')} ${s.house}</small><b>${t('night')} ${s.level}</b></div></div>
       <div class="cookie-bar">
         ${Array.from({ length: s.total }, (_, i) => `<div class="slot ${i < s.cookies ? 'got' : ''}">${ICONS.cookie(i < s.cookies)}</div>`).join('')}
       </div>
@@ -25,11 +26,11 @@ export function buildHud(s: HudState) {
     </div>
     <div class="hud-sub">
       <div class="chip timer"><span class="clock"></span><b>0:${String(Math.floor(s.time)).padStart(2, '0')}</b><i>/ 0:35</i></div>
-      <div class="chip stealth">${ICONS.eye}<b>Hmm?</b></div>
+      <div class="chip stealth">${ICONS.eye}<b>${t('hmm')}</b></div>
     </div>
     <div class="tip-card">
       <div class="tip-icon">${ICONS.creak}</div>
-      <div class="tip-text"><small>NEW!</small><b>Creaky boards</b><span>Tiptoe over them — running makes them squeak!</span></div>
+      <div class="tip-text"><small>${t('newTip')}</small><b>${t('tip_creaky_t')}</b><span>${t('tip_creaky_d')}</span></div>
     </div>
     <div class="joystick">
       <div class="joy-run"></div>
@@ -37,7 +38,7 @@ export function buildHud(s: HudState) {
       <div class="joy-knob"></div>
       <div class="joy-label">tiptoe</div>
     </div>
-    <button class="toy-btn" aria-label="Throw toy">
+    <button class="toy-btn" aria-label="${t('throwToy')}">
       <div class="toy-ring"></div>
       ${ICONS.duck}
       <span class="toy-count">×${s.toys}</span>

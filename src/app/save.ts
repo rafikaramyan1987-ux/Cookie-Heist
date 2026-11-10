@@ -1,6 +1,11 @@
 import { sdk } from './sdk';
+import { isLang, type Lang } from './i18n';
 
-/** Persistent progress. Stored through the platform storage (CrazyGames Data Module) or localStorage, with an in-memory fallback. */
+/**
+ * Persistent progress, one JSON document under the key `cookieheist.save.v1`: stored through the CrazyGames Data
+ * Module on CrazyGames (synced to the player's account), localStorage on the other platforms (same key), with an
+ * in-memory fallback when storage is blocked. Saved 300 ms after every change and when the page is hidden.
+ */
 export interface SaveData {
   v: 1;
   coins: number;
@@ -13,7 +18,7 @@ export interface SaveData {
   skin: string;
   cap: string;
   trail: string;
-  lang: 'en' | 'fr' | null;
+  lang: Lang | null;
   sound: boolean;
   music: boolean;
   tips: string[];
@@ -24,9 +29,14 @@ export interface SaveData {
   items: { toy: number; peek: number; hint: number; pillow: number };
   /** nights won with a hint (tracked silently; stars are not affected) */
   hinted: Record<string, boolean>;
+  /** the first-visit tutorial (night 1) is done: the menu shows from now on */
+  tutorialDone: boolean;
+  /** day the midnight snack bonus night was last played */
+  snack: string;
 }
 
-const KEY = 'cookieheist.save.v1';
+export const SAVE_KEY = 'cookieheist.save.v1';
+const KEY = SAVE_KEY;
 
 export function defaultSave(): SaveData {
   return {
@@ -49,6 +59,8 @@ export function defaultSave(): SaveData {
     totals: { cookies: 0, wins: 0 },
     items: { toy: 0, peek: 0, hint: 0, pillow: 0 },
     hinted: {},
+    tutorialDone: false,
+    snack: '',
   };
 }
 
@@ -68,6 +80,9 @@ export function parseSave(raw: string | null | undefined): SaveData {
       hinted: d.hinted && typeof d.hinted === 'object' ? d.hinted : {},
       owned: Array.isArray(d.owned) ? Array.from(new Set([...base.owned, ...d.owned])) : base.owned,
       coins: Math.max(0, Math.floor(Number(d.coins) || 0)),
+      // players from before the tutorial existed have already played night 1
+      tutorialDone: !!d.tutorialDone || Object.keys(d.stars ?? {}).length > 0,
+      lang: isLang(d.lang) ? d.lang : null,
     };
   } catch {
     return base;

@@ -18,13 +18,23 @@ Caught? Mum gasps *“Back to bed!”* and carries you back — child-friendly, 
   3 daily missions, house map with progress.
 - Shop: **boosts** for coins (extra duck, peek at the grown-ups' routes, hint, pillow decoy — small prices, never
   required) and cosmetics (6 pyjamas, 5 caps, 5 trails) with a rotating 3D Pip to try items on before buying.
-- EN + FR (auto-detected, switchable). All sounds synthesised (Web Audio), all models procedural.
+- **First visit:** no menu — the loading screen, then straight into night 1 with an in-game tutorial (hand pointer:
+  drag to sneak → hide in the basket → mum's flashlight sweeps right past, "Phew!" → grab the cookie → back to bed,
+  ~15 s, skippable). The menu shows after night 1 and on later visits.
+- **Come back tomorrow:** 7-day reward calendar (growing coins, day 7 = the Golden Moon pyjamas) with a streak, a
+  "Midnight Snack" bonus night once a day, 3 daily missions with a progress bar on the menu, and on every end screen
+  the next unlock (with a picture) and tomorrow's reward.
+- **Juice:** "Phew!" on near misses, cookie sparkle + crunch, comic "Back to bed!" burst, star rain on 3 stars,
+  instant one-tap retry.
+- 10 languages (EN, FR, DE, IT, ES, PT, NL, PL, TR, RU), one JSON per language in `src/locales/` (CI checks every key);
+  picked from the portal locale (CrazyGames SDK / `GamePix.lang()`) or the browser, switchable in Settings, saved.
+  All sounds synthesised (Web Audio), all models procedural.
 
 ## Controls
 
 | | Touch | Mouse | Keyboard |
 |---|---|---|---|
-| Move | drag anywhere (virtual joystick) | drag | WASD / arrows (ZQSD works too) |
+| Move | drag anywhere (virtual joystick) | drag | WASD / arrows (physical keys: ZQSD on AZERTY) |
 | Tiptoe (silent) | drag (default) | drag (default) | default |
 | Run (fast, noisy) | drag to the outer ring and hold, or double-tap & hold | same | hold Shift |
 | Throw a toy | tap the duck, then tap the floor | click duck, click floor | Space (throws ahead) |
@@ -37,11 +47,12 @@ Caught? Mum gasps *“Back to bed!”* and carries you back — child-friendly, 
 ```bash
 npm install
 npm run dev            # http://localhost:5173  (?level=0-0 jumps to a night, ?autoplay=good lets the bot play)
-npm run build          # CrazyGames build: dist/index.html — single file, no extra requests (~1 MB)
+npm run build          # CrazyGames build: dist/ — index.html (loading screen inline) + lazily loaded chunks
 npm run build:gd       # GameDistribution build: dist-gd/index.html (no CrazyGames code)
 npm run build:web      # portal-free build: dist-web/index.html
 npm run build:gamepix  # GamePix build: dist-gamepix/index.html (GamePix SDK only); zip: npm run submission:gamepix
-npm run lint && npm run typecheck && npm test
+npm run lint && npm run typecheck && npm test   # (+ npm run check:locales)
+npm run perf           # load time on a throttled mid-range phone (4G, 4x CPU): first frame, playable, bytes
 npm run test:e2e       # Playwright smoke tests (desktop + 390×844 portrait), CrazyGames build
 npm run test:e2e:gd    # Playwright smoke tests of the GD build with a mocked gdsdk
 npm run playtest       # bot plays all 60 levels (strict audit) → docs/playtest.md
@@ -62,8 +73,17 @@ static meshes merged per material, one shadow-casting light, DPR capped at 2, ha
 - `src/render/` — toon materials, procedural characters/props/textures, house builder, vision cones, effects
 - `src/app/` — app flow, input, Web Audio synth, save, i18n, meta (shop/daily/missions)
 - `src/app/platform/` — portal layer: one `Platform` interface, CrazyGames / GameDistribution / GamePix / plain-web implementations
-- `src/levels/` — the 60 levels (see `docs/levels.md`)
+- `src/levels/` — the 60 levels (see `docs/levels.md`); houses 2–5 and the midnight-snack nights are a lazy chunk
+- `src/locales/` — UI strings, one JSON per language
 - `scripts/playtest/` — headless playtest bot report; `scripts/submission/` — covers, trailers, zip
+
+## Loading
+
+`index.html` paints a plain HTML/CSS loading screen (logo, progress bar, a tip in the player's language) before any
+script runs. The CrazyGames / web builds are split: the game + night 1 load first; three.js is its own chunk
+(preloaded in parallel); the other houses, the 3D menu scene, the shop renderer, music + extra sounds and the other
+languages stream in afterwards. GameDistribution / GamePix keep a single inlined `index.html`.
+`npm run perf` measures it (see the v3 PR for the before / after numbers).
 
 ## Platforms
 
@@ -76,7 +96,9 @@ own SDK code: the GD build never includes or loads the CrazyGames SDK and vice v
 SDK v3 is loaded at runtime (with a timeout and an offline fallback): `loadingStart/Stop`, `gameplayStart/Stop`
 (paused during menus, pause and ads), `happytime` on house completion, midgame ads only between levels and at most
 one every ~2 minutes, optional rewarded ads (×2 coins, +1 toy, skip a night after 3 fails), SDK mute respected,
-progress saved through the SDK Data Module with a localStorage fallback.
+progress saved through the SDK Data Module with a localStorage fallback (one key, `cookieheist.save.v1`). Rewarded
+ads only from buttons with a TV icon + "Ad" label, paid only when the ad really completed; without an SDK no ad
+buttons are shown.
 
 ## GameDistribution integration
 

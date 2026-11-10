@@ -2,7 +2,6 @@ import type { FloorKind, GuardKind, HouseId, PropDef, WallKind, LevelDef } from 
 
 /** Compact hand-authored level source (see docs/levels.md). */
 export interface LevelSrc {
-  name: [string, string];
   /** room letters per cell, '.' = outside */
   map: string[];
   /** objects per cell (same size), ' ' or '.' = nothing */
@@ -38,6 +37,11 @@ export interface GuardSrc {
   delay?: number;
   /** vision range multiplier (sharper eyes on harder nights) */
   sight?: number;
+  /**
+   * scripted (tutorial): off-stage (no beam, deaf) until the kid first hides; then walks the path once, there and
+   * back, and goes off-stage again. While she is near, the hidden kid stays put (a guaranteed near miss).
+   */
+  cue?: boolean;
 }
 
 export type TipId =
@@ -77,6 +81,8 @@ export interface GuardSpec {
   delay: number;
   /** vision range multiplier */
   sight: number;
+  /** scripted tutorial guard, see GuardSrc.cue */
+  cue: boolean;
 }
 
 /** Runtime level, shared by game logic, bot and renderer. */
@@ -85,7 +91,8 @@ export interface Level {
   house: HouseId;
   houseIndex: number;
   index: number; // 0..11 within house
-  name: [string, string];
+  /** i18n key of the night's name */
+  nameKey: string;
   w: number;
   d: number;
   /** room group per cell (-1 outside) */
@@ -103,6 +110,8 @@ export interface Level {
   floorToy: Uint8Array;
   cookies: (Vec2 & { onSolid: boolean })[];
   need: number;
+  /** bonus nights: winning needs only this many cookies (any of them), not all of them */
+  minCookies?: number;
   /** index of the golden bonus cookie (optional), -1 if none */
   bonus: number;
   keys: Vec2[];

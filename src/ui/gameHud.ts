@@ -1,5 +1,5 @@
 import { ICONS } from './icons';
-import { t, TIPS, getLang } from '../app/i18n';
+import { t, tip as tipText } from '../app/i18n';
 import { RUN_ZONE, type Joy } from '../app/input';
 
 export interface HudInit {
@@ -59,7 +59,9 @@ export class GameHud {
   private toastEl: HTMLElement;
   private shoutEl: HTMLElement;
   private aimHint: HTMLElement;
-  private lastCookies = 0;
+  private lastCookies = -1;
+  private goalEl!: HTMLElement;
+  private goalKey = '';
   private tipTimer = 0;
 
   constructor(private o: HudInit) {
@@ -71,7 +73,7 @@ export class GameHud {
       <div class="hud-top">
         <div class="chip level-chip">${ICONS.moon}<div><small>${o.houseName}</small><b>${t('night')} ${o.night}</b></div></div>
         <div class="cookie-bar">${Array.from({ length: o.need }, () => `<div class="slot">${ICONS.cookie(false)}</div>`).join('')}${o.bonus >= 0 ? `<div class="slot bonus-slot">${ICONS.goldCookie(false)}</div>` : ''}</div>
-        <button class="round-btn pause" aria-label="Pause">${ICONS.pause}</button>
+        <button class="round-btn pause" aria-label="${t('pause')}">${ICONS.pause}</button>
       </div>
       <div class="hud-sub">
         <div class="chip timer"><span class="clock"></span><b>0:00</b><i>/ ${fmt(o.par)}</i></div>
@@ -79,15 +81,16 @@ export class GameHud {
         <div class="chip key-chip hidden-chip">${ICONS.key}<b>${t('key')}</b></div>
         <div class="chip bed-chip ${o.bedCheck ? '' : 'hidden-chip'}">${ICONS.clock}<b></b></div>
       </div>
+      <div class="chip goal-line">${ICONS.cookie(true)}<span></span></div>
       <div class="tip-card hidden-tip"><div class="tip-icon"></div><div class="tip-text"><small>${t('newTip')}</small><b></b><span></span></div></div>
       <div class="edge-arrows"></div>
       <div class="toast"></div>
       <div class="shout"></div>
       <div class="aim-hint">${t('aim')}</div>
       <div class="joystick hidden-joy"><div class="joy-run"></div><div class="joy-tip"></div><div class="joy-knob"></div><div class="joy-label">${t('tiptoe')}</div></div>
-      <button class="round-btn zoom" aria-label="Map">${ICONS.map}</button>
-      <button class="round-btn peek ${o.peeks ? '' : 'hidden-chip'}" aria-label="Peek">${ICONS.binoculars}<span class="peek-count">×${o.peeks ?? 0}</span></button>
-      <button class="toy-btn ${o.toys > 0 || o.toyPickups ? '' : 'no-toys'}" aria-label="Throw toy"><div class="toy-ring"></div>${ICONS.duck}<span class="toy-count">×0</span></button>
+      <button class="round-btn zoom" aria-label="${t('zoom')}">${ICONS.map}</button>
+      <button class="round-btn peek ${o.peeks ? '' : 'hidden-chip'}" aria-label="${t('b_peek')}">${ICONS.binoculars}<span class="peek-count">×${o.peeks ?? 0}</span></button>
+      <button class="toy-btn ${o.toys > 0 || o.toyPickups ? '' : 'no-toys'}" aria-label="${t('throwToy')}"><div class="toy-ring"></div>${ICONS.duck}<span class="toy-count">×0</span></button>
       ${o.touch ? '' : `<div class="kb-hint">${t('kbHint')}</div>`}
     `;
     this.slots = [...el.querySelectorAll<HTMLElement>('.cookie-bar .slot')];
@@ -105,6 +108,7 @@ export class GameHud {
     this.toastEl = el.querySelector('.toast')!;
     this.shoutEl = el.querySelector('.shout')!;
     this.aimHint = el.querySelector('.aim-hint')!;
+    this.goalEl = el.querySelector('.goal-line')!;
     const stop = (e: Event) => e.stopPropagation();
     for (const b of el.querySelectorAll('button')) b.addEventListener('pointerdown', stop);
     el.querySelector('.pause')!.addEventListener('click', () => this.onPause());
@@ -224,6 +228,17 @@ export class GameHud {
       });
       this.lastCookies = key;
     }
+    // the goal, always visible: "Grab N cookies" until done, then "Back to bed"
+    const left = Math.max(0, this.o.need - got);
+    const gk = left > 0 ? `c${left}` : 'bed';
+    if (gk !== this.goalKey) {
+      this.goalKey = gk;
+      this.goalEl.innerHTML = left > 0 ? ICONS.cookie(true) : ICONS.bed;
+      const sp = document.createElement('span');
+      sp.textContent = left > 0 ? `${t('grab', { n: left })} ➜ ${t('backToBed')}` : `${t('backToBed')}!`;
+      this.goalEl.appendChild(sp);
+      this.goalEl.classList.toggle('done', left === 0);
+    }
     const a = f.hidden ? 'hidden' : f.alert;
     this.alertEl.className = `chip stealth ${a}`;
     this.alertEl.querySelector('b')!.textContent = a === 'hidden' ? t('hidden') : a === 'chase' ? t('spotted') : a === 'sus' ? t('hmm') : '';
@@ -283,9 +298,9 @@ export class GameHud {
   }
 
   showTip(id: string, icon = '') {
-    const tip = TIPS[id];
+    const tip = tipText(id);
     if (!tip) return;
-    const [title, text] = tip[getLang()];
+    const [title, text] = tip;
     this.tipEl.querySelector('b')!.textContent = title;
     this.tipEl.querySelector('span')!.textContent = text;
     this.tipEl.querySelector('.tip-icon')!.innerHTML = icon || TIP_ICONS[id] || ICONS.cookie(true);
