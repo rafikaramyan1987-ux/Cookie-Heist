@@ -176,7 +176,8 @@ export class App {
     performance.mark('ch:frame');
     sdk.loadingStop();
     loader.done();
-    if (!this.capture) requestAnimationFrame(this.frame);
+    // ?capture / ?manual: frames are driven from outside (tick), for recordings; ?manual keeps the normal player flow
+    if (!this.capture && !params.has('manual')) requestAnimationFrame(this.frame);
     (window as unknown as { __ready: boolean }).__ready = true;
     // everything else streams in the background once night 1 / the menu is up
     setTimeout(() => {

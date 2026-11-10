@@ -1,10 +1,18 @@
-// Covers + trailers + zip. Expects `npx vite preview --host 127.0.0.1 --port 4174` running on the built dist.
+// CrazyGames submission v3: the multi-file build in a zip that unzips to cookie-heist-v3/ (index.html + assets/).
+// Run `npm run build` first. Covers: scripts/submission/covers-v3.mjs; trailers: scripts/submission/trailer-v3.mjs
+// (both need `npx vite preview --host 127.0.0.1 --port 4174` on the built dist).
 import { execFileSync } from 'node:child_process';
-const base = 'http://127.0.0.1:4174/';
-const run = (...a) => execFileSync('node', a, { stdio: 'inherit' });
-run('scripts/submission/covers.mjs', base);
-run('scripts/submission/record.mjs', base, '1920', '1080', 'submission/videos/trailer-1920x1080.mp4');
-run('scripts/submission/record.mjs', base, '1080', '1920', 'submission/videos/trailer-1080x1920.mp4');
-execFileSync('rm', ['-f', 'submission/cookie-heist-build.zip']);
-execFileSync('zip', ['-j', '-q', 'submission/cookie-heist-build.zip', 'dist/index.html'], { stdio: 'inherit' });
-console.log('submission ready');
+import { cpSync, rmSync, mkdirSync, statSync, readdirSync } from 'node:fs';
+
+const name = 'cookie-heist-v3';
+const tmp = '/tmp/claude-0/submission-cg';
+rmSync(tmp, { recursive: true, force: true });
+mkdirSync(tmp, { recursive: true });
+cpSync('dist', `${tmp}/${name}`, { recursive: true });
+// .woff (non-woff2) fallbacks are never fetched by browsers that run WebGL 2-era games: leave them out
+for (const f of readdirSync(`${tmp}/${name}/assets`)) if (f.endsWith('.woff')) rmSync(`${tmp}/${name}/assets/${f}`);
+const zip = `${process.cwd()}/submission/${name}.zip`;
+rmSync(zip, { force: true });
+execFileSync('zip', ['-r', '-9', '-X', '-q', zip, name], { cwd: tmp, stdio: 'inherit' });
+console.log(`CrazyGames submission ready: submission/${name}.zip (${(statSync(zip).size / 1024).toFixed(0)} KB)`);
+execFileSync('unzip', ['-l', zip], { stdio: 'inherit' });

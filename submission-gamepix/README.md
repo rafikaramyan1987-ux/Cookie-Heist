@@ -1,10 +1,14 @@
 # Cookie Heist — GamePix submission
 
-- **Build:** `cookie-heist-gamepix-v1.zip` — a single `index.html` at the root of the zip (all code, art and sounds
-  inlined, relative paths only). The only external script is the GamePix SDK
+- **Build:** `cookie-heist-gamepix-v2.zip` (v3 of the game: tutorial, daily calendar, 10 languages, faster start) —
+  a single `index.html` at the root of the zip (all code, art and sounds inlined, relative paths only).
+  `cookie-heist-gamepix-v1.zip` is the previous build, kept for reference. The only external script is the GamePix SDK
   (`integration.gamepix.com/sdk/v3/gamepix.sdk.js`, manual lifecycle), loaded before the game bundle.
-- **Icon / cover:** `icon-512x512.png`, `cover-1280x720.png` — scaled from the store covers rendered from the real 3D
-  title scene (title "Cookie Heist" and characters only, no URLs).
+- **Icon / cover:** `icon-256x256.jpg`, `cover-1360x850.jpg` — from v3 cover A (the kid's guilty grin and a giant glowing
+  cookie, rendered from the real 3D scene; title only, no URLs). `icon-512x512.png` / `cover-1280x720.png` = v1.
+- **Sound:** the SDK's `soundOff` / `soundOn` events (and the legacy `GamePix.soundOff()` / `soundOn()` hooks) are
+  handled: soundOff mutes without pausing, soundOn restores sound only when no pause or ad is active, through the
+  player's own sound / music settings.
 - **Screen capture:** `cookie-heist-gamepix-capture.mp4` (58 s, 960x540) — the GamePix build in the local SDK
   simulator: title, night 1 played by the demo bot (sped up 3x), Next night with the simulator's fake interstitial
   (shown because 2 minutes have passed since loading; the idle wait on the result screen is cut; ad sped up 2x),
@@ -31,7 +35,8 @@ sneak back into bed before the bed check.
 mansion, each with a big finale. New ideas arrive one at a time with short animated tips, and if you get caught it's
 just "Back to bed!" and another try. Stuck? After a few tries a free hint shows a safe route. Earn stars and coins,
 claim daily rewards, finish daily missions and spend your coins in the shop on boosts, pyjamas, caps and cookie
-trails. Plays in English and French on desktop and mobile, in portrait and landscape.
+trails. Plays in English, French, German, Italian, Spanish, Portuguese, Dutch, Polish, Turkish and Russian (from
+GamePix.lang()), on desktop and mobile, in portrait and landscape.
 
 ## Controls
 - **Touch / mouse:** drag anywhere to move. A small drag tiptoes silently; drag to the outer ring and hold to run
