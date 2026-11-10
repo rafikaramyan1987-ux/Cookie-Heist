@@ -97,15 +97,21 @@ export interface Storage {
 export function storage(): Storage {
   const data = sdk.data();
   if (data) return data;
+  // Playgama: progress goes only through Bridge Storage; without Bridge the game plays on with an in-memory save
+  if (__PLATFORM__ === 'playgama') return memoryStorage();
   try {
     const ls = window.localStorage;
     ls.setItem('__t', '1');
     ls.removeItem('__t');
     return ls;
   } catch {
-    const mem = new Map<string, string>();
-    return { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => void mem.set(k, v) };
+    return memoryStorage();
   }
+}
+
+function memoryStorage(): Storage {
+  const mem = new Map<string, string>();
+  return { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => void mem.set(k, v) };
 }
 
 export function loadSave(st: Storage = storage()): SaveData {

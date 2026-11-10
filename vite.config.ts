@@ -2,19 +2,19 @@ import { defineConfig, type Plugin } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { readdirSync, readFileSync } from 'node:fs';
 
-const PLATFORMS = ['crazygames', 'gd', 'web', 'gamepix'] as const;
+const PLATFORMS = ['crazygames', 'gd', 'web', 'gamepix', 'playgama'] as const;
 type PlatformName = (typeof PLATFORMS)[number];
 
 /** GamePix JS SDK v3 (manual lifecycle): an external script, loaded before the game bundle, in the GamePix build only */
 export const GAMEPIX_SDK_URL = 'https://integration.gamepix.com/sdk/v3/gamepix.sdk.js';
 
 /**
- * Build target portal: `VITE_PLATFORM=crazygames|gd|web|gamepix`, or `--mode gd` / `--mode web` / `--mode gamepix`;
+ * Build target portal: `VITE_PLATFORM=crazygames|gd|web|gamepix|playgama`, or `--mode gd` / `--mode web` / `--mode gamepix` / `--mode playgama`;
  * default CrazyGames. The CrazyGames build goes to dist/, the others to dist-<platform>/.
  */
 function platformFor(mode: string): PlatformName {
   const p = process.env.VITE_PLATFORM || (PLATFORMS.includes(mode as PlatformName) ? mode : 'crazygames');
-  if (!PLATFORMS.includes(p as PlatformName)) throw new Error(`unknown VITE_PLATFORM "${p}" (crazygames | gd | web | gamepix)`);
+  if (!PLATFORMS.includes(p as PlatformName)) throw new Error(`unknown VITE_PLATFORM "${p}" (crazygames | gd | web | gamepix | playgama)`);
   return p as PlatformName;
 }
 
@@ -28,6 +28,35 @@ function gamepixSdk(): Plugin {
         { tag: 'script', children: "window.GamePixConfig = { lifecycle: 'manual' };", injectTo: 'head-prepend' },
         { tag: 'script', attrs: { src: GAMEPIX_SDK_URL }, injectTo: 'head-prepend' },
       ],
+    },
+  };
+}
+
+/**
+ * Playgama build: Playgama Bridge 2.4.1 (vendor/playgama-bridge/, the official standalone `playgama` build) as
+ * `./playgama-bridge.js`, the first script in <head>, loaded normally (not async), and `playgama-bridge-config.json`
+ * beside index.html (Bridge loads it from there).
+ */
+function playgamaBridge(): Plugin {
+  return {
+    name: 'playgama-bridge',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'pre',
+      handler: (html) => {
+        // the loading screen speaks English until Bridge gives the language (Playgama: no localStorage, the language
+        // comes only from Bridge's platform.language)
+        const guess = /var sv = JSON\.parse\(localStorage[^\n]*\n\s*var c = \[sv\]\.concat\(navigator\.languages \|\| \[\], navigator\.language\);/;
+        if (!guess.test(html)) throw new Error('playgama-bridge: the loading screen language guess in index.html changed');
+        return {
+          html: html.replace(guess, 'var c = [];'),
+          tags: [{ tag: 'script', attrs: { src: './playgama-bridge.js' }, injectTo: 'head-prepend' }],
+        };
+      },
+    },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'playgama-bridge.js', source: readFileSync('vendor/playgama-bridge/playgama-bridge.js') });
+      this.emitFile({ type: 'asset', fileName: 'playgama-bridge-config.json', source: readFileSync('scripts/playgama/playgama-bridge-config.json') });
     },
   };
 }
@@ -67,12 +96,12 @@ function preloadFonts(): Plugin {
 
 export default defineConfig(({ mode }) => {
   const platform = platformFor(mode);
-  // CrazyGames / web: index.html (with the loading screen) + split, lazily loaded chunks — playable fast, smallest
+  // CrazyGames / web / Playgama: index.html (with the loading screen) + split, lazily loaded chunks — playable fast, smallest
   // download. GameDistribution / GamePix keep their single-file upload (one index.html, everything inlined).
   const single = platform === 'gd' || platform === 'gamepix';
   return {
     base: './',
-    plugins: [bootStrings(), ...(platform === 'gamepix' ? [gamepixSdk()] : []), ...(single ? [viteSingleFile()] : [preloadFonts()])],
+    plugins: [bootStrings(), ...(platform === 'gamepix' ? [gamepixSdk()] : []), ...(platform === 'playgama' ? [playgamaBridge()] : []), ...(single ? [viteSingleFile()] : [preloadFonts()])],
     define: { __PLATFORM__: JSON.stringify(platform) },
     build: {
       target: 'es2020',
