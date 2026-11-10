@@ -133,9 +133,9 @@ if (only !== 'playgama') {
     await frame.waitForTimeout(800); // the save is written 300 ms after the change
     const saved = await frame.evaluate(async () => {
       const [v] = await window.bridge.storage.get(['cookieheist.save.v1']);
-      return { type: window.bridge.storage.defaultType, v: typeof v === 'string' ? v.slice(0, 40) : v };
+      return { v: typeof v === 'string' ? v.slice(0, 40) : v };
     });
-    expect(saved.v, `progress saved through Bridge Storage (${saved.type})`, JSON.stringify(saved));
+    expect(saved.v, 'progress saved through Bridge Storage (bridge.storage.get returns the save)', JSON.stringify(saved));
     await frame.evaluate(() => (window.__playgama.lastMidgame = 0));
     await game.next(frame);
     await game.nextLevelOpened(frame);
