@@ -166,7 +166,7 @@ for (const [w, h] of SIZES) {
     check(res?.won === false, `${tag}: the first level was not won (${res?.why ?? ''})`, `${tag}: first level played${res?.note ? ` (${res.note})` : ''}`);
     await layout(s.frame, w, h, `${tag} end`);
     await noAdButtons(s.frame, `${tag} end`);
-    if (shots) await s.page.screenshot({ path: join(shots, `iframe-${tag}.png`) });
+    if (shots) await s.page.screenshot({ path: join(shots, `iframe-${tag}.png`), timeout: 180_000 });
     await finish(s, tag);
   } catch (e) {
     fail(`${tag}: ${e.message.split('\n')[0]}`);

@@ -28,7 +28,7 @@ for (const [name, w, h] of [['landscape', 1920, 1080], ['portrait', 1080, 1920]]
   await page.goto(`${server.origin}/game/index.html${shot.query ?? ''}`);
   await web.ready(page.mainFrame(), page);
   await shot.run(page.mainFrame(), page);
-  await page.screenshot({ path: join(out, `${name}.png`) });
+  await page.screenshot({ path: join(out, `${name}.png`), timeout: 180_000 });
   console.log(`${join(out, `${name}.png`)}: ${shot.name}`);
   await ctx.close();
 }
