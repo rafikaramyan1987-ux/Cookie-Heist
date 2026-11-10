@@ -1,5 +1,11 @@
 # Cookie Heist — CrazyGames submission
 
+## What changed in v3.2
+- The title screen fits every screen: the logo never overlaps the Play / Daily reward / Midnight Snack / missions /
+  Shop / Houses buttons, and every button stays fully on screen (it was overlapping at 1280x720 and 1366x768 and
+  cut off on phones held sideways). Upload `cookie-heist-v3.2.zip` (unzips to `cookie-heist-v3.2/` with `index.html`
+  and `assets/`, same structure as v3; `cookie-heist-v3.zip` is kept).
+
 ## What changed in v3
 - New players jump straight into night 1 with a quick in-game tutorial and a close call with mum's flashlight.
 - Loads much faster: a light loading screen in under a second, then only night 1 loads first.

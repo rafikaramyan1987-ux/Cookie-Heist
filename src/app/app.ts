@@ -8,7 +8,7 @@ import { SKINS, CapId } from '../render/characters';
 import { HOUSES, HIDE } from '../game/level';
 import { GameHud } from '../ui/gameHud';
 import { buildIntro } from '../ui/intro';
-import { buildTitle } from '../ui/title';
+import { buildTitle, fitTitle } from '../ui/title';
 import { houseMap, shopScreen, dailyScreen, missionsScreen, settingsScreen, pauseScreen, winScreen, failScreen, retentionStrip } from '../ui/screens';
 import { Tutorial } from '../ui/tutorial';
 import { sparkle, phew, catchBurst, starRain } from '../ui/juice';
@@ -176,6 +176,8 @@ export class App {
     performance.mark('ch:frame');
     sdk.loadingStop();
     loader.done();
+    // Playgama: Bridge's game_ready once the loading screen has faded out (loader.ts) and the player can play
+    if (__PLATFORM__ === 'playgama') setTimeout(() => sdk.gameReady?.(), 500);
     // ?capture / ?manual: frames are driven from outside (tick), for recordings; ?manual keeps the normal player flow
     if (!this.capture && !params.has('manual')) requestAnimationFrame(this.frame);
     (window as unknown as { __ready: boolean }).__ready = true;
@@ -192,6 +194,7 @@ export class App {
     document.body.classList.toggle('portrait', this.h > this.w);
     this.stage.resize(this.w, this.h);
     this.title?.resize(this.w, this.h);
+    if (this.titleEl) fitTitle(this.titleEl, this.w, this.h);
     if (this.run) {
       this.run.scene.resize(this.w, this.h);
       this.run.hud.layout(this.w, this.h);
@@ -249,6 +252,10 @@ export class App {
       snack: this.save.tutorialDone ? snackAvailable(this.save) : undefined,
     });
     this.ui.appendChild(this.titleEl);
+    // logo and buttons never overlap: fit now, and again once the title font has loaded (it changes the sizes)
+    const fit = () => this.titleEl && fitTitle(this.titleEl, this.w, this.h);
+    fit();
+    void document.fonts?.ready.then(fit);
     this.stage.setScene(this.title.scene, this.title.camera);
     this.title.resize(this.w, this.h);
     this.titleEl.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -921,6 +928,8 @@ export class App {
     const r = this.run!;
     const w = r.world;
     this.mode = 'result';
+    // Playgama: Bridge's level_completed / level_failed
+    if (__PLATFORM__ === 'playgama') sdk.levelEnd?.(w.status === 'won');
     if (r.kind === 'snack') return this.snackResult();
     const id = levelId(r.h, r.i);
     if (w.status === 'won') {
