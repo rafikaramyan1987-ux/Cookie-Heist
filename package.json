@@ -30,6 +30,7 @@
     "submission:playgama": "npm run build:playgama && node scripts/playgama/zip.mjs",
     "check:playgama": "node scripts/playgama/check.mjs",
     "test:playgama": "node scripts/playgama/test.mjs",
+    "qa:playgama": "node scripts/playgama/qa.mjs",
     "check:locales": "node scripts/check-locales.mjs",
     "perf": "node scripts/perf/measure.mjs dist 3",
     "covers": "node scripts/submission/covers-v3.mjs http://127.0.0.1:4174/",
