@@ -5,6 +5,8 @@ export default {
   slug: web.slug,
   title: 'Cookie Heist',
   dist: 'dist-playgama',
+  /** the submission zip's version: submission-playgama/<slug>-playgama-v<version>.zip (v1 kept for reference) */
+  version: 2,
   exclude: web.exclude,
   /** the game's query for the tests: night 1 played by the built-in bot (as in scripts/web/check.mjs) */
   query: 'autoplay=good&low',

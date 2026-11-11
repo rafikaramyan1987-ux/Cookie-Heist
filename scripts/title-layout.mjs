@@ -21,7 +21,8 @@ console.log(`title layout: ${dir}`);
 for (const [w, h] of SIZES) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: h > w });
   const page = await ctx.newPage();
-  await page.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.abort());
+  // Playgama's build loads Bridge from Playgama's CDN (its mock platform keeps the save below in localStorage); nothing else goes out
+  await page.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => (r.request().url().startsWith('https://bridge.playgama.com/') ? r.continue() : r.abort()));
   await page.addInitScript(() =>
     localStorage.setItem('cookieheist.save.v1', JSON.stringify({ v: 1, tutorialDone: true, coins: 240, stars: { 'apartment-1': 3, 'apartment-2': 3, 'apartment-3': 2 } })),
   );
