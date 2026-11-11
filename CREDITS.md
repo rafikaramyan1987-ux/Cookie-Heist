@@ -13,5 +13,7 @@ Everything in Cookie Heist is **original** and generated in code — no third-pa
 | Engine: **three.js** | mrdoob & contributors | MIT |
 | CrazyGames SDK v3 | Loaded at runtime from `sdk.crazygames.com` (CrazyGames build only) | CrazyGames terms |
 | GameDistribution HTML5 SDK | Loaded at runtime from `html5.api.gamedistribution.com` (GD build only) | GameDistribution terms |
+| GameMonetize HTML5 SDK | Loaded at runtime from `api.gamemonetize.com` (GameMonetize build only) | GameMonetize terms |
+| Y8 SDK | Loaded at runtime from `cdn.y8.com` (Y8 build only) | Y8 terms |
 
 No CC0 asset packs were needed: all models are procedural.

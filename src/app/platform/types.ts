@@ -3,7 +3,7 @@
  * One implementation per portal, chosen at build time (`__PLATFORM__`, see vite.config.ts).
  */
 
-export type PlatformName = 'crazygames' | 'gd' | 'web' | 'gamepix' | 'playgama';
+export type PlatformName = 'crazygames' | 'gd' | 'web' | 'gamepix' | 'playgama' | 'gamemonetize' | 'y8';
 
 declare global {
   /** the build target, a string literal at build time (vite.config.ts `define`), so other platforms' branches are dropped */
