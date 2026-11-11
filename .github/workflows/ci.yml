@@ -202,3 +202,40 @@ jobs:
           npm run build:gamepix
           npm run build:playgama
           for f in dist dist-gd dist-web dist-gamepix dist-playgama; do if grep -rqi -e gamemonetize -e p4y3j0gzsj1efndrh21up9ji7ykxjyo8 $f; then echo "$f has GameMonetize code"; exit 1; fi; done
+
+  y8:
+    # Y8: y8.min.js from Y8's CDN (async, never bundled), initialized as the portal snippet; start / next interstitials
+    # only from clicks, rewarded only after adViewed; pause + mute on hidden / blur; a zip with index.html at the root
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Media tools (ffprobe for the videos, ImageMagick identify for the images)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg imagemagick
+      - name: Y8 adapter unit test (beforeAd / afterAd, settles once, reward only on adViewed, visibility / blur pause)
+        run: npx vitest run tests/unit/y8.test.ts
+      - name: Y8 build
+        run: npm run build:y8
+      - name: Y8 zip + media checks (index.html at the root, relative paths, CDN SDK async in <head>, no bundled SDK, no other ad network; every media file at its exact size and limit)
+        run: node scripts/y8/zip.mjs ci-y8/cookie-heist-y8.zip
+      - name: Committed zip (submission-y8/cookie-heist-y8-v1.zip) passes the same checks
+        run: node scripts/y8/check.mjs submission-y8/cookie-heist-y8-v1.zip
+      - name: Playwright smoke test of dist-y8 (stubbed SDK; loads, no ad before init, Play, rewarded, ad blocker, no console errors)
+        run: npm run test:e2e:y8
+      - name: Title layout (Y8)
+        run: node scripts/title-layout.mjs dist-y8
+      - name: The other builds never contain the Y8 SDK
+        run: |
+          npm run build
+          npm run build:gd
+          npm run build:web
+          npm run build:gamepix
+          npm run build:playgama
+          npm run build:gamemonetize
+          for f in dist dist-gd dist-web dist-gamepix dist-playgama dist-gamemonetize; do if grep -rqi -e cdn.y8.com -e y8sdk -e 6af4a2c63c0f1c5e7ad8dc57 $f; then echo "$f has Y8 code"; exit 1; fi; done
