@@ -1,6 +1,6 @@
 /**
  * The portal platform for this build, chosen at build time: `vite build` = CrazyGames, `--mode gd` = GameDistribution,
- * `--mode gamepix` = GamePix, `--mode playgama` = Playgama (Bridge), `--mode web` = no portal (see vite.config.ts). `__PLATFORM__` is a literal, so the bundler drops the other
+ * `--mode gamepix` = GamePix, `--mode playgama` = Playgama (Bridge), `--mode gamemonetize` = GameMonetize, `--mode web` = no portal (see vite.config.ts). `__PLATFORM__` is a literal, so the bundler drops the other
  * implementations (the GD build has no CrazyGames code and vice versa).
  */
 import { CrazyGamesPlatform } from './platform/crazygames';
@@ -8,6 +8,7 @@ import { GDPlatform } from './platform/gd';
 import { GamePixPlatform } from './platform/gamepix';
 import { WebPlatform } from './platform/web';
 import { PlaygamaPlatform } from './platform/playgama';
+import { GameMonetizePlatform } from './platform/gamemonetize';
 import type { Platform } from './platform/types';
 
 export { AD_TIMEOUT } from './platform/types';
@@ -22,4 +23,6 @@ export const sdk: Platform =
         ? new GamePixPlatform()
         : __PLATFORM__ === 'playgama'
           ? new PlaygamaPlatform()
-          : new CrazyGamesPlatform();
+          : __PLATFORM__ === 'gamemonetize'
+            ? new GameMonetizePlatform()
+            : new CrazyGamesPlatform();

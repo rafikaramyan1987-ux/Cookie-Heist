@@ -168,3 +168,37 @@ jobs:
         run: npm run build && npm run build:gd && npm run build:web && npm run build:gamepix && npm run build:playgama
       - name: Title layout (CrazyGames, GD, web, GamePix, Playgama)
         run: for d in dist dist-gd dist-web dist-gamepix dist-playgama; do node scripts/title-layout.mjs "$d" || exit 1; done
+
+  gamemonetize:
+    # GameMonetize: window.SDK_OPTIONS + api.gamemonetize.com/sdk.js loaded once at boot; interstitials only at natural
+    # breaks; no rewarded ads (the SDK has none); a zip with index.html at the root
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: GameMonetize adapter unit test (pause + mute, resume, settles once, no rewarded)
+        run: npx vitest run tests/unit/gamemonetize.test.ts
+      - name: GameMonetize build
+        run: npm run build:gamemonetize
+      - name: GameMonetize zip checks (index.html at the root, relative paths, only sdk.js external, game ID, no other portal SDK, images 512x384 / 512x512 / 512x340 JPEG < 300 KB)
+        run: node scripts/gamemonetize/zip.mjs ci-gamemonetize/cookie-heist-gamemonetize.zip
+      - name: Committed zip (submission-gamemonetize/cookie-heist-gamemonetize-v1.zip) passes the same checks
+        run: node scripts/gamemonetize/check.mjs submission-gamemonetize/cookie-heist-gamemonetize-v1.zip
+      - name: Playwright smoke test of dist-gamemonetize (stubbed SDK; loads, Play, ad pauses + mutes, no rewarded buttons, no console errors)
+        run: npm run test:e2e:gamemonetize
+      - name: Title layout (GameMonetize)
+        run: node scripts/title-layout.mjs dist-gamemonetize
+      - name: The other builds never contain the GameMonetize SDK
+        run: |
+          npm run build
+          npm run build:gd
+          npm run build:web
+          npm run build:gamepix
+          npm run build:playgama
+          for f in dist dist-gd dist-web dist-gamepix dist-playgama; do if grep -rqi -e gamemonetize -e p4y3j0gzsj1efndrh21up9ji7ykxjyo8 $f; then echo "$f has GameMonetize code"; exit 1; fi; done

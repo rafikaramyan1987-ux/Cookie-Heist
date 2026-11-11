@@ -2,19 +2,20 @@ import { defineConfig, type Plugin } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { readdirSync, readFileSync } from 'node:fs';
 
-const PLATFORMS = ['crazygames', 'gd', 'web', 'gamepix', 'playgama'] as const;
+const PLATFORMS = ['crazygames', 'gd', 'web', 'gamepix', 'playgama', 'gamemonetize'] as const;
 type PlatformName = (typeof PLATFORMS)[number];
 
 /** GamePix JS SDK v3 (manual lifecycle): an external script, loaded before the game bundle, in the GamePix build only */
 export const GAMEPIX_SDK_URL = 'https://integration.gamepix.com/sdk/v3/gamepix.sdk.js';
 
 /**
- * Build target portal: `VITE_PLATFORM=crazygames|gd|web|gamepix|playgama`, or `--mode gd` / `--mode web` / `--mode gamepix` / `--mode playgama`;
+ * Build target portal: `VITE_PLATFORM=crazygames|gd|web|gamepix|playgama|gamemonetize`, or `--mode gd` / `--mode web` / `--mode gamepix` /
+ * `--mode playgama` / `--mode gamemonetize`;
  * default CrazyGames. The CrazyGames build goes to dist/, the others to dist-<platform>/.
  */
 function platformFor(mode: string): PlatformName {
   const p = process.env.VITE_PLATFORM || (PLATFORMS.includes(mode as PlatformName) ? mode : 'crazygames');
-  if (!PLATFORMS.includes(p as PlatformName)) throw new Error(`unknown VITE_PLATFORM "${p}" (crazygames | gd | web | gamepix | playgama)`);
+  if (!PLATFORMS.includes(p as PlatformName)) throw new Error(`unknown VITE_PLATFORM "${p}" (crazygames | gd | web | gamepix | playgama | gamemonetize)`);
   return p as PlatformName;
 }
 
@@ -114,7 +115,7 @@ function preloadFonts(): Plugin {
 
 export default defineConfig(({ mode }) => {
   const platform = platformFor(mode);
-  // CrazyGames / web / Playgama: index.html (with the loading screen) + split, lazily loaded chunks — playable fast, smallest
+  // CrazyGames / web / Playgama / GameMonetize: index.html (with the loading screen) + split, lazily loaded chunks — playable fast, smallest
   // download. GameDistribution / GamePix keep their single-file upload (one index.html, everything inlined).
   const single = platform === 'gd' || platform === 'gamepix';
   return {
