@@ -41,9 +41,13 @@ stealth, puzzle, casual, cute, family, 3d, sneaking, cookies, hide-and-seek, mob
   or the Bridge script does not load, `console.error("[Playgama Bridge] bridge.initialize() failed; the game runs
   WITHOUT Playgama Bridge …")` and the game plays on with no ads and no Bridge storage.
 - **Config:** `playgama-bridge-config.json` beside `index.html` (Bridge loads `./playgama-bridge-config.json`).
--  `game_ready` once the loading screen is gone; language from `platform.language`
-  (English fallback); progress through Bridge Storage only (key `cookieheist.save.v1`, its default storage type);
-  interstitials only between nights; rewarded ads only from the labelled "×2 coins / skip / extra toy" ad buttons, with
+- **Events:** `game_ready` once the loading screen is gone, and always first: a `level_started` / `level_completed`
+  before it (night 1 starts behind the loading screen) is held and sent right after it.
+- **Ads:** interstitials at every break between nights (the result screen's Next / Menu), so never during a night and
+  never before the first night has ended, with no counter or timer of the game's own: how often one shows is Bridge's
+  call, `minimumDelayBetweenInterstitial` in playgama-bridge-config.json (Playgama's interstitial docs).
+- Language from `platform.language`
+  (English fallback); progress through Bridge Storage only (key `cookieheist.save.v1`, its default storage type); rewarded ads only from the labelled "×2 coins / skip / extra toy" ad buttons, with
   the reward only after Bridge's `rewarded` state; audio muted and the night paused during ads, on Bridge's pause and
   audio events and when the page is hidden.
 

@@ -7,10 +7,13 @@
  *   browser language; the game falls back to English), the save through Bridge Storage (one `storage.get([...])` of
  *   every key), `platform.isAudioEnabled`, and the AUDIO_STATE_CHANGED / PAUSE_STATE_CHANGED events
  * - `game_ready` once the loading screen is gone and the player can play (`gameReady()`, called by app.ts)
- * - gameplay start → `level_started`; a finished night → `level_completed` (Bridge has no gameplay start / stop)
- * - interstitials (`advertisement.showInterstitial()`) only at the result-screen breaks between levels, after a click,
- *   at most one per ~2 minutes (MIDGAME_GAP, plus `minimumDelayBetweenInterstitial: 120` in
- *   playgama-bridge-config.json); never during a level, no pre-roll
+ * - gameplay start → `level_started`; a finished night → `level_completed` (Bridge has no gameplay start / stop);
+ *   `game_ready` is always the first: a gameplay message before it (night 1 starts behind the loading screen) is
+ *   held and sent right after it (send)
+ * - interstitials (`advertisement.showInterstitial()`) at every result-screen break between levels, after a click,
+ *   with no counter or timer of the game's own: how often one shows is Bridge's call
+ *   (`minimumDelayBetweenInterstitial` in playgama-bridge-config.json, Playgama's interstitial docs); never during a
+ *   level, never before the first level has ended, no pre-roll
  * - rewarded (`advertisement.showRewarded()`) only from the labelled ad buttons (`available` is Bridge's
  *   `isRewardedSupported`, so the buttons are hidden where Bridge has no rewarded ads); the reward is granted only
  *   when Bridge reports the `rewarded` state; closed / failed without it: no reward
@@ -20,7 +23,7 @@
  *   player's own sound / music settings (audio.ts)
  */
 
-import { AD_TIMEOUT, MIDGAME_GAP, type AdSlot, type KeyValueStore, type Platform } from './types';
+import { AD_TIMEOUT, type AdSlot, type KeyValueStore, type Platform } from './types';
 
 /** every storage key the game uses (src/app/save.ts SAVE_KEY), read in one `storage.get([...])` at startup */
 export const PLAYGAMA_STORAGE_KEYS = ['cookieheist.save.v1'];
@@ -102,7 +105,10 @@ export class PlaygamaPlatform implements Platform {
   private playing = false;
   private levelOn = false;
   private readySent = false;
-  private lastMidgame = Date.now(); // no interstitial right after loading (as in the other builds)
+  /** a level has ended this session (won or failed): before that, no interstitial */
+  private levelEnded = false;
+  /** gameplay messages waiting for game_ready (see send) */
+  private held: string[] = [];
   private pausedBy = new Set<PauseReason>();
   private paused = false;
   /** Bridge says the platform's audio is off (independent of pauses) */
@@ -234,6 +240,7 @@ export class PlaygamaPlatform implements Platform {
     if (this.readySent || !this.b) return;
     this.readySent = true;
     this.send('game_ready');
+    for (const m of this.held.splice(0)) this.send(m);
   }
   gameplayStart() {
     this.playing = true;
@@ -248,11 +255,21 @@ export class PlaygamaPlatform implements Platform {
   levelEnd(won: boolean) {
     if (!this.levelOn) return;
     this.levelOn = false;
+    this.levelEnded = true;
     this.send(won ? 'level_completed' : 'level_failed');
   }
   happytime() {}
   sadMoment() {}
+  /**
+   * Every Bridge message goes through here. Playgama: `game_ready` comes first, so any gameplay message (level_started,
+   * level_completed, …) before it is held and sent right after it, in order.
+   */
   private send(m: string) {
+    if (!this.b) return;
+    if (m !== 'game_ready' && !this.readySent) {
+      this.held.push(m);
+      return;
+    }
     this.log.push(m);
     try {
       void Promise.resolve(this.b?.platform.sendMessage(m)).catch(() => {});
@@ -298,25 +315,23 @@ export class PlaygamaPlatform implements Platform {
     return slot !== 'preroll';
   }
 
-  /** Interstitial between levels, at most once per ~2 minutes (MIDGAME_GAP). Never in a level, one at a time. */
+  /**
+   * Interstitial at a break between levels (result screen), one at a time; never in a level or before the first level
+   * has ended. No gap or counter of the game's own: Bridge applies minimumDelayBetweenInterstitial.
+   */
   async midgame(slot: AdSlot = 'between'): Promise<void> {
-    if (!this.adSlot(slot) || this.playing || !this.b || this.pending) return;
+    if (!this.adSlot(slot) || this.playing || !this.levelEnded || !this.b || this.pending) return;
     try {
       if (!this.b.advertisement.isInterstitialSupported) return;
     } catch {
       return;
     }
-    if (Date.now() - this.lastMidgame < MIDGAME_GAP) return;
-    this.lastMidgame = Date.now();
     await this.requestAd('interstitial');
   }
 
   /** Rewarded ad; true only when Bridge reported the `rewarded` state before the ad closed. */
   async rewarded(): Promise<boolean> {
     if (!this.available) return false;
-    const ok = await this.requestAd('rewarded');
-    // a finished rewarded ad also counts as the interstitial break (same as the other builds)
-    if (ok) this.lastMidgame = Date.now();
-    return ok;
+    return this.requestAd('rewarded');
   }
 }
