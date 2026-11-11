@@ -45,7 +45,7 @@ stealth, puzzle, casual, cute, family, 3d, sneaking, cookies, hide-and-seek, mob
   before it (night 1 starts behind the loading screen) is held and sent right after it.
 - **Ads:** interstitials at every break between nights (the result screen's Next / Menu), so never during a night and
   never before the first night has ended, with no counter or timer of the game's own: how often one shows is Bridge's
-  call, `minimumDelayBetweenInterstitial` in playgama-bridge-config.json (Playgama's interstitial docs).
+  call, Bridge's own platform default delay between interstitials (no override in playgama-bridge-config.json) (Playgama's interstitial docs).
 - Language from `platform.language`
   (English fallback); progress through Bridge Storage only (key `cookieheist.save.v1`, its default storage type); rewarded ads only from the labelled "×2 coins / skip / extra toy" ad buttons, with
   the reward only after Bridge's `rewarded` state; audio muted and the night paused during ads, on Bridge's pause and

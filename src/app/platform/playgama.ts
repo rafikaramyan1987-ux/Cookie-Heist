@@ -12,7 +12,7 @@
  *   held and sent right after it (send)
  * - interstitials (`advertisement.showInterstitial()`) at every result-screen break between levels, after a click,
  *   with no counter or timer of the game's own: how often one shows is Bridge's call
- *   (`minimumDelayBetweenInterstitial` in playgama-bridge-config.json, Playgama's interstitial docs); never during a
+ *   (Bridge's own platform default delay between interstitials (no override in playgama-bridge-config.json), Playgama's interstitial docs); never during a
  *   level, never before the first level has ended, no pre-roll
  * - rewarded (`advertisement.showRewarded()`) only from the labelled ad buttons (`available` is Bridge's
  *   `isRewardedSupported`, so the buttons are hidden where Bridge has no rewarded ads); the reward is granted only
