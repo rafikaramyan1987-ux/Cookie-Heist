@@ -1,7 +1,7 @@
 # Cookie Heist — GameMonetize submission
 
 - **Game ID:** `p4y3j0gzsj1efndrh21up9ji7ykxjyo8`
-- **Upload:** `cookie-heist-gamemonetize-v1.zip`: `index.html` and `assets/` at the zip root, relative paths only
+- **Upload:** `cookie-heist-gamemonetize-v2.zip` (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); `cookie-heist-gamemonetize-v1.zip` = previous build): `index.html` and `assets/` at the zip root, relative paths only
   (Game Management > My games > select the game > drop the file; then "Verify Game" and "REQUEST ACTIVATION").
 - **Images:** `cookie-heist-512x384.jpg`, `cookie-heist-512x512.jpg`, `cookie-heist-512x340.jpg` — the B2 cover
   scene (submission/covers-v3/B2) re-rendered without the title logo: no text, no logo, each under 300 KB.

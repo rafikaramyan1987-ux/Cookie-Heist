@@ -96,10 +96,17 @@ function bootStrings(): Plugin {
     transformIndexHtml: {
       order: 'pre',
       handler: (html) => {
-        const out: Record<string, { tips: string[]; loading: string }> = {};
+        const out: Record<string, { tips: string[]; loading: string; loadFailed: string; noWebgl: string; retry: string }> = {};
         for (const f of readdirSync('src/locales').filter((f) => f.endsWith('.json'))) {
           const d = JSON.parse(readFileSync(`src/locales/${f}`, 'utf8')) as Record<string, string>;
-          out[f.replace('.json', '')] = { tips: Object.keys(d).filter((k) => k.startsWith('loadTip_')).map((k) => d[k]), loading: d.loading };
+          out[f.replace('.json', '')] = {
+            tips: Object.keys(d).filter((k) => k.startsWith('loadTip_')).map((k) => d[k]),
+            loading: d.loading,
+            // the loading screen's failure card (index.html: window.__bootFail)
+            loadFailed: d.loadFailed,
+            noWebgl: d.noWebgl,
+            retry: d.retry,
+          };
         }
         return html.replace('__BOOT_STRINGS__', JSON.stringify(out));
       },
@@ -117,6 +124,7 @@ function preloadFonts(): Plugin {
       handler: (_html, ctx) =>
         Object.keys(ctx.bundle ?? {})
           .filter((f) => /fredoka-latin-(600|700)-normal-.*\.woff2$/.test(f))
+          .sort() // a stable order: the same index.html on every machine (the CI zip check compares it)
           .map((f) => ({ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `./${f}`, crossorigin: '' }, injectTo: 'head' as const })),
     },
   };

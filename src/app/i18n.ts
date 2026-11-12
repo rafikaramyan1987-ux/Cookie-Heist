@@ -4,6 +4,7 @@
  * loaded on demand. Language: the save, else the portal locale (CrazyGames SDK / GamePix.lang()), else the browser.
  */
 import EN from '../locales/en.json';
+import { importRetry } from './lazy';
 
 export type Key = keyof typeof EN;
 export const LANGS = ['en', 'fr', 'de', 'it', 'es', 'pt', 'nl', 'pl', 'tr', 'ru'] as const;
@@ -25,7 +26,7 @@ export async function loadLang(l: Lang): Promise<void> {
   const ld = loaders[`../locales/${l}.json`];
   if (!ld) return;
   try {
-    dicts[l] = (await ld()).default;
+    dicts[l] = (await importRetry(ld)).default;
   } catch {
     /* offline: English */
   }

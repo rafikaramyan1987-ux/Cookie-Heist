@@ -9,6 +9,7 @@ function cached<T extends THREE.BufferGeometry>(key: string, make: () => T): T {
   let g = gcache.get(key) as T | undefined;
   if (!g) {
     g = make();
+    g.userData.shared = true; // cached: kept when a night is disposed (src/render/dispose.ts)
     gcache.set(key, g);
   }
   return g;

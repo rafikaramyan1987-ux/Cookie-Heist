@@ -255,5 +255,7 @@
   "snackCookies": "{n} ciastko|{n} ciastka|{n} ciastek|{n} ciastka",
   "lv_snack_1": "Nalot na lodówkę",
   "lv_snack_2": "Impreza w spiżarni",
-  "lv_snack_3": "Ciastkowa kumulacja"
+  "lv_snack_3": "Ciastkowa kumulacja",
+  "loadFailed": "Nie udało się wczytać gry. Sprawdź połączenie.",
+  "noWebgl": "Ta przeglądarka nie może wyświetlić gry 3D. Włącz akcelerację sprzętową albo użyj innej przeglądarki."
 }

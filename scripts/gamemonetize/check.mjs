@@ -10,7 +10,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync } from 'no
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const zip = resolve(process.argv[2] ?? 'submission-gamemonetize/cookie-heist-gamemonetize-v1.zip');
+const zip = resolve(process.argv[2] ?? 'submission-gamemonetize/cookie-heist-gamemonetize-v2.zip');
 const GAME_ID = 'p4y3j0gzsj1efndrh21up9ji7ykxjyo8';
 const SDK = 'https://api.gamemonetize.com/sdk.js';
 const BANNED = ['crazygames', 'gamedistribution', 'gamepix', 'playgama', 'googlesyndication', '<iframe', 'window.open'];

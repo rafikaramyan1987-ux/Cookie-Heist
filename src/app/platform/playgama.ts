@@ -23,7 +23,7 @@
  *   player's own sound / music settings (audio.ts)
  */
 
-import { AD_TIMEOUT, type AdSlot, type KeyValueStore, type Platform } from './types';
+import { AD_MAX, AD_TIMEOUT, type AdSlot, type KeyValueStore, type Platform } from './types';
 
 /** every storage key the game uses (src/app/save.ts SAVE_KEY), read in one `storage.get([...])` at startup */
 export const PLAYGAMA_STORAGE_KEYS = ['cookieheist.save.v1'];
@@ -292,6 +292,7 @@ export class PlaygamaPlatform implements Platform {
           if (done) return;
           done = true;
           clearTimeout(timer);
+        clearTimeout(cap);
           if (this.pending === pending) this.pending = null;
           this.setPaused('ad', false);
           res(ok);
@@ -301,6 +302,8 @@ export class PlaygamaPlatform implements Platform {
       const timer = setTimeout(() => {
         if (!pending.opened) pending.finish(false);
       }, AD_TIMEOUT);
+      // started but never ended (SDK stuck): give up after AD_MAX so the game cannot stay paused
+      const cap = setTimeout(() => pending.finish(false), AD_MAX);
       try {
         if (type === 'rewarded') s.advertisement.showRewarded();
         else s.advertisement.showInterstitial();

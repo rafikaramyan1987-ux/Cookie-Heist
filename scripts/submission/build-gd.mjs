@@ -1,4 +1,4 @@
-// GameDistribution submission v2: zip with index.html at the root (single file). Run `npm run build:gd` first.
+// GameDistribution submission v3: zip with index.html at the root (single file). Run `npm run build:gd` first.
 // `--thumbs` also re-renders the thumbnails (starts its own `vite preview --mode gd` on port 4175).
 import { execFileSync, spawn } from 'node:child_process';
 import { statSync, mkdirSync, rmSync } from 'node:fs';
@@ -22,7 +22,7 @@ if (process.argv.includes('--thumbs')) {
     process.kill(-server.pid);
   }
 }
-const zip = 'submission-gd/cookie-heist-gd-v2.zip';
+const zip = 'submission-gd/cookie-heist-gd-v3.zip';
 rmSync(zip, { force: true });
 // -j: index.html sits at the root of the zip (GD requirement)
 execFileSync('zip', ['-j', '-9', '-X', '-q', zip, 'dist-gd/index.html'], { stdio: 'inherit' });

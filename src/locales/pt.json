@@ -255,5 +255,7 @@
   "snackCookies": "{n} biscoito|{n} biscoitos",
   "lv_snack_1": "Ataque à geladeira",
   "lv_snack_2": "Festa na despensa",
-  "lv_snack_3": "Pote premiado"
+  "lv_snack_3": "Pote premiado",
+  "loadFailed": "Não foi possível carregar o jogo. Verifique sua conexão.",
+  "noWebgl": "Este navegador não consegue mostrar o jogo 3D. Ative a aceleração de hardware ou tente outro navegador."
 }

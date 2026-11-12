@@ -1,0 +1,21 @@
+{
+ "v": 1,
+ "coins": 95,
+ "stars": { "apartment-1": 3, "apartment-2": 1 },
+ "best": { "apartment-1": 21.4, "apartment-2": 33.9 },
+ "fails": { "apartment-2": 0, "apartment-3": 4 },
+ "skipped": {},
+ "owned": ["skin:starry", "cap:classic", "trail:none", "trail:crumbs"],
+ "skin": "starry",
+ "cap": "classic",
+ "trail": "crumbs",
+ "lang": null,
+ "sound": true,
+ "music": false,
+ "tips": ["cookies", "creaky"],
+ "daily": { "last": "2026-11-8", "streak": 1 },
+ "missions": { "day": "2026-11-8", "list": [{ "id": "nights", "n": 3, "progress": 2, "reward": 60, "claimed": false }, { "id": "toys", "n": 4, "progress": 4, "reward": 50, "claimed": false }, { "id": "hide", "n": 5, "progress": 1, "reward": 50, "claimed": false }] },
+ "totals": { "cookies": 7, "wins": 2 },
+ "items": { "toy": 1, "peek": 0, "hint": 0, "pillow": 0 },
+ "hinted": {}
+}

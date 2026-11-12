@@ -1,6 +1,7 @@
 import { parseLevel, HOUSES } from '../game/level';
 import type { Level, LevelSrc } from '../game/types';
 import { APARTMENT } from './houses/apartment';
+import { importRetry } from '../app/lazy';
 
 /**
  * All 60 hand-designed levels (5 houses × 12 nights). The first house ships with the game; the other four are a
@@ -14,13 +15,22 @@ export function registerHouses(rest: LevelSrc[][]) {
 }
 
 let loading: Promise<void> | null = null;
-/** load houses 2–5 (once); resolves when every house is available */
+/**
+ * Load houses 2–5 (once, with retries); resolves when every house is available. Rejects when the chunk could not
+ * be loaded (offline); a later call tries again (a failed attempt is not kept).
+ */
 export function loadHouses(): Promise<void> {
   if (housesLoaded()) return Promise.resolve();
-  return (loading ??= import('./houses/rest').then((m) => {
-    registerHouses(m.REST);
-    snack = m.getSnackLevel;
-  }));
+  return (loading ??= importRetry(() => import('./houses/rest')).then(
+    (m) => {
+      registerHouses(m.REST);
+      snack = m.getSnackLevel;
+    },
+    (e) => {
+      loading = null;
+      throw e;
+    },
+  ));
 }
 let snack: ((k: number) => Level) | null = null;
 /** today's midnight-snack bonus night (after loadHouses()) */

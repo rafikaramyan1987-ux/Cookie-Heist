@@ -255,5 +255,7 @@
   "snackCookies": "{n} koekje|{n} koekjes",
   "lv_snack_1": "Koelkastoverval",
   "lv_snack_2": "Voorraadfeest",
-  "lv_snack_3": "Koekjestrommel-jackpot"
+  "lv_snack_3": "Koekjestrommel-jackpot",
+  "loadFailed": "Het spel kon niet laden. Controleer je verbinding.",
+  "noWebgl": "Deze browser kan het 3D-spel niet tonen. Zet hardwareversnelling aan of probeer een andere browser."
 }

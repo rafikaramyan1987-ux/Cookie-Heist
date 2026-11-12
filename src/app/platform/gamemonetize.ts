@@ -13,13 +13,13 @@
  * - saves use localStorage (no portal storage); if the SDK fails to load the game plays on without ads
  */
 
-import { AD_TIMEOUT, MIDGAME_GAP, type AdSlot, type Platform } from './types';
+import { AD_MAX, AD_TIMEOUT, MIDGAME_GAP, type AdSlot, type Platform } from './types';
 
 export const GM_GAME_ID = 'p4y3j0gzsj1efndrh21up9ji7ykxjyo8';
 export const GM_SDK_URL = 'https://api.gamemonetize.com/sdk.js';
 export const GM_SCRIPT_ID = 'gamemonetize-sdk';
 /** a started ad that never sends SDK_GAME_START is given up after this long, so the game cannot stay paused (ms) */
-export const AD_MAX = 120_000;
+export { AD_MAX };
 
 export interface GMEvent {
   name: string;

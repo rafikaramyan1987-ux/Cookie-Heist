@@ -9,7 +9,7 @@
  * - saves use localStorage (no portal storage); if the SDK fails to load the game plays on without ads
  */
 
-import { AD_TIMEOUT, MIDGAME_GAP, loadScript, type AdSlot, type Platform } from './types';
+import { AD_MAX, AD_TIMEOUT, MIDGAME_GAP, loadScript, type AdSlot, type Platform } from './types';
 
 export const GD_GAME_ID = '6aa8020129824d9c9fc5d2cfed7b2d99';
 export const GD_SDK_URL = 'https://html5.api.gamedistribution.com/main.min.js';
@@ -130,6 +130,7 @@ export class GDPlatform implements Platform {
         if (done) return;
         done = true;
         clearTimeout(timer);
+        clearTimeout(cap);
         clearTimeout(grace);
         if (this.pending === pending) this.pending = null;
         this.setAdPaused(false);
@@ -149,6 +150,8 @@ export class GDPlatform implements Platform {
       const timer = setTimeout(() => {
         if (!pending.started) finish(false);
       }, AD_TIMEOUT);
+      // started but never ended (SDK stuck): give up after AD_MAX so the game cannot stay paused
+      const cap = setTimeout(() => finish(false), AD_MAX);
       try {
         const r = type === 'rewarded' ? s.showAd('rewarded') : s.showAd();
         if (r && typeof (r as Promise<unknown>).then === 'function')

@@ -255,5 +255,7 @@
   "snackCookies": "{n} kurabiye|{n} kurabiye",
   "lv_snack_1": "Buzdolabı baskını",
   "lv_snack_2": "Kiler partisi",
-  "lv_snack_3": "Kavanoz ikramiyesi"
+  "lv_snack_3": "Kavanoz ikramiyesi",
+  "loadFailed": "Oyun yüklenemedi. Bağlantını kontrol et.",
+  "noWebgl": "Bu tarayıcı 3D oyunu gösteremiyor. Donanım hızlandırmayı aç ya da başka bir tarayıcı dene."
 }

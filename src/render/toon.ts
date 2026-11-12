@@ -91,6 +91,7 @@ export function toon(color: number | string, opts: ToonOpts = {}): THREE.MeshToo
       );
   };
   m.customProgramCacheKey = () => `toonrim${rim}`;
+  m.userData.shared = true; // cached: kept when a night is disposed (src/render/dispose.ts)
   cache.set(key, m);
   return m;
 }

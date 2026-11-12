@@ -19,6 +19,9 @@ import { sdk, type AdSlot } from './sdk';
 import { loadSave, saveSoon, saveNow, SaveData } from './save';
 import { t, useLang, detectLang, getLang } from './i18n';
 import { loader } from './loader';
+import { importRetry } from './lazy';
+import { report } from './guard';
+import { disposeScene, forgetLostContext } from '../render/dispose';
 import {
   buy,
   levelCoins,
@@ -95,6 +98,10 @@ export class App {
   run: Run | null = null;
   title: View | null = null;
   titleEl: HTMLElement | null = null;
+  /** houses 2–5 could not be loaded for the menu (offline): it shows without them; opening one tries again */
+  private housesFailed = false;
+  /** the WebGL renderer could not be created (boot() says so on the loading screen) */
+  private noWebgl = false;
   overlay: HTMLElement | null = null;
   w = 1;
   h = 1;
@@ -111,7 +118,21 @@ export class App {
     return sdk.available || FAKE_ADS;
   }
 
+  /**
+   * Boot, never throwing: an error here used to be an unhandled rejection with the loading screen up forever (a
+   * CrazyGames load crash). Now the loading screen says what failed, with a retry button (index.html).
+   */
   async boot() {
+    try {
+      await this.start();
+    } catch (e) {
+      report('boot', e);
+      const w = window as unknown as { __bootFail?: (kind: string) => void };
+      w.__bootFail?.(this.noWebgl ? 'webgl' : 'load');
+    }
+  }
+
+  private async start() {
     performance.mark('ch:boot');
     loader.progress(0.3);
     await sdk.init(params.has('nosdk') ? 1 : 3500);
@@ -143,7 +164,14 @@ export class App {
     // the UI font: wait a moment for it, never long (the loader is already on screen; text swaps in when it lands)
     await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 250))]);
     performance.mark('ch:fonts');
-    this.stage = createStage(this.canvas, { low: params.has('low') });
+    // no WebGL (blocked, no GPU, too many contexts): boot() shows the "no 3D" card instead of a stuck loader
+    try {
+      this.stage = createStage(this.canvas, { low: params.has('low') });
+    } catch (e) {
+      this.noWebgl = true;
+      throw e;
+    }
+    this.watchContext();
     performance.mark('ch:stage');
     loader.progress(0.8);
     this.input.onAnyInput = () => audio.unlock();
@@ -166,7 +194,8 @@ export class App {
       this.openLevel(h, i, { hint: params.has('hint'), tutorial: h === 0 && i === 0 && first && !this.autoplay && !this.capture });
     } else if (first) this.openLevel(0, 0, { tutorial: true, quick: true });
     else {
-      await loadHouses();
+      // houses 2–5 for the menu (map, next night); if they cannot be loaded the menu still shows (showTitle)
+      await loadHouses().catch(() => (this.housesFailed = true));
       this.showTitle();
     }
     performance.mark('ch:level');
@@ -181,9 +210,14 @@ export class App {
     // ?capture / ?manual: frames are driven from outside (tick), for recordings; ?manual keeps the normal player flow
     if (!this.capture && !params.has('manual')) requestAnimationFrame(this.frame);
     (window as unknown as { __ready: boolean }).__ready = true;
-    // everything else streams in the background once night 1 / the menu is up
+    try {
+      sessionStorage.removeItem('ch-reload'); // index.html's one automatic reload is available again
+    } catch {
+      /* no sessionStorage */
+    }
+    // everything else streams in the background once night 1 / the menu is up (failures: tried again when needed)
     setTimeout(() => {
-      void loadHouses();
+      loadHouses().catch(() => {});
       void loadPreview();
     }, 600);
   }
@@ -223,17 +257,30 @@ export class App {
 
   // ------------------------------------------------------------------ title
   showTitle() {
-    if (!housesLoaded()) {
-      // houses 2–5 are a lazy chunk (normally long loaded by now)
-      void loadHouses().then(() => this.showTitle());
+    if (!housesLoaded() && !this.housesFailed) {
+      // houses 2–5 are a lazy chunk (normally long loaded by now); offline: the menu shows anyway (house 1 plays,
+      // the others are tried again when opened)
+      loadHouses().then(
+        () => this.showTitle(),
+        () => {
+          this.housesFailed = true;
+          this.showTitle();
+        },
+      );
       return;
     }
     if (!this.title) {
-      // the 3D title scene is a lazy chunk (first-time players go straight into night 1)
-      void import('../art/titleView').then((m) => {
-        this.title ??= m.titleView();
-        this.showTitle();
-      });
+      // the 3D title scene is a lazy chunk (first-time players go straight into night 1); offline: a plain backdrop
+      importRetry(() => import('../art/titleView')).then(
+        (m) => {
+          this.title ??= m.titleView();
+          this.showTitle();
+        },
+        () => {
+          this.title ??= plainView();
+          this.showTitle();
+        },
+      );
       return;
     }
     this.disposeRun();
@@ -249,7 +296,7 @@ export class App {
       streak: currentStreak(this.save),
       missions: missionsProgress(this.save),
       soundOn: this.save.sound,
-      snack: this.save.tutorialDone ? snackAvailable(this.save) : undefined,
+      snack: this.save.tutorialDone && housesLoaded() ? snackAvailable(this.save) : undefined,
     });
     this.ui.appendChild(this.titleEl);
     // logo and buttons never overlap: fit now, and again once the title font has loaded (it changes the sizes)
@@ -376,8 +423,11 @@ export class App {
 
   // ------------------------------------------------------------------ level lifecycle
   openLevel(h: number, i: number, opts: OpenOpts = {}) {
-    if (opts.snack === undefined && h > 0 && !housesLoaded()) {
-      void loadHouses().then(() => this.openLevel(h, i, opts));
+    if ((opts.snack !== undefined || h > 0) && !housesLoaded()) {
+      loadHouses().then(
+        () => this.openLevel(h, i, opts),
+        () => this.loadFailed(),
+      );
       return;
     }
     if (opts.hint && this.mode !== 'intro-wait') {
@@ -555,7 +605,43 @@ export class App {
   private disposeRun() {
     if (!this.run) return;
     this.run.hud.el.remove();
+    // free the night's GPU memory (it used to pile up night after night: WebGL context loss / tab killed on phones)
+    try {
+      disposeScene(this.run.scene.scene);
+    } catch (e) {
+      report('dispose', e);
+    }
     this.run = null;
+  }
+
+  /** a chunk the player asked for (another house, the snack night) could not be loaded: say so, stay in the menu */
+  private loadFailed() {
+    if (this.mode !== 'title') this.showTitle();
+    const n = document.createElement('div');
+    n.className = 'toast show load-failed';
+    n.textContent = t('loadFailed');
+    this.ui.appendChild(n);
+    setTimeout(() => n.remove(), 3500);
+  }
+
+  /**
+   * WebGL context loss (the GPU was reset, or a phone reclaimed its memory): three.js stops drawing and rebuilds
+   * everything on restore. The level pauses while the screen is black; nothing else is needed.
+   */
+  private contextLost = false;
+  private watchContext() {
+    this.canvas.addEventListener('webglcontextlost', () => {
+      this.contextLost = true;
+      if (this.mode === 'play') this.pause();
+    });
+    this.canvas.addEventListener('webglcontextrestored', () => {
+      this.contextLost = false;
+      try {
+        forgetLostContext([this.stage.composer, ...(this.title ? [this.title.scene] : []), ...(this.run ? [this.run.scene.scene] : [])]);
+      } catch (e) {
+        report('context', e);
+      }
+    });
   }
 
   private clearUi() {
@@ -602,10 +688,15 @@ export class App {
 
   // ------------------------------------------------------------------ frame
   frame = (now: number) => {
+    // next frame first: one failing frame never freezes the game (logged + recorded by report())
+    requestAnimationFrame(this.frame);
     const dt = Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
-    this.tick(dt);
-    requestAnimationFrame(this.frame);
+    try {
+      this.tick(dt);
+    } catch (e) {
+      report('frame', e);
+    }
   };
 
   /** advance without rendering (capture tool: skip to a moment quickly) */
@@ -621,7 +712,7 @@ export class App {
     if (this.mode === 'title' && this.title) {
       this.title.update(dt, this.t, this.w, this.h);
     } else if (this.run) this.updateRun(dt);
-    this.stage.render(this.t);
+    if (!this.contextLost) this.stage.render(this.t);
   }
 
   private updateRun(dt: number) {
@@ -1088,4 +1179,12 @@ export class App {
     }
     next();
   }
+}
+
+/** the menu backdrop when the 3D title scene could not be loaded: the night sky colour, no scene */
+function plainView(): View {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x140f33);
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 10);
+  return { scene, camera, resize: (w, h) => ((camera.aspect = w / Math.max(1, h)), camera.updateProjectionMatrix()), update: () => {} };
 }

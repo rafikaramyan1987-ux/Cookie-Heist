@@ -17,7 +17,8 @@ stealth, puzzle, casual, cute, family, 3d, sneaking, cookies, hide-and-seek, mob
 
 | File | What |
 |---|---|
-| `cookie-heist-playgama-v2.zip` | **upload this one.** The Playgama build: `index.html` at the zip root, `playgama-bridge-config.json` beside it, `assets/`; Playgama Bridge from Playgama's CDN, initialized before the game bundle runs; otherwise relative paths only |
+| `cookie-heist-playgama-v3.zip` | **upload this one.** Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md). |
+| `cookie-heist-playgama-v2.zip` | the previous build (same Bridge setup), kept for reference. The Playgama build: `index.html` at the zip root, `playgama-bridge-config.json` beside it, `assets/`; Playgama Bridge from Playgama's CDN, initialized before the game bundle runs; otherwise relative paths only |
 | `cookie-heist-playgama-v1.zip` | the previous build, kept for reference: **do not upload**. Its vendored single-platform Bridge build had no `qa_tool` adapter, so Playgama's archive check reported "Playgama Bridge never initialized in this archive" (see below) |
 | `cover-800x800.png`, `cover-1080x1920.png`, `cover-1920x1080.png` | the three covers Playgama's form takes (square, portrait, landscape), made with Playgama's own covers script from 1920x1080 / 1080x1920 screenshots of real play and the game's title font |
 | `icon-512x512.png` | icon (same as submission-web/) |
@@ -55,7 +56,7 @@ stealth, puzzle, casual, cute, family, 3d, sneaking, cookies, hide-and-seek, mob
 
 ```sh
 npm ci
-npm run submission:playgama   # vite --mode playgama → submission-playgama/cookie-heist-playgama-v2.zip
+npm run submission:playgama   # vite --mode playgama → submission-playgama/cookie-heist-playgama-v3.zip
 npm run check:playgama        # zip checks + Playgama's precheck (no FAIL, no WARN)
 npm run qa:playgama           # Playgama QA Tool harness: ?platform_id=qa_tool, Bridge's initialize handshake, game_ready
 npm run test:playgama         # Bridge mock + stubbed Playgama SDK test (Playwright)

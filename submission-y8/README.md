@@ -8,7 +8,7 @@
 
 | Portal tab → slot | File (in this folder) | Spec checked |
 |---|---|---|
-| **Builds** → upload build | `cookie-heist-y8-v1.zip` | `index.html` + `assets/` at the zip root, relative paths only, about 430 KB |
+| **Builds** → upload build | `cookie-heist-y8-v2.zip` (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); v1 = previous build) | `index.html` + `assets/` at the zip root, relative paths only, about 430 KB |
 | **Media** → Standard Screenshot (4:3) | `media/screenshot-760x570-1.jpg` … `-4.jpg` | 760x570 JPG, < 2 MB |
 | **Media** → Widescreen Screenshot (16:9) | `media/screenshot-1280x720-1.jpg` … `-4.jpg` | 1280x720 JPG, < 5 MB |
 | **Media** → Landscape Promo | `media/promo-landscape-1920x1080.jpg` | 1920x1080 JPG, < 5 MB |
@@ -104,7 +104,7 @@ as the form asks.
 
 ```sh
 npm ci
-npm run submission:y8        # vite --mode y8 → dist-y8/ → cookie-heist-y8-v1.zip + checks (zip and media)
+npm run submission:y8        # vite --mode y8 → dist-y8/ → cookie-heist-y8-v2.zip + checks (zip and media)
 npm run test:e2e:y8          # Playwright smoke test of dist-y8 with a stubbed Y8 SDK
 # media: npx vite --host 127.0.0.1 --port 4174 &  node scripts/y8/media.mjs http://127.0.0.1:4174/
 ```

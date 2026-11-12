@@ -9,11 +9,16 @@ import './ui/style.css';
 import { createStage } from './render/stage';
 import type { View } from './art/view';
 import { App } from './app/app';
+import { installGuard } from './app/guard';
 
 /**
  * Entry. `?view=lineup|level|hud|houses|title` shows the art-test views
  * (`&t=<s>` freezes time for screenshots); otherwise the game boots.
  */
+// the game module runs: index.html's script-download watchdog stands down (see index.html)
+(window as unknown as { __booted: boolean }).__booted = true;
+installGuard();
+
 const params = new URLSearchParams(location.search);
 const viewName = params.get('view');
 

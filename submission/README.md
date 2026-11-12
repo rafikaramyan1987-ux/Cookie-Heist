@@ -1,5 +1,16 @@
 # Cookie Heist — CrazyGames submission
 
+## What changed in v3.3 (crash fixes)
+- Fixes the load / gameplay crash spike after v3 (see `docs/crash-investigation.md`): a lazily loaded part of the game
+  (houses 2–5, the menu scene, a language, the shop renderer, extra sounds) that failed to download used to be an
+  unhandled promise rejection — and for returning players the loading screen never finished. Downloads are now
+  retried, the game plays on without a part that cannot load, and a failed download of the game script reloads
+  once. No WebGL: the loading screen says so instead of hanging. GPU memory is freed after every night (it piled up
+  until phones lost the WebGL context). Ads always settle (also an ad that starts but never ends). Saves of every
+  earlier version load; a disabled Data Module falls back to localStorage. Same save format, same B2 art.
+- Upload `cookie-heist-v3.3.zip` (unzips to `cookie-heist-v3.3/` with `index.html` and `assets/`, same structure as
+  v3 / v3.2; the older zips are kept).
+
 ## What changed in v3.2
 - The title screen fits every screen: the logo never overlaps the Play / Daily reward / Midnight Snack / missions /
   Shop / Houses buttons, and every button stays fully on screen (it was overlapping at 1280x720 and 1366x768 and
@@ -39,8 +50,9 @@ stealth, puzzle, casual, cute, kids, family, 3d, sneaking, cookies, night, hide 
 PEGI 3–7 friendly: no violence, being caught means being carried back to bed.
 
 ## Assets in this folder
-- `cookie-heist-v3.zip` — **the v3 build to upload**: unzips to `cookie-heist-v3/` with `index.html` and `assets/`
-  (code split into lazily loaded chunks; relative paths only). `cookie-heist-build.zip` / `index.html` are the
+- `cookie-heist-v3.3.zip` — **the build to upload** (v3.3, crash fixes): unzips to `cookie-heist-v3.3/` with
+  `index.html` and `assets/` (code split into lazily loaded chunks; relative paths only). `cookie-heist-v3.2.zip`,
+  `cookie-heist-v3.zip` — the previous builds, kept. `cookie-heist-build.zip` / `index.html` are the
   previous single-file build, kept for reference.
 - **Main cover (B2):** `cover-1920x1080.png`, `cover-800x1200.png`, `cover-800x800.png` in this folder — the night
   kitchen with the kid big and clear at the front edge of the table, guilty grin to camera, a cookie held at the side,
@@ -56,5 +68,5 @@ PEGI 3–7 friendly: no violence, being caught means being carried back to bed.
   cookie grab, the Snowy Chalet, a 3-star win, cover B2 again at the end.
   (`trailer-1920x1080.mp4` / `trailer-1080x1920.mp4` = the v2 trailers.)
 
-Regenerate: `npm run build && npm run submission`, and with `npx vite preview --host 127.0.0.1 --port 4174` running:
+Regenerate: `npm run build && npm run submission` (→ `cookie-heist-v3.3.zip`), and with `npx vite preview --host 127.0.0.1 --port 4174` running:
 `npm run covers`, `npm run trailers`, `npm run media:first-minute`.

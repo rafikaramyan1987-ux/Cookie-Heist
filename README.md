@@ -55,6 +55,7 @@ npm run lint && npm run typecheck && npm test   # (+ npm run check:locales)
 npm run perf           # load time on a throttled mid-range phone (4G, 4x CPU): first frame, playable, bytes
 npm run test:e2e       # Playwright smoke tests (desktop + 390×844 portrait), CrazyGames build
 npm run test:e2e:gd    # Playwright smoke tests of the GD build with a mocked gdsdk
+npm run test:e2e:crash # zero errors in the CrazyGames build: Chromium / WebKit / Firefox, desktop + phone (Firefox: xvfb-run on Linux); see docs/crash-investigation.md
 npm run playtest       # bot plays all 60 levels (strict audit) → docs/playtest.md
 npm run check:audit    # static level audit: no parked guards, safe starts, every patrol cycle opens a path
 npm run check:levels   # static reachability checks
