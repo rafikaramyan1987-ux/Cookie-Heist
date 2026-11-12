@@ -11,7 +11,9 @@ test('first visit: loading → night 1 (tutorial) → three more nights with mid
   await loaded(page, run);
   expect(await mode(page)).toBe('play');
   for (let n = 0; n < 4; n++) {
-    await playNight(page);
+    // the bot plays the first two nights (won or caught); the last two end as wins, so Next requests a midgame ad
+    if (n < 2) await playNight(page);
+    else await winNight(page);
     await next(page);
   }
   const ev = (await run.events()).map((e) => e[0]);

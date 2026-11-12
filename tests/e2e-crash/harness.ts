@@ -278,7 +278,9 @@ export async function winNight(page: Page) {
 /** the result screen's Next (with the clock moved past the 2-minute ad gap, so a midgame ad is requested) */
 export async function next(page: Page, withAd = true) {
   if (withAd) await page.evaluate(() => (window.__skew = (window.__skew ?? 0) + 130_000));
-  await page.locator('.result .next').click({ force: true });
+  // a won night has Next (the midgame-ad slot); a lost one (the bot was caught) has Retry
+  const won = (await page.locator('.result .next').count()) > 0;
+  await page.locator(won ? '.result .next' : '.result .retry').click({ force: true });
   // a midgame ad that never answers settles after AD_TIMEOUT (8 s), then the next night is built
   await page.waitForFunction(() => window.__game.mode !== 'result', null, { timeout: 40_000 }).catch(async (e) => {
     console.log('next() stuck; sdk events:', JSON.stringify(await page.evaluate(() => [window.__cgEvents, performance.now() | 0, window.__game.mode])));
