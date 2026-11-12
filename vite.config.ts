@@ -124,6 +124,7 @@ function preloadFonts(): Plugin {
       handler: (_html, ctx) =>
         Object.keys(ctx.bundle ?? {})
           .filter((f) => /fredoka-latin-(600|700)-normal-.*\.woff2$/.test(f))
+          .sort() // a stable order: the same index.html on every machine (the CI zip check compares it)
           .map((f) => ({ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `./${f}`, crossorigin: '' }, injectTo: 'head' as const })),
     },
   };
