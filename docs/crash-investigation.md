@@ -9,9 +9,10 @@ failed to download, and in four other non-happy paths. All of them were reproduc
 fixed in v3.3. The v3.2-only code change (the title layout fix) does not throw in any scenario. The paths that do
 throw arrived with **v3**: v3 split the game into 26 lazily loaded files, where the v2 build of 8–9 Nov was a
 single `index.html`. A failed file download now cost every player a crash, and a returning player's loading screen
-never finished. Players with a v3 save first appeared on 11 Nov. On that path the loading screen also waits for the
-houses 2–5 file. That fits the jump from 10 to 11 Nov and the longer loading time; this part is an inference, see
-[What explains the timeline](#what-explains-the-timeline). The zero-errors suite (`tests/e2e-crash`) fails on v3.2
+never finished. Players with a v3 save first appeared on 11 Nov. On that path the loading screen also waits for the houses 2–5
+file, so for them a failed download means a load that never ends. That fits the jump from 10 to 11 Nov; this
+part is an inference, see [What explains the timeline](#what-explains-the-timeline). The loading-time rise is
+**not** explained by the code: v3, v3.2 and v3.3 load equally fast in our measurement (section 5). The zero-errors suite (`tests/e2e-crash`) fails on v3.2
 and passes on v3.3 in Chromium, WebKit and Firefox, desktop and phone.
 
 ## 1. How CrazyGames counts crashes (and which signals we can trigger)
@@ -98,7 +99,7 @@ WebGL is missing, etc., which only the CrazyGames error log can show (see the en
 | 6 | **Unhandled rejection** `InvalidStateError` from `AudioContext.resume()` / `suspend()` | 100 % on a closed AudioContext (all engines, measured); `new AudioContext()` can also throw | `void ctx.resume()` / `void ctx.suspend()` with no handler, called from ad callbacks and taps; a throw in `unlock()` runs inside an input handler | Every `resume()` / `suspend()` has a handler and is skipped on a closed context; `new AudioContext()` is guarded (the game plays on silently) |
 | 7 | Returning player **loses progress** (treated as a first visit) | 100 % when the Data Module throws (`dataModuleDisabled`) | `loadSave()` caught the throw and returned a fresh save | The Data Module is probed once at init. If it throws, saves use localStorage (same key, same format); otherwise every get / set is wrapped so it never throws |
 | 8 | `gameplayStart` before `loadingStop` | every first visit (night 1 starts under the loading screen) | The tutorial night calls `gameplayStart()` during `boot()`, before `loadingStop()` | The CrazyGames wrapper holds `gameplayStart` until `loadingStop` and sends it right after |
-| 9 | `WebGL: INVALID_OPERATION: delete: object does not belong to this context` (console, WebKit), hundreds of lines | every WebGL context restore followed by a resize or a disposed night (WebKit) | three.js rebuilds its state on restore, but the `dispose` listeners its old state put on every geometry, material, texture and render target stay; disposing or resizing them deletes lost-context objects in the new context | `forgetLostContext()` (src/render/dispose.ts) drops those stale listeners on restore (the new state adds its own on the next draw; the lost context already freed the memory); the night pauses while the context is lost |
+| 9 | `WebGL: INVALID_OPERATION: delete: object does not belong to this context` (console, WebKit), hundreds of lines | measured on the v3.3 candidate before this fix (WebKit, every restore followed by a resize or a disposed night); v3.2 takes the same path on any resize after a restore | three.js rebuilds its state on restore, but the `dispose` listeners its old state put on every geometry, material, texture and render target stay; disposing or resizing them deletes lost-context objects in the new context | `forgetLostContext()` (src/render/dispose.ts) drops those stale listeners on restore (the new state adds its own on the next draw; the lost context already freed the memory); the night pauses while the context is lost |
 | 10 | (hardening) a save with a wrong-typed field would throw later in game code | not seen in real saves | `parseSave()` trusted field types | Every field is coerced to its type; unknown fields kept; format unchanged (v3 / v3.2 saves load byte-for-byte equal, unit test) |
 | 11 | (hardening) an exception in one frame stopped the frame loop for good | not seen | `requestAnimationFrame` was scheduled after `tick()` | The next frame is scheduled first; a failing frame is logged and recorded (`src/app/guard.ts`), the game keeps running |
 
@@ -124,10 +125,15 @@ What we infer (it needs the CrazyGames error log to confirm):
   v3 save yet, so nearly everyone took the first-visit path: night 1 loads with the main files, and houses 2–5 load
   in the background. A failed download there is an unhandled rejection *after* loading (gameplay crash), not a
   stuck load.
-- **11 Nov (v3.2 all day): load 10–12 %, gameplay 6–9 %, loading 1.3 → 1.8 s.** The first full day on the split
-  build, and the first day with returning v3 players. A returning player's boot awaits houses 2–5 *inside* the
-  loading window, which makes loading slower, and a failed download leaves the loading screen up forever.
-  First-time players still crash after loading when a background download fails. Every lazily loaded file also
+- **11 Nov (v3.2 all day): load 10–12 %, gameplay 6–9 %.** The first full day on the split build, and the first
+  day with returning v3 players. A returning player's boot waits for houses 2–5 *inside* the loading window, so a
+  failed download leaves the loading screen up forever. First-time players still crash after loading when a
+  background download fails.
+- **Loading time 1.3 → 1.8 s: not explained by the code.** Measured on a throttled phone, v3 and v3.2 are equal
+  (section 5), and a returning player loads *faster* than a first-time player (~0.5 s vs ~2.5 s
+  `loadingStart → loadingStop`: the first visit builds night 1 inside the loading window, the menu does not). If the
+  portal's average counts only loads that finished, it moves with the mix of first-time and returning players and
+  with retried loads, which the code cannot show. v3.3 does not change load time. Every lazily loaded file also
   changed its name in v3.2, so a session that started on v3 and fetched a file after the v3.2 upload asked for a
   name that no longer existed (if CrazyGames removes the old files).
 
@@ -144,11 +150,37 @@ should be gone.
 section 1. The CI job also checks that the committed `submission/cookie-heist-v3.3.zip` is byte-identical to the
 fresh build.
 
-RESULTS_TABLE
+Before / after (the same suite, pointed at the unzipped `cookie-heist-v3.2.zip` with `CRASH_DIR`, desktop):
+
+| Scenario | v3.2 Chromium | v3.2 WebKit | v3.2 Firefox | v3.3 (all 6 projects) |
+| --- | --- | --- | --- | --- |
+| first visit, 4 nights, midgame ads | ✘ `gameplayStart` before `loadingStop` (#8) | ✘ same | ✘ same | ✓ |
+| returning player, v2 save, +1 day | ✓ | ✓ | ✓ | ✓ |
+| returning player, v3 save, +1 day | ✓ | ✓ | ✓ | ✓ |
+| returning player, v3.2 save, +8 days | ✘ (test bug since fixed: the bot was caught and the test looked for Next) | ✓ | ✓ | ✓ |
+| ads: success / error / blocked / no fill | ✓ | ✓ | ✓ | ✓ |
+| pause, tab hide / show, resize / rotate | ✓ | ✓ | ✓ | ✓ |
+| WebGL context lost + restored | ✘ the night keeps running on a black screen (v3.3 pauses it) | ✘ same | ✘ same | ✓ |
+| low memory: 10 nights / retries | ✘ +803 geometries never freed (#4) | ✘ | ✘ | ✓ |
+| slow network + each lazy file failing once | ✘ unhandled rejections, loading never ends (#1, #2) | ✘ | ✘ | ✓ |
+| offline after loading (houses 2–5 never arrive) | ✘ loading never ends (#1) | ✘ | ✘ | ✓ |
+| private mode + Data Module disabled | ✘ `gameplayStart` before `loadingStop` (#8) | ✘ | ✘ | ✓ |
+| Data Module holds the save, localStorage blocked | ✓ | ✓ | ✓ | ✓ |
+| game script fails to download once | ✘ loading never ends (#2) | ✘ | ✘ | ✓ |
+| no WebGL | ✘ unhandled rejection, loading never ends (#3) | ✘ | ✘ | ✓ |
+| official SDK, local mode | ✓ | ✓ | ✓ | ✓ |
+| **total** | **9 failed / 6 passed** | **8 / 7** | **8 / 7** | **15 / 15 in each of the 6 projects** (local runs and CI job `crash`) |
 
 ### Loading time (`loadingStart → loadingStop`, throttled phone: 150 ms RTT, 1.6 MB/s, 4× CPU, median of 5)
 
-LOADTIME_TABLE
+| Build | First visit (night 1) | Returning player (menu) |
+| --- | --- | --- |
+| v3 | 2,773 ms | 502 ms |
+| v3.2 | 2,472 ms | 486 ms |
+| v3.3 | 2,777 ms | 475 ms |
+
+The run-to-run spread is about ±600 ms on the first visit, so the three builds are equal; v3.3 adds no loading cost
+(the retries only run when a download fails).
 
 ### Unit tests
 
