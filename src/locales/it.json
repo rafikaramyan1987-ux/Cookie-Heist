@@ -255,5 +255,7 @@
   "snackCookies": "{n} biscotto|{n} biscotti",
   "lv_snack_1": "Assalto al frigo",
   "lv_snack_2": "Festa in dispensa",
-  "lv_snack_3": "Jackpot nel barattolo"
+  "lv_snack_3": "Jackpot nel barattolo",
+  "loadFailed": "Impossibile caricare il gioco. Controlla la connessione.",
+  "noWebgl": "Questo browser non riesce a mostrare il gioco 3D. Attiva l'accelerazione hardware o prova un altro browser."
 }

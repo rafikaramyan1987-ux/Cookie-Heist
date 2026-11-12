@@ -19,13 +19,13 @@
  * - saves use localStorage (no portal storage); no external links
  */
 
-import { AD_TIMEOUT, type AdSlot, type Platform } from './types';
+import { AD_MAX, AD_TIMEOUT, type AdSlot, type Platform } from './types';
 
 export const Y8_APP_ID = '6af4a2c63c0f1c5e7ad8dc57';
 export const Y8_GAME_ID = '292539';
 export const Y8_SDK_URL = 'https://cdn.y8.com/minimal-sdk/2-0/y8.min.js';
 /** a started ad whose break never ends is given up after this long, so the game cannot stay paused (ms) */
-export const AD_MAX = 120_000;
+export { AD_MAX };
 
 export interface Y8AdBreakInfo {
   breakStatus?: string;

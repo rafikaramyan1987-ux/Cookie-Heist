@@ -1,4 +1,4 @@
-// GamePix submission v3: zip (index.html at the zip root) + icon 256×256 and cover 1360×850 (JPG) from cover B2.
+// GamePix submission v4: zip (index.html at the zip root) + icon 256×256 and cover 1360×850 (JPG) from cover B2.
 // Run `npm run build:gamepix` and scripts/submission/covers-v3.mjs first.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, statSync } from 'node:fs';
@@ -6,7 +6,7 @@ import { mkdirSync, rmSync, statSync } from 'node:fs';
 const out = 'submission-gamepix';
 mkdirSync(out, { recursive: true });
 // bump the version for every new submission; older zips stay as they are
-const zip = `${out}/cookie-heist-gamepix-v3.zip`;
+const zip = `${out}/cookie-heist-gamepix-v4.zip`;
 rmSync(zip, { force: true });
 // -j: index.html sits at the root of the zip; -9: smallest; -X: no extra file attributes
 execFileSync('zip', ['-j', '-9', '-X', '-q', zip, 'dist-gamepix/index.html'], { stdio: 'inherit' });

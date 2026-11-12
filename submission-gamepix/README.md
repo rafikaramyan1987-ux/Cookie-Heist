@@ -1,6 +1,6 @@
 # Cookie Heist — GamePix submission
 
-- **Build:** `cookie-heist-gamepix-v3.zip` (v2 + the legacy `GamePix.soundOff / soundOn / pause / resume` handlers
+- **Build:** `cookie-heist-gamepix-v4.zip` (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md)). `cookie-heist-gamepix-v3.zip` (v2 + the legacy `GamePix.soundOff / soundOn / pause / resume` handlers
   and `GamePix.lang()` read once at boot) — a single `index.html` at the root of the zip (all code, art and sounds
   inlined, relative paths only). `cookie-heist-gamepix-v2.zip` (v3 of the game: tutorial, daily calendar, 10
   languages, faster start) and `cookie-heist-gamepix-v1.zip` are the previous builds, kept for reference. The only external script is the GamePix SDK

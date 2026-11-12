@@ -32,6 +32,7 @@ export function canvasTex(key: string, w: number, h: number, draw: Draw, repeat 
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4;
   t.needsUpdate = true;
+  t.userData.shared = true; // cached: kept when a night is disposed (src/render/dispose.ts)
   cache.set(key, t);
   return t;
 }

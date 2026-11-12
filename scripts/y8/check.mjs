@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
-const zip = resolve(args[0] && !args[0].startsWith('--') ? args[0] : 'submission-y8/cookie-heist-y8-v1.zip');
+const zip = resolve(args[0] && !args[0].startsWith('--') ? args[0] : 'submission-y8/cookie-heist-y8-v2.zip');
 const SDK = 'https://cdn.y8.com/minimal-sdk/2-0/y8.min.js';
 const BANNED = ['crazygames', 'gamedistribution', 'gamepix', 'playgama', 'gamemonetize', 'googlesyndication', 'adbreak(', '<iframe', 'window.open'];
 const NAMESPACE = /^https?:\/\/www\.w3\.org\//;

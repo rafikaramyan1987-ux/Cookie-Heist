@@ -4,6 +4,8 @@
  * and a soft music-box lullaby per house.
  */
 
+import { importRetry } from './lazy';
+
 type Ctx = AudioContext;
 
 class Audio {
@@ -29,7 +31,12 @@ class Audio {
     if (!this.ctx) {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AC) return;
-      this.ctx = new AC();
+      // the browser may refuse a new context (too many contexts, audio blocked): the game plays on silently
+      try {
+        this.ctx = new AC();
+      } catch {
+        return;
+      }
       this.master = this.ctx.createGain();
       // gentle limiter: every sound and the music land at a consistent loudness
       const comp = this.ctx.createDynamicsCompressor();
@@ -51,9 +58,12 @@ class Audio {
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.apply();
       // music + the extra (juice) sounds: a separate chunk, loaded in the background
-      void import('./audioExtra').then((m) => (this.extra = m)).catch(() => {});
+      void importRetry(() => import('./audioExtra')).then(
+        (m) => (this.extra = m),
+        () => {},
+      );
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume();
+    if (this.ctx.state === 'suspended') this.resumeCtx();
   }
 
   apply() {
@@ -66,8 +76,28 @@ class Audio {
 
   suspend(paused: boolean) {
     if (!this.ctx) return;
-    if (paused) void this.ctx.suspend();
-    else void this.ctx.resume();
+    if (!paused) return this.resumeCtx();
+    if (this.ctx.state === 'closed') return;
+    try {
+      this.ctx.suspend().catch(() => {});
+    } catch {
+      /* old WebKit: suspend() may throw synchronously */
+    }
+  }
+
+  /**
+   * resume() / suspend() return promises that reject on a closed context (InvalidStateError: the browser closed it,
+   * e.g. under memory pressure) and may stay pending without a user gesture; either way the game plays on (an
+   * unhandled rejection here would count as a crash).
+   */
+  private resumeCtx() {
+    const c = this.ctx;
+    if (!c || c.state === 'closed') return;
+    try {
+      c.resume().catch(() => {});
+    } catch {
+      /* old WebKit: resume() may throw synchronously */
+    }
   }
 
   // ------------------------------------------------------------------ primitives

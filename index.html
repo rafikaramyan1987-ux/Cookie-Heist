@@ -5,6 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#140f33" />
     <title>Cookie Heist</title>
+    <script>
+      // a game script (the entry module or one it imports, e.g. three.js) failed to download: the module never runs
+      // and no error reaches the page, so the loading screen would stay forever. Reload once by itself (a new page
+      // fetches the files again), then show the retry card (window.__bootFail, below). Before the game's scripts.
+      addEventListener('error', function (e) {
+        var t = e.target;
+        if (!t || t.tagName !== 'SCRIPT' || t.type !== 'module' || window.__booted) return;
+        var once = false;
+        try { once = sessionStorage.getItem('ch-reload') === '1'; sessionStorage.setItem('ch-reload', '1'); } catch (x) { once = true; }
+        if (!once) {
+          // fetch the game's scripts afresh first (WebKit keeps a failed script in its memory cache across a plain
+          // reload; a successful fetch replaces it), then reload; never wait more than 8 s
+          var urls = [t.src];
+          var pre = document.querySelectorAll('link[rel="modulepreload"]');
+          for (var i = 0; i < pre.length; i++) urls.push(pre[i].href);
+          var go = function () { location.reload(); };
+          var timer = setTimeout(go, 8000);
+          try {
+            Promise.all(urls.map(function (u) { return fetch(u, { cache: 'reload' }).catch(function () {}); })).then(function () { clearTimeout(timer); go(); });
+          } catch (x) { go(); }
+          return;
+        }
+        if (window.__bootFail) window.__bootFail('load');
+        else window.__chFail = 'load';
+      }, true);
+    </script>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #140f33; }
       #boot { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: radial-gradient(ellipse at 50% 40%, #3a2c86 0%, #1c1550 55%, #0d0a28 100%); color: #fff4dc; font-family: Fredoka, 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif; transition: opacity .4s; text-align: center; padding: 0 16px; }
@@ -15,6 +41,7 @@
       #boot .bar i { display: block; height: 100%; width: 8%; border-radius: 99px; background: linear-gradient(90deg, #ffb63b, #ffe38a); transition: width .35s; animation: creep 6s ease-out forwards; }
       #boot p { margin: 0; max-width: 340px; font-size: 16px; font-weight: 600; opacity: .85; min-height: 2.4em; }
       #boot small { font-size: 13px; opacity: .6; }
+      #boot-retry { font: inherit; font-size: 20px; font-weight: 700; color: #2a1a33; background: #ffd25e; border: 3px solid #2a1a33; border-radius: 99px; padding: 10px 28px; cursor: pointer; }
       @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-12px) rotate(6deg); } }
       @keyframes creep { from { width: 4%; } to { width: 28%; } }
     </style>
@@ -40,6 +67,25 @@
         var s = S[l];
         document.getElementById('boot-tip').textContent = s.tips[Math.floor(Math.random() * s.tips.length)];
         document.getElementById('boot-load').textContent = s.loading;
+        // the game could not start: say why on the loading screen, with a retry button (kind: 'load' | 'webgl').
+        // Called by the game (src/app/app.ts) and below when the game's own script files fail to download.
+        window.__bootFail = function (kind) {
+          var b = document.getElementById('boot');
+          if (!b || b.getAttribute('data-failed')) return;
+          b.setAttribute('data-failed', kind);
+          b.classList.remove('gone');
+          var bar = b.querySelector('.bar');
+          if (bar) bar.style.display = 'none';
+          document.getElementById('boot-tip').textContent = kind === 'webgl' ? s.noWebgl : s.loadFailed;
+          document.getElementById('boot-load').textContent = '';
+          var r = document.createElement('button');
+          r.id = 'boot-retry';
+          r.textContent = s.retry;
+          r.onclick = function () { location.reload(); };
+          b.appendChild(r);
+        };
+        // a game script failed to download before this ran (the watchdog in <head>): show the card now
+        if (window.__chFail) window.__bootFail(window.__chFail);
       })();
     </script>
     <canvas id="game"></canvas>

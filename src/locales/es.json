@@ -255,5 +255,7 @@
   "snackCookies": "{n} galleta|{n} galletas",
   "lv_snack_1": "Asalto a la nevera",
   "lv_snack_2": "Fiesta en la despensa",
-  "lv_snack_3": "Tarro de la suerte"
+  "lv_snack_3": "Tarro de la suerte",
+  "loadFailed": "No se pudo cargar el juego. Revisa tu conexión.",
+  "noWebgl": "Este navegador no puede mostrar el juego en 3D. Activa la aceleración por hardware o prueba otro navegador."
 }

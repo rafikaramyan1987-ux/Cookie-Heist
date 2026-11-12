@@ -63,6 +63,17 @@ export interface Platform {
 export const MIDGAME_GAP = 120_000;
 /** an ad that has not started after this long is treated as unavailable (ms) */
 export const AD_TIMEOUT = 8000;
+/** a started ad that never reports its end is given up after this long, so the game cannot stay paused (ms) */
+export const AD_MAX = 120_000;
+
+/** call into a portal SDK; a throwing SDK (blocked, disabled, half-loaded) never breaks the game */
+export function safe<T>(fn: () => T): T | undefined {
+  try {
+    return fn();
+  } catch {
+    return undefined;
+  }
+}
 
 export function loadScript(src: string, timeoutMs: number, id?: string) {
   return new Promise<void>((res, rej) => {

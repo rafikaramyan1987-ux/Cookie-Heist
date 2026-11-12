@@ -255,5 +255,7 @@
   "snackCookies": "{n} cookie|{n} cookies",
   "lv_snack_1": "Raid sur le frigo",
   "lv_snack_2": "Fête dans le placard",
-  "lv_snack_3": "Le jackpot du pot à cookies"
+  "lv_snack_3": "Le jackpot du pot à cookies",
+  "loadFailed": "Impossible de charger le jeu. Vérifie ta connexion.",
+  "noWebgl": "Ce navigateur ne peut pas afficher le jeu en 3D. Active l'accélération matérielle ou essaie un autre navigateur."
 }

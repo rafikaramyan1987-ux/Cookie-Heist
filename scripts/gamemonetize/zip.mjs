@@ -1,12 +1,12 @@
 // GameMonetize upload: zips dist-gamemonetize/ (run `npm run build:gamemonetize` first) so that index.html and the
 // game files sit at the zip root (GameMonetize README: "Root folder of .ZIP file must include index.html and game
 // files"), then runs the static checks (scripts/gamemonetize/check.mjs).
-// Usage: node scripts/gamemonetize/zip.mjs [out.zip]   (default submission-gamemonetize/cookie-heist-gamemonetize-v1.zip)
+// Usage: node scripts/gamemonetize/zip.mjs [out.zip]   (default submission-gamemonetize/cookie-heist-gamemonetize-v2.zip)
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-const out = resolve(process.argv[2] ?? 'submission-gamemonetize/cookie-heist-gamemonetize-v1.zip');
+const out = resolve(process.argv[2] ?? 'submission-gamemonetize/cookie-heist-gamemonetize-v2.zip');
 const dist = resolve('dist-gamemonetize');
 if (!existsSync(`${dist}/index.html`)) throw new Error('dist-gamemonetize/index.html missing: run `npm run build:gamemonetize` first');
 mkdirSync(dirname(out), { recursive: true });

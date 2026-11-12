@@ -20,7 +20,7 @@
  * - happyMoment / sadMoment signals, GamePix.lang() (called once in init, cached) as the locale, plain localStorage for saves
  */
 
-import { AD_TIMEOUT, MIDGAME_GAP, type AdSlot, type Platform } from './types';
+import { AD_MAX, AD_TIMEOUT, MIDGAME_GAP, type AdSlot, type Platform } from './types';
 
 export const GPX_SDK_URL = 'https://integration.gamepix.com/sdk/v3/gamepix.sdk.js';
 /** a rewarded ad whose `resume` came without a result gets this long for a late result (ms) */
@@ -251,6 +251,7 @@ export class GamePixPlatform implements Platform {
         if (done) return;
         done = true;
         clearTimeout(timer);
+        clearTimeout(cap);
         clearTimeout(grace);
         if (this.pending === pending) this.pending = null;
         this.setPaused('sdk', false);
@@ -274,6 +275,8 @@ export class GamePixPlatform implements Platform {
       const timer = setTimeout(() => {
         if (!pending.started) finish(false);
       }, AD_TIMEOUT);
+      // started but never ended (SDK stuck): give up after AD_MAX so the game cannot stay paused
+      const cap = setTimeout(() => finish(false), AD_MAX);
       try {
         const r = type === 'reward' ? s.ads.reward() : s.ads.interstitial();
         Promise.resolve(r).then(
