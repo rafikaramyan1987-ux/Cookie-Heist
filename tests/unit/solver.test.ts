@@ -5,10 +5,14 @@ import { describe, it, expect } from 'vitest';
 import { ALL_LEVELS, getLevel } from '../../src/levels/all';
 import { solveLevel } from '../../src/game/solve';
 
+/** a long run of synchronous level tests starves the worker's event loop (vitest RPC timeouts): yield once per test */
+const yieldToWorker = () => new Promise((r) => setTimeout(r, 0));
+
 describe('solver: every level can be completed', () => {
   for (const [h, i] of ALL_LEVELS) {
     const L = getLevel(h, i);
-    it(`${L.id}`, () => {
+    it(`${L.id}`, async () => {
+      await yieldToWorker();
       const s = solveLevel(L);
       expect(s.solved, `${L.id}: no winning run found`).toBe(true);
       // a bot solution is proven by its replay; the hint fallback by a person-like follower

@@ -1,29 +1,23 @@
-import { describe, it, expect } from "vitest";
-import { getLevel, ALL_LEVELS } from "../../src/levels/all";
-import {
-  closedTargets,
-  startSightings,
-  stationaryGuards,
-  crossingWaits,
-  MAX_CROSS_WAIT,
-} from "../../src/game/audit";
+import { describe, it, expect } from 'vitest';
+import { getLevel, ALL_LEVELS } from '../../src/levels/all';
+import { closedTargets, startSightings, stationaryGuards, crossingWaits, MAX_CROSS_WAIT } from '../../src/game/audit';
 
-describe("level audit (real guard simulation)", () => {
+/** a long run of synchronous level tests starves the worker's event loop (vitest RPC timeouts): yield once per test */
+const yieldToWorker = () => new Promise((r) => setTimeout(r, 0));
+
+describe('level audit (real guard simulation)', () => {
   for (const [h, i] of ALL_LEVELS) {
-    const L = getLevel(h, i);
-    it(`${L.id}: no stationary adult guard, safe start, every patrol cycle opens a path, readable only-route windows`, () => {
-      // every awake adult walks a patrol (no guard parked forever)
-      expect(stationaryGuards(L)).toEqual([]);
-      // nobody sees the start or the first three steps during the first 3 s (any seed)
-      expect(startSightings(L, 3, 3)).toEqual([]);
-      // start → required cookies → bed through cells that are each clear at least every 6 s
-      expect(closedTargets(L, 6)).toEqual([]);
-      // a guard controlling the only route opens a window to cross it at least every 10 s
-      expect(
-        crossingWaits(L)
-          .filter((s) => s.maxWait > MAX_CROSS_WAIT)
-          .map((s) => s.maxWait),
-      ).toEqual([]);
-    });
-  }
+      const L = getLevel(h, i);
+      it(`${L.id}: no stationary adult guard, safe start, every patrol cycle opens a path, readable only-route windows`, async () => {
+        await yieldToWorker();
+        // every awake adult walks a patrol (no guard parked forever)
+        expect(stationaryGuards(L)).toEqual([]);
+        // nobody sees the start or the first three steps during the first 3 s (any seed)
+        expect(startSightings(L, 3, 3)).toEqual([]);
+        // start → required cookies → bed through cells that are each clear at least every 6 s
+        expect(closedTargets(L, 6)).toEqual([]);
+        // a guard controlling the only route opens a window to cross it at least every 10 s
+        expect(crossingWaits(L).filter((s) => s.maxWait > MAX_CROSS_WAIT).map((s) => s.maxWait)).toEqual([]);
+      });
+    }
 });

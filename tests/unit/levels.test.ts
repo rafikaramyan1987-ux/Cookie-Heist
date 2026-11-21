@@ -5,6 +5,9 @@ import { World } from '../../src/game/world';
 import { simulate, PROFILES } from '../../src/game/bot';
 import { hiddenRequiredCookies } from '../../src/game/visibility';
 
+/** a long run of synchronous level tests starves the worker's event loop (vitest RPC timeouts): yield once per test */
+const yieldToWorker = () => new Promise((r) => setTimeout(r, 0));
+
 describe('levels', () => {
   it('there are 5 houses × 12 nights + 3 houses × 10 nights (v3.4)', () => {
     expect(LEVEL_SRC).toHaveLength(8);
@@ -12,9 +15,13 @@ describe('levels', () => {
   });
 
   for (const [h, i] of ALL_LEVELS)
-    it(`house ${h + 1} night ${i + 1}: cookies, keys and bed are reachable`, () => {
+    it(`house ${h + 1} night ${i + 1}: cookies, keys and bed are reachable`, async () => {
+      await yieldToWorker();
       const L = getLevel(h, i);
-      const open = { eh: L.eh.map((v) => (v === 3 ? 2 : v)), ev: L.ev.map((v) => (v === 3 ? 2 : v)) };
+      const open = {
+        eh: L.eh.map((v) => (v === 3 ? 2 : v)),
+        ev: L.ev.map((v) => (v === 3 ? 2 : v)),
+      };
       const f = distanceField(L, open, walkable(L, false), L.start);
       const near = (x: number, z: number, solid: boolean) =>
         solid
@@ -38,14 +45,13 @@ describe('levels', () => {
       expect(L.cookies.length).toBeLessThanOrEqual(3);
     });
 
-  it('every level is solvable by the playtest bot', () => {
-    const unsolved: string[] = [];
-    for (const [h, i] of ALL_LEVELS) {
+  // one test per level: a single 90-level loop blocks the test worker for minutes (vitest's RPC times out)
+  for (const [h, i] of ALL_LEVELS)
+    it(`house ${h + 1} night ${i + 1} is solvable by the playtest bot`, async () => {
+      await yieldToWorker();
       const L = getLevel(h, i);
       let ok = false;
       for (const prof of [PROFILES.good, PROFILES.average]) for (let s = 1; s <= 6 && !ok; s++) ok = simulate(new World(L, { seed: s, jitter: 1 }), prof, s).won;
-      if (!ok) unsolved.push(L.id);
-    }
-    expect(unsolved).toEqual([]);
-  });
+      expect(ok, `${L.id} unsolved`).toBe(true);
+    });
 });
