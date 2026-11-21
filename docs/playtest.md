@@ -81,7 +81,7 @@ Audit columns (all profiles): **Escapes** = "!" that did not end in a catch (mus
 | Farmhouse 9 | yes | yes | 25% | 75% | 81% | 53.2 s | 0.25 | 0 | 0 | 2.1 s | 100% | ok |
 | Farmhouse 10 (finale) | yes | yes | 13% | 81% | 100% | 47.9 s | 0.19 | 0 | 0 | 0.0 s | 100% | ok |
 | Beach House 1 | yes | yes | 13% | 69% | 44% | 57.0 s | 0.31 | 0 | 0 | 1.0 s | 63% | ok |
-| Beach House 2 | yes | yes | 0% | 19% | 38% | 63.8 s | 0.75 | 0 | 0 | 1.3 s | 100% | ok |
+| Beach House 2 | yes | yes | 13% | 63% | 44% | 71.7 s | 0.38 | 0 | 0 | 1.3 s | 100% | ok |
 | Beach House 3 | yes | yes | 44% | 56% | 100% | 43.7 s | 0.44 | 0 | 0 | 2.1 s | 100% | ok |
 | Beach House 4 | yes | yes | 50% | 88% | 100% | 39.3 s | 0.13 | 0 | 0 | 2.1 s | 100% | ok |
 | Beach House 5 | yes | yes | 50% | 94% | 100% | 44.2 s | 0.06 | 0 | 0 | 2.1 s | 100% | ok |
