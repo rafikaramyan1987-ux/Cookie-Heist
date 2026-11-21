@@ -90,11 +90,12 @@ export const BEACHHOUSE: LevelSrc[] = [
     toys: 2,
     dark: 'L',
   }),
-  // night 2 (tier 10): score 72, route 42 cells; playtest avg 50% / good 30%, ~76 s
+  // night 2 (tier 10): score 72, route 42 cells; retuned in v3.4 review (the sibling waits longer at the hall ends,
+  // dad walks slower): playtest avg 63% (was 21%)
   night(S2, {
     guards: [
-      { k: 'teen', p: '1,7 10,7', w: 1.6, speed: 1.17, delay: 2 },
-      { k: 'dad', p: '10,4 6,2', w: 2.1, speed: 1.05, delay: 6 },
+      { k: 'teen', p: '1,7 10,7', w: 2.4, speed: 1.17, delay: 2 },
+      { k: 'dad', p: '10,4 6,2', w: 2.1, speed: 0.85, delay: 6 },
       { k: 'dad', p: '5,0', sleep: true, face: 90, doze: [6.2, 2.9, 4.9] },
       { k: 'vacuum', p: '9,0 9,2', w: 1 },
     ],

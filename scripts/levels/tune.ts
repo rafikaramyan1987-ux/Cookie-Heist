@@ -8,6 +8,7 @@
  * usage: npx tsx scripts/levels/tune.ts --house farmhouse --tiers 0-9 --per 3 --tries 60 --out out.jsonl
  */
 import { appendFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { generate, type Candidate } from './gen';
 import { night } from '../../src/levels/helpers';
 import { parseLevel } from '../../src/game/level';
@@ -95,7 +96,9 @@ export function evaluate(L: Level, RUNS = runs): Eval {
 }
 
 const houseIndex = { farmhouse: 5, beachhouse: 6, castle: 7 }[house as 'farmhouse'];
-for (let tier = t0; tier <= t1; tier++) {
+// the search runs only when this file is the script (evaluate() can be imported)
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+for (let tier = t0; isMain && tier <= t1; tier++) {
   let found = 0;
   const reasons: Record<string, number> = {};
   const variants = +arg('--variants', '6');

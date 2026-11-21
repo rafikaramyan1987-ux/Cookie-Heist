@@ -32,7 +32,7 @@ strict playtest audit (`scripts/levels/tune.ts`), and frozen as plain data (`scr
 | 69 | farmhouse-9 | Lamplight Barn | 11×11 | mum, mum, grandma (light sleeper) | light sleeper | 84 s | 48 | 69 | 79% | 88% | 54 s | 100% |
 | 70 | farmhouse-10 (finale) | Haystack Finale | 12×13 | mum, mum, mum (light sleeper) | light sleeper, 1 motion lamp *(tip)* | 85 s | 44 | 70 | 83% | 100% | 48 s | 100% |
 | 71 | beachhouse-1 | Sandy Toes | 12×12 | mum, mum, mum (light sleeper), cat | light sleeper, 1 motion lamp | 86 s | 41 | 71 | 75% | 50% | 56 s | 67% |
-| 72 | beachhouse-2 | Seashell Sneak | 12×13 | sibling, dad, dad (light sleeper), vacuum | light sleeper, 1 motion lamp | 87 s | 42 | 72 | 21% | 33% | 61 s | 100% |
+| 72 | beachhouse-2 | Seashell Sneak | 12×13 | sibling, dad, dad (light sleeper), vacuum | light sleeper, 1 motion lamp | 87 s | 42 | 72 | 63% | 42% | 78 s | 100% |
 | 73 | beachhouse-3 | Low Tide | 11×13 | mum, mum, mum (light sleeper), vacuum | light sleeper, 1 motion lamp | 88 s | 44 | 74 | 50% | 100% | 45 s | 100% |
 | 74 | beachhouse-4 | Lighthouse Beam | 12×14 | mum, sibling, mum, dad (light sleeper) | light sleeper, 1 motion lamp | 89 s | 41 | 75 | 83% | 100% | 38 s | 100% |
 | 75 | beachhouse-5 | Salty Breeze | 12×13 | mum, sibling, dad (light sleeper), cat | light sleeper, 1 motion lamp | 90 s | 46 | 76 | 92% | 100% | 44 s | 100% |
