@@ -8,6 +8,7 @@ import type { Key } from '../app/i18n';
 import type { SaveData } from '../app/save';
 import { THEMES } from '../render/themes';
 import { HOUSES } from '../game/level';
+import { nightsIn } from '../levels/index';
 
 /** Menu screens & modals (DOM). */
 
@@ -27,9 +28,10 @@ export function houseMap(save: SaveData, onPlay: (h: number, i: number) => void,
   let body = '<div class="houses">';
   HOUSES.forEach((id, h) => {
     const th = THEMES[id];
+    const n = nightsIn(h);
     let stars = 0,
       done = 0;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < n; i++) {
       const s = save.stars[levelIds(h, i)];
       if (s !== undefined) {
         stars += s;
@@ -38,15 +40,15 @@ export function houseMap(save: SaveData, onPlay: (h: number, i: number) => void,
     }
     const open = unlocked(h, 0);
     body += `<div class="house-card ${open ? '' : 'locked'}" style="--c1:#${th.slabTop.toString(16).padStart(6, '0')};--c2:#${th.skyBottom.toString(16).padStart(6, '0')}">
-      <div class="house-head"><span class="hnum">${h + 1}</span><b>${t(`house_${id}`)}</b><span class="hstars">${ICONS.star(true)} ${stars}/36</span></div>
-      <div class="nights">${Array.from({ length: 12 }, (_, i) => {
+      <div class="house-head"><span class="hnum">${h + 1}</span><b>${t(`house_${id}`)}</b><span class="hstars">${ICONS.star(true)} ${stars}/${n * 3}</span></div>
+      <div class="nights">${Array.from({ length: n }, (_, i) => {
         const s = save.stars[levelIds(h, i)];
         const ok = unlocked(h, i);
-        const fin = i === 11;
+        const fin = i === n - 1;
         return `<button class="night ${ok ? '' : 'locked'} ${s !== undefined ? 'done' : ''} ${fin ? 'finale' : ''}" data-h="${h}" data-i="${i}" ${ok ? '' : 'disabled'}><span>${fin ? ICONS.crown : i + 1}</span>${s !== undefined ? starRow(s, 11) : ok ? '' : `<i class="lock-ic">${ICONS.lock}</i>`}</button>`;
       }).join('')}</div>
       ${open ? '' : `<div class="lock-note">${ICONS.lock} ${t('comingSoon')}</div>`}
-      <div class="progress"><i style="width:${(done / 12) * 100}%"></i></div>
+      <div class="progress"><i style="width:${(done / n) * 100}%"></i></div>
     </div>`;
   });
   body += '</div>';

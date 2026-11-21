@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Level } from '../game/types';
-import { World, GameEvent, Guard } from '../game/world';
+import { World, GameEvent, Guard, MOTION_R } from '../game/world';
 import { buildHouse, BuiltHouse, WALL_H } from '../render/house';
 import { THEMES } from '../render/themes';
 import { nightLights } from '../render/stage';
@@ -75,6 +75,8 @@ export class GameScene {
   private vel = new THREE.Vector2();
   private cinematic: null | { kind: 'win' | 'caught'; t: number; g?: number; from: THREE.Vector3 } = null;
   private switchVis: THREE.Mesh[] = [];
+  /** motion-sensor lamps: their sensor ring on the floor, per lamp */
+  private motionVis: { m: THREE.Mesh; room: number }[] = [];
 
   constructor(
     readonly level: Level,
@@ -238,6 +240,17 @@ export class GameScene {
       this.scene.add(m);
       this.switchVis.push(m);
     }
+    // motion-sensor lamps (the side-table lamp itself is a prop): a dashed ring shows the sensor's reach
+    for (const ms of L.motion) {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(MOTION_R * 2, MOTION_R * 2),
+        new THREE.MeshBasicMaterial({ map: this.motionTex(), transparent: true, depthWrite: false, toneMapped: false }),
+      );
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(ms.x, 0.022, ms.z);
+      this.scene.add(m);
+      this.motionVis.push({ m, room: ms.room });
+    }
     // locked doors
     const addDoor = (x: number, z: number, vertical: boolean) => {
       const g = new THREE.Group();
@@ -283,6 +296,33 @@ export class GameScene {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: radialTex(), color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.8 }));
     s.scale.setScalar(size);
     return s;
+  }
+
+  /** the motion sensor's reach: a dashed warm ring (same look as the switch marker) */
+  private motionTex() {
+    return canvasTex(
+      'motionmark',
+      256,
+      256,
+      (g, w, h) => {
+        g.translate(w / 2, h / 2);
+        g.strokeStyle = 'rgba(255,240,176,0.85)';
+        g.lineWidth = 6;
+        g.setLineDash([14, 12]);
+        g.beginPath();
+        g.arc(0, 0, 120, 0, Math.PI * 2);
+        g.stroke();
+        g.setLineDash([]);
+        const r = g.createRadialGradient(0, 0, 0, 0, 0, 120);
+        r.addColorStop(0, 'rgba(255,240,176,0.18)');
+        r.addColorStop(1, 'rgba(255,240,176,0)');
+        g.fillStyle = r;
+        g.beginPath();
+        g.arc(0, 0, 120, 0, Math.PI * 2);
+        g.fill();
+      },
+      false,
+    );
   }
 
   private switchTex() {
@@ -452,6 +492,10 @@ export class GameScene {
     this.switchVis.forEach((m, i) => {
       (m.material as THREE.MeshBasicMaterial).opacity = 0.6 + Math.sin(t * 3 + i) * 0.25;
     });
+    // a lit sensor ring glows steady; a waiting one breathes slowly
+    this.motionVis.forEach(({ m, room }, i) => {
+      (m.material as THREE.MeshBasicMaterial).opacity = w.roomDark[room] ? 0.45 + Math.sin(t * 1.6 + i) * 0.2 : 0.95;
+    });
 
     // cookies taken
     L.cookies.forEach((_, i) => {
@@ -523,7 +567,8 @@ export class GameScene {
       this.routes = new THREE.Group();
       const colors: Record<string, number> = { mum: 0xff9f6b, dad: 0x8fb4ff, grandma: 0xffc46b, teen: 0x9fdcff };
       for (const g of this.world.guards) {
-        if (!g.cfg.adult || g.spec.sleep || g.spec.path.length < 2) continue;
+        // sleepers have no route; an alarm-clock sleeper shows the patrol she walks once she is up
+        if (!g.cfg.adult || (g.spec.sleep && !g.spec.wakeAt) || g.spec.path.length < 2) continue;
         const pts = g.spec.path;
         const loop = pts.length > 2 && pts[0].x === pts[pts.length - 1].x && pts[0].z === pts[pts.length - 1].z;
         const segs: [THREE.Vector3, THREE.Vector3][] = [];
@@ -584,8 +629,10 @@ export class GameScene {
     const rig = v.rig;
     const lying = g.state === 'sleep';
     const onSolid = !!this.level.solid[Math.floor(g.z) * this.level.w + Math.floor(g.x)];
+    // a light sleeper sitting up on her bed
+    const sitUp = g.dozing && onSolid;
     if (!(this.cinematic?.kind === 'caught' && this.cinematic.g === this.guards.indexOf(v))) {
-      rig.root.position.set(g.x, lying ? (onSolid ? 0.55 : 0.12) : 0, g.z);
+      rig.root.position.set(g.x, lying ? (onSolid ? 0.55 : 0.12) : sitUp ? 0.45 : 0, g.z);
       if (lying) rig.root.rotation.set(-Math.PI / 2, 0, Math.atan2(Math.cos(g.dir), Math.sin(g.dir)) * 0 + 0.4, 'YXZ');
       else rig.root.rotation.set(0, Math.atan2(Math.cos(g.dir), Math.sin(g.dir)), 0);
     }

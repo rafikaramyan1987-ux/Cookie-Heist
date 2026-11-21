@@ -73,12 +73,12 @@ describe('meta', () => {
     const s = defaultSave();
     const done = new Set<string>();
     const isDone = (h: number, i: number) => done.has(`${h}-${i}`);
-    expect(nextUnlock(s, isDone, 5, 12)).toEqual({ kind: 'house', house: 1, n: 12 });
+    expect(nextUnlock(s, isDone, 5, () => 12)).toEqual({ kind: 'house', house: 1, n: 12 });
     for (let i = 0; i < 10; i++) done.add(`0-${i}`);
-    expect(nextUnlock(s, isDone, 5, 12)).toEqual({ kind: 'house', house: 1, n: 2 });
+    expect(nextUnlock(s, isDone, 5, () => 12)).toEqual({ kind: 'house', house: 1, n: 2 });
     for (let h = 0; h < 5; h++) for (let i = 0; i < 12; i++) done.add(`${h}-${i}`);
     s.coins = 100;
-    expect(nextUnlock(s, isDone, 5, 12)).toEqual({ kind: 'skin', key: 'candy', n: 50 });
+    expect(nextUnlock(s, isDone, 5, () => 12)).toEqual({ kind: 'skin', key: 'candy', n: 50 });
   });
   it('midnight snack: once a day, after the tutorial; variants rotate', () => {
     const s = defaultSave();

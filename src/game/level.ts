@@ -10,7 +10,7 @@ import { distanceField, walkable } from './grid';
  * obj layer: see OBJ table below.
  */
 
-export const HOUSES: HouseId[] = ['apartment', 'family', 'cottage', 'chalet', 'mansion'];
+export const HOUSES: HouseId[] = ['apartment', 'family', 'cottage', 'chalet', 'mansion', 'farmhouse', 'beachhouse', 'castle'];
 
 type Style = [FloorKind, WallKind];
 const BASE_STYLES: Record<string, Style> = {
@@ -35,6 +35,9 @@ const HOUSE_STYLES: Record<HouseId, Record<string, Style>> = {
   cottage: { K: ['stone', 'floral'], H: ['pine', 'floral'], L: ['pine', 'floral'], G: ['carpetRose', 'floral'], B: ['pine', 'starsBlue'], D: ['pine', 'paintPeach'] },
   chalet: { K: ['pine', 'logs'], H: ['pine', 'logs'], L: ['oak', 'logs'], B: ['pine', 'logs'], P: ['carpetRose', 'logs'], E: ['stone', 'logs'], D: ['oak', 'logs'], T: ['carpetBlue', 'logs'] },
   mansion: { K: ['checker', 'panel'], H: ['marble', 'damask'], L: ['parquet', 'panel'], B: ['parquet', 'starsBlue'], P: ['carpetRose', 'damask'], M: ['marble', 'damask'], Y: ['parquet', 'panel'], D: ['marble', 'panel'], E: ['marble', 'damask'] },
+  farmhouse: { K: ['stone', 'floral'], H: ['oak', 'paintPeach'], L: ['oak', 'logs'], B: ['pine', 'starsBlue'], P: ['carpetRose', 'floral'], D: ['pine', 'stripesCream'], C: ['tileBlue', 'paintGrey'], E: ['stone', 'paintPeach'], G: ['carpetRose', 'floral'] },
+  beachhouse: { K: ['tileBlue', 'teal'], H: ['pine', 'teal'], L: ['oak', 'paintSage'], B: ['oak', 'starsBlue'], P: ['carpetBlue', 'teal'], T: ['carpetBlue', 'paintSage'], A: ['tileBlue', 'paintGrey'], D: ['pine', 'teal'], E: ['pine', 'paintSage'] },
+  castle: { K: ['stone', 'stone'], H: ['stone', 'damask'], M: ['marble', 'stone'], Y: ['darkwood', 'panel'], B: ['parquet', 'starsBlue'], P: ['carpetRose', 'damask'], E: ['stone', 'stone'], D: ['darkwood', 'panel'], L: ['parquet', 'damask'], G: ['carpetRose', 'damask'] },
 };
 
 export const HIDE = { table: 1, basket: 2, wardrobe: 3, curtain: 4 } as const;
@@ -83,11 +86,13 @@ const OBJ: Record<string, ObjInfo> = {
   r: { prop: 'rug', group: true },
   y: { prop: 'teddy' },
   b: { prop: 'bed', solid: true, group: true, wall: true },
+  // motion-sensor lamp (v3.4): the side-table lamp, lit warm; its sensor ring is drawn on the floor (gameScene)
+  m: { prop: 'sideTable', solid: true, wall: true, opts: { light: true, lightPower: 1.8, lightY: 0.95, lightColor: 0xfff0b0 } },
 };
 
 const sideDelta: Record<Side, [number, number]> = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] };
 
-export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level {
+export function parseLevel(src: LevelSrc, house: HouseId, index: number, finale = index === 11): Level {
   const d = src.map.length;
   const w = src.map[0].length;
   const id = `${house}-${index + 1}`;
@@ -162,6 +167,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
   const switches: Level['switches'] = [];
   const pillows: Level['pillows'] = [];
   const toyPickups: Level['toyPickups'] = [];
+  const motion: Level['motion'] = [];
   const props: PropDef[] = [];
   let bed: Level['bed'] | null = null;
   let start: { x: number; z: number } | null = null;
@@ -292,6 +298,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
           }
         }
       }
+      if (ch === 'm') motion.push({ x: x + 0.5, z: z + 0.5, room: R(x, z) });
       if (ch === 'j') props.push({ type: 'cookieJar', x: px, z: pz, y: 0.885 });
       if (ch === 'j') cookies.push({ x: x + 0.5, z: z + 0.5, onSolid: true });
       props.push({ type: info.prop!, x: px, z: pz, rot, opts });
@@ -319,11 +326,11 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
         const [a, c] = t.split(',').map(Number);
         return { x: a + 0.5, z: c + 0.5 };
       });
-    for (const p of path) {
+    for (const [k, p] of path.entries()) {
       if (R(Math.floor(p.x), Math.floor(p.z)) < 0) throw new Error(`${id}: guard path outside at ${p.x},${p.z}`);
-      // patrol points on furniture are nudged to the nearest free cell
+      // patrol points on furniture are nudged to the nearest free cell (a sleeper's bed spot stays on the bed)
       const c = Math.floor(p.z) * w + Math.floor(p.x);
-      if (!g.sleep && (solid[c] || hide[c])) {
+      if ((!g.sleep || (g.wakeAt && k > 0)) && (solid[c] || hide[c])) {
         let best: [number, number] | null = null,
           bd = Infinity;
         for (let zz = 0; zz < d; zz++)
@@ -342,6 +349,11 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
         }
       }
     }
+    if ((g.doze || g.wakeAt) && !g.sleep) throw new Error(`${id}: ${g.k} with doze / wakeAt must be asleep (sleep: true)`);
+    if (g.doze && g.wakeAt) throw new Error(`${id}: ${g.k} cannot both doze and have an alarm`);
+    if (g.wakeAt && path.length < 3) throw new Error(`${id}: ${g.k} wakeAt needs a sleeping spot and at least 2 patrol points`);
+    // alarm clock: the first point is where she sleeps; she patrols the others once she is up
+    const rest = g.wakeAt ? path.shift()! : null;
     return {
       kind: g.k,
       path,
@@ -353,6 +365,9 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
       delay: g.delay ?? 0,
       sight: g.sight ?? 1,
       cue: !!g.cue,
+      doze: g.doze ? [g.doze[0], g.doze[1], g.doze[2] ?? g.doze[0]] : null,
+      wakeAt: g.wakeAt ?? 0,
+      rest,
     };
   });
 
@@ -377,6 +392,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
   }
   const dark = new Set((src.dark ?? '').split(''));
   const roomDark = roomLetters.map((l) => dark.has(l));
+  for (const m of motion) if (!roomDark[m.room]) throw new Error(`${id}: motion lamp at ${m.x - 0.5},${m.z - 0.5} is in a room that is not dark`);
   const def: LevelDef = {
     id,
     house,
@@ -424,6 +440,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
     switches,
     pillows,
     toyPickups,
+    motion,
     bed: b,
     start: start!,
     guards,
@@ -431,7 +448,7 @@ export function parseLevel(src: LevelSrc, house: HouseId, index: number): Level 
     toys: src.toys ?? 0,
     bedCheck: src.bedCheck ?? 0,
     tip: src.tip ?? null,
-    finale: index === 11,
+    finale,
     def,
     props,
   };

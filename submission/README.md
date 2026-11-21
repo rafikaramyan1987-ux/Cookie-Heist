@@ -1,5 +1,16 @@
 # Cookie Heist — CrazyGames submission
 
+## What changed in v3.4 (30 new nights)
+- Three new houses after the Grand Mansion, 10 nights each: the **Farmhouse**, the **Beach House** and the **Royal
+  Castle** — 90 nights in all. Every new night has its own floorplan and is a little longer and harder than the one
+  before.
+- New things to sneak past: **light sleepers** (grandma sits up now and then and looks around), **alarm clocks** (a
+  grown-up gets up mid-night and starts patrolling) and **motion-sensor lamps** (moving close to one lights the dark
+  room for a few seconds).
+- Players keep all their progress: whoever finished the 60 nights finds the Farmhouse open; everyone else continues
+  where they were. Same save format.
+- Upload `cookie-heist-v3.4.zip` (unzips to `cookie-heist-v3.4/`, same structure as before; older zips are kept).
+
 ## What changed in v3.3 (crash fixes)
 - Fixes the load / gameplay crash spike after v3 (see `docs/crash-investigation.md`): a lazily loaded part of the game
   (houses 2–5, the menu scene, a language, the shop renderer, extra sounds) that failed to download used to be an
@@ -33,8 +44,8 @@ don't wake Nana Rose, keep away from Mochi the cat (she meows!) and Dusty the ro
 Hide in laundry baskets, under tables and behind curtains, throw squeaky toys to lure grown-ups away, switch
 off the lights, find keys and pillow decoys — then sneak back into bed before the bed check.
 
-60 hand-made nights in 5 cosy houses: a city apartment, a family house, grandma's cottage, a snowy chalet and a
-grand mansion, each with a big finale. Earn stars and coins, unlock pyjamas, caps and cookie trails, claim daily
+90 nights in 8 cosy houses: a city apartment, a family house, grandma's cottage, a snowy chalet, a grand mansion, a
+farmhouse, a beach house and a royal castle, each with a big finale. Earn stars and coins, unlock pyjamas, caps and cookie trails, claim daily
 rewards and complete daily missions, and raid the Midnight Snack bonus night once a day. If you get caught, it's just
 “Back to bed!” and another try. Plays in 10 languages.
 
@@ -50,9 +61,9 @@ stealth, puzzle, casual, cute, kids, family, 3d, sneaking, cookies, night, hide 
 PEGI 3–7 friendly: no violence, being caught means being carried back to bed.
 
 ## Assets in this folder
-- `cookie-heist-v3.3.zip` — **the build to upload** (v3.3, crash fixes): unzips to `cookie-heist-v3.3/` with
-  `index.html` and `assets/` (code split into lazily loaded chunks; relative paths only). `cookie-heist-v3.2.zip`,
-  `cookie-heist-v3.zip` — the previous builds, kept. `cookie-heist-build.zip` / `index.html` are the
+- `cookie-heist-v3.4.zip` — **the build to upload** (v3.4, 30 new nights): unzips to `cookie-heist-v3.4/` with
+  `index.html` and `assets/` (code split into lazily loaded chunks; relative paths only). `cookie-heist-v3.3.zip`,
+  `cookie-heist-v3.2.zip`, `cookie-heist-v3.zip` — the previous builds, kept. `cookie-heist-build.zip` / `index.html` are the
   previous single-file build, kept for reference.
 - **Main cover (B2):** `cover-1920x1080.png`, `cover-800x1200.png`, `cover-800x800.png` in this folder — the night
   kitchen with the kid big and clear at the front edge of the table, guilty grin to camera, a cookie held at the side,
@@ -68,5 +79,5 @@ PEGI 3–7 friendly: no violence, being caught means being carried back to bed.
   cookie grab, the Snowy Chalet, a 3-star win, cover B2 again at the end.
   (`trailer-1920x1080.mp4` / `trailer-1080x1920.mp4` = the v2 trailers.)
 
-Regenerate: `npm run build && npm run submission` (→ `cookie-heist-v3.3.zip`), and with `npx vite preview --host 127.0.0.1 --port 4174` running:
+Regenerate: `npm run build && npm run submission` (→ `cookie-heist-v3.4.zip`), and with `npx vite preview --host 127.0.0.1 --port 4174` running:
 `npm run covers`, `npm run trailers`, `npm run media:first-minute`.

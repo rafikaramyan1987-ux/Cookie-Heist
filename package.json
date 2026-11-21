@@ -1,7 +1,7 @@
 {
   "name": "cookie-heist",
   "private": true,
-  "version": "3.3.0",
+  "version": "3.4.0",
   "type": "module",
   "description": "Cookie Heist - a cosy 3D stealth puzzle game for the web",
   "scripts": {

@@ -1,7 +1,7 @@
 # Cookie Heist — GameDistribution submission
 
 - **Game ID:** `6aa8020129824d9c9fc5d2cfed7b2d99`
-- **Build:** `cookie-heist-gd-v3.zip` (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); `cookie-heist-gd-v2.zip` = v3 of the game: tutorial, daily calendar, 10 languages from the browser
+- **Build:** `cookie-heist-gd-v4.zip` (v3.4 of the game: 30 new nights in 3 new houses (Farmhouse, Beach House, Royal Castle) with light sleepers, alarm clocks and motion-sensor lamps; progress kept; `cookie-heist-gd-v3.zip` = Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); `cookie-heist-gd-v2.zip` = v3 of the game: tutorial, daily calendar, 10 languages from the browser
   language, faster start; `cookie-heist-gd-v1.zip` = previous build, kept) — a single `index.html` at the root of the zip (all code, art and sounds inlined),
   about 1 MB. Loads only the GameDistribution SDK (`html5.api.gamedistribution.com/main.min.js`) at runtime.
 - **Orientation:** portrait and landscape (responsive), desktop and mobile.
@@ -16,8 +16,8 @@ keep away from Mochi the cat (she meows!) and Dusty the robot vacuum (it beeps!)
 tables and behind curtains, throw squeaky toys to lure grown-ups away, switch off the lights, find keys and pillow
 decoys — then sneak back into bed before the bed check.
 
-60 hand-made nights in 5 cosy houses: a city apartment, a family house, grandma's cottage, a snowy chalet and a
-grand mansion, each with a big finale. If you get caught, it's just "Back to bed!" and another try.
+90 nights in 8 cosy houses: a city apartment, a family house, grandma's cottage, a snowy chalet, a grand
+mansion, a farmhouse, a beach house and a royal castle, each with a big finale. If you get caught, it's just "Back to bed!" and another try.
 
 ## Instructions
 - **Touch / mouse:** drag anywhere to move. A small drag tiptoes silently; drag to the outer ring and hold to run
@@ -27,7 +27,7 @@ grand mansion, each with a big finale. If you get caught, it's just "Back to bed
   Collect all cookies, never get spotted and beat the par time for 3 stars.
 
 ## Key features
-- 60 hand-designed stealth-puzzle nights in 5 themed houses, each with a finale
+- 90 stealth-puzzle nights in 8 themed houses, each with a finale
 - Cute, child-friendly 3D toon art; no violence — being caught means being carried back to bed
 - New mechanics introduced gradually with animated tips: noise, hiding spots, distractions, light switches,
   keys and locked doors, sleeping grown-ups, a meowing cat, a beeping robot vacuum, bed checks and pillow decoys
@@ -47,7 +47,7 @@ Puzzle (stealth)
 Suitable for everyone (PEGI 3–7 friendly): no violence, no text chat, no external links, no logins.
 
 ## Assets in this folder
-- `cookie-heist-gd-v3.zip` — the build to upload (`index.html` at the root); `cookie-heist-gd-v2.zip`, `cookie-heist-gd-v1.zip` — previous builds.
+- `cookie-heist-gd-v4.zip` — the build to upload (`index.html` at the root); `cookie-heist-gd-v3.zip`, `cookie-heist-gd-v2.zip`, `cookie-heist-gd-v1.zip` — previous builds.
 - `thumbnails/thumb-512x384.jpg`, `thumb-512x512.jpg`, `thumb-200x120.jpg`, `thumb-1280x720.jpg`,
   `thumb-1280x550.jpg` — rendered from the real 3D title scene (game title and characters only).
 

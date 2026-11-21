@@ -1,7 +1,7 @@
 # Cookie Heist — GameMonetize submission
 
 - **Game ID:** `p4y3j0gzsj1efndrh21up9ji7ykxjyo8`
-- **Upload:** `cookie-heist-gamemonetize-v2.zip` (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); `cookie-heist-gamemonetize-v1.zip` = previous build): `index.html` and `assets/` at the zip root, relative paths only
+- **Upload:** `cookie-heist-gamemonetize-v3.zip` (v3.4 of the game: 30 new nights in 3 new houses (Farmhouse, Beach House, Royal Castle) with light sleepers, alarm clocks and motion-sensor lamps; progress kept; `cookie-heist-gamemonetize-v2.zip` = Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); `cookie-heist-gamemonetize-v1.zip` = previous build): `index.html` and `assets/` at the zip root, relative paths only
   (Game Management > My games > select the game > drop the file; then "Verify Game" and "REQUEST ACTIVATION").
 - **Images:** `cookie-heist-512x384.jpg`, `cookie-heist-512x512.jpg`, `cookie-heist-512x340.jpg` — the B2 cover
   scene (submission/covers-v3/B2) re-rendered without the title logo: no text, no logo, each under 300 KB.
@@ -31,7 +31,7 @@ stealth, puzzle, 3d, casual, cute, kids, family, sneaking, cookies, hide and see
 ```
 Sneak out of bed, steal the cookies and get back under the covers before anyone notices! Cookie Heist is a cosy 3D stealth puzzle game. Tiptoe past Mum's flashlight, dodge Dad's torch, don't wake Nana Rose, and keep away from Mochi the cat and Dusty the robot vacuum. Hide in laundry baskets and behind curtains, throw squeaky toys to lure grown-ups away, flip light switches, find keys and use pillow decoys.
 
-Modes: Story with 60 hand-made nights in 5 houses (City Apartment, Family House, Grandma's Cottage, Snowy Chalet, Grand Mansion), each with a finale; replay any night for 3 stars; daily rewards and missions. Shop with pyjamas and boosts. 10 languages.
+Modes: Story with 90 nights in 8 houses (City Apartment, Family House, Grandma's Cottage, Snowy Chalet, Grand Mansion, Farmhouse, Beach House, Royal Castle), each with a finale; replay any night for 3 stars; daily rewards and missions. Shop with pyjamas and boosts. 10 languages.
 
 Desktop controls: WASD / arrow keys to move, hold Shift to run (noisy!), Space to throw a toy.
 Mobile controls: drag anywhere to move (small drag tiptoes, long drag runs), tap the toy, then tap the floor to throw it.

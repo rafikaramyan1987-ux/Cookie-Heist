@@ -8,7 +8,7 @@
 
 | Portal tab → slot | File (in this folder) | Spec checked |
 |---|---|---|
-| **Builds** → upload build | `cookie-heist-y8-v2.zip` (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); v1 = previous build) | `index.html` + `assets/` at the zip root, relative paths only, about 430 KB |
+| **Builds** → upload build | `cookie-heist-y8-v3.zip` (v3.4 of the game: 30 new nights in 3 new houses (Farmhouse, Beach House, Royal Castle) with light sleepers, alarm clocks and motion-sensor lamps; progress kept; v2 = Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); v1 = previous build) | `index.html` + `assets/` at the zip root, relative paths only, about 430 KB |
 | **Media** → Standard Screenshot (4:3) | `media/screenshot-760x570-1.jpg` … `-4.jpg` | 760x570 JPG, < 2 MB |
 | **Media** → Widescreen Screenshot (16:9) | `media/screenshot-1280x720-1.jpg` … `-4.jpg` | 1280x720 JPG, < 5 MB |
 | **Media** → Landscape Promo | `media/promo-landscape-1920x1080.jpg` | 1920x1080 JPG, < 5 MB |
@@ -49,7 +49,7 @@ It's the middle of the night and the cookie jar is calling! Sneak out of bed, gr
 
 Tiptoe past Mum's flashlight, dodge Dad's big torch, don't wake Nana Rose, and keep away from Mochi the cat (she meows!) and Dusty the robot vacuum (it beeps!). Hide in laundry baskets, under tables and behind curtains, throw squeaky toys to lure grown-ups away, switch off the lights, find keys and leave pillow decoys - then sneak back into bed before the bed check.
 
-60 hand-made nights in 5 cosy houses: City Apartment, Family House, Grandma's Cottage, Snowy Chalet and Grand Mansion, each with a big finale. Collect every cookie, stay unseen and beat the par time for 3 stars. Getting caught just means "Back to bed!" and another try - free hints show a safe route after 3 fails.
+90 nights in 8 cosy houses: City Apartment, Family House, Grandma's Cottage, Snowy Chalet, Grand Mansion, Farmhouse, Beach House and Royal Castle, each with a big finale. Collect every cookie, stay unseen and beat the par time for 3 stars. Getting caught just means "Back to bed!" and another try - free hints show a safe route after 3 fails.
 
 Earn coins for pyjamas, caps and cookie trails, claim daily rewards and complete daily missions. Progress is saved automatically. Plays in 10 languages.
 ```
@@ -104,7 +104,7 @@ as the form asks.
 
 ```sh
 npm ci
-npm run submission:y8        # vite --mode y8 → dist-y8/ → cookie-heist-y8-v2.zip + checks (zip and media)
+npm run submission:y8        # vite --mode y8 → dist-y8/ → cookie-heist-y8-v3.zip + checks (zip and media)
 npm run test:e2e:y8          # Playwright smoke test of dist-y8 with a stubbed Y8 SDK
 # media: npx vite --host 127.0.0.1 --port 4174 &  node scripts/y8/media.mjs http://127.0.0.1:4174/
 ```

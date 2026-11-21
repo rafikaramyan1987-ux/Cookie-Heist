@@ -4,7 +4,7 @@
 
 ## Description
 
-It's the middle of the night and the cookie jar is calling. Tiptoe past mum's flashlight, dodge dad's torch, keep away from Mochi the cat and Dusty the robot vacuum. Hide in laundry baskets and behind curtains, throw squeaky toys to lure grown-ups away, then sneak back into bed before the bed check. 60 hand-made nights in 5 cosy houses, stars, coins, pyjamas to unlock and daily rewards. Plays in 10 languages.
+It's the middle of the night and the cookie jar is calling. Tiptoe past mum's flashlight, dodge dad's torch, keep away from Mochi the cat and Dusty the robot vacuum. Hide in laundry baskets and behind curtains, throw squeaky toys to lure grown-ups away, then sneak back into bed before the bed check. 90 nights in 8 cosy houses, stars, coins, pyjamas to unlock and daily rewards. Plays in 10 languages.
 
 ## Controls
 
@@ -28,7 +28,7 @@ playable without them), no analytics, no external requests (fonts and all assets
 
 | File | What |
 |---|---|
-| `cookie-heist-web-v2.zip` | the game (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); `cookie-heist-web-v1.zip` = previous build): `index.html` at the zip root + `assets/`, relative paths only (upload as an HTML5 game, "played in the browser") |
+| `cookie-heist-web-v3.zip` | the game (v3.4 of the game: 30 new nights in 3 new houses (Farmhouse, Beach House, Royal Castle) with light sleepers, alarm clocks and motion-sensor lamps; progress kept; `cookie-heist-web-v2.zip` = Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md); `cookie-heist-web-v1.zip` = previous build): `index.html` at the zip root + `assets/`, relative paths only (upload as an HTML5 game, "played in the browser") |
 | `cover-630x500.png` | itch.io cover, from the main cover art |
 | `icon-512x512.png` | icon |
 | `screenshot-1.png` … `screenshot-4.png` | 1280x720 gameplay: night 1 start (tutorial), mid-level (Family House night 3), hiding in a laundry basket, win screen |
@@ -42,7 +42,7 @@ playable without them), no analytics, no external requests (fonts and all assets
 
 ```sh
 npm ci
-npm run submission:web     # web build (vite --mode web) → submission-web/cookie-heist-web-v2.zip
-npm run check:web -- submission-web/cookie-heist-web-v2.zip --shots submission-web/checks
+npm run submission:web     # web build (vite --mode web) → submission-web/cookie-heist-web-v3.zip
+npm run check:web -- submission-web/cookie-heist-web-v3.zip --shots submission-web/checks
 npm run store:web          # cover, icon and the four screenshots
 ```

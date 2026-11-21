@@ -10,6 +10,9 @@ const SONGS = [
   { root: 57, bpm: 70, scale: [0, 2, 3, 7, 8], prog: [0, 5, 3, 7] }, // cottage (minor-ish)
   { root: 64, bpm: 72, scale: [0, 2, 4, 7, 11], prog: [0, 4, 9, 5] }, // chalet
   { root: 55, bpm: 66, scale: [0, 2, 4, 5, 7, 9], prog: [0, 9, 2, 7] }, // mansion
+  { root: 60, bpm: 80, scale: [0, 2, 4, 7, 9], prog: [0, 7, 5, 9] }, // farmhouse
+  { root: 62, bpm: 74, scale: [0, 2, 4, 7, 11], prog: [0, 5, 7, 4] }, // beach house
+  { root: 57, bpm: 64, scale: [0, 2, 3, 5, 7, 8], prog: [0, 8, 5, 7] }, // castle (minor)
 ];
 
 export function scheduleMusic(a: AudioCore, c: AudioContext, bus: AudioNode) {
