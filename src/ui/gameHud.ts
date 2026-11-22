@@ -344,6 +344,9 @@ export class GameHud {
 }
 
 const TIP_ICONS: Record<string, string> = {
+  doze: ICONS.moon,
+  alarm: ICONS.clock,
+  motion: ICONS.bulb,
   creaky: ICONS.creak,
   toys: ICONS.duck,
   cones: `<svg viewBox="0 0 64 64"><path d="M14 30 L58 12 L58 50 Z" fill="#ffe2a0" opacity=".85"/><rect x="6" y="25" width="14" height="10" rx="3" fill="#2e3446"/></svg>`,

@@ -29,6 +29,10 @@ export const PUZZLED = 0.6;
 export const PHONE_CYCLE = 6;
 export const PHONE_TIME = 2.2;
 const PHONE_RAMP = 0.35;
+/** motion-sensor lamp: moving this close to it (same room) switches its room's light on … */
+export const MOTION_R = 1.6;
+/** … for this long after the last movement (s) */
+export const MOTION_TIME = 4;
 
 /** alert gained per second in the beam: base + bonus × closeness (0 far edge … 1 at the guard) */
 export const ALERT_RATE: [number, number] = [0.55, 1.7];
@@ -123,6 +127,12 @@ export interface Guard {
   cueState: 0 | 1 | 2;
   /** scripted guard has been in the kid's room */
   cueVisited: boolean;
+  /** light sleeper: sitting up and looking around (until `timer` runs out) */
+  dozing: boolean;
+  /** light sleeper: time asleep since the last wake-up */
+  dozeT: number;
+  /** alarm clock: the alarm has rung, she is up for the rest of the night */
+  awake: boolean;
 }
 
 export interface Player {
@@ -171,7 +181,13 @@ export type GameEvent =
   | { type: 'needCookies' }
   /** a scripted guard comes on stage / has left the hidden kid ("Phew!") */
   | { type: 'cue'; g: number }
-  | { type: 'cueClear'; g: number };
+  | { type: 'cueClear'; g: number }
+  /** a light sleeper sits up (`up`) / lies down again */
+  | { type: 'doze'; g: number; up: boolean }
+  /** an alarm clock rang: this grown-up is up and patrolling */
+  | { type: 'alarm'; g: number }
+  /** a motion-sensor lamp switched its room's light on / off */
+  | { type: 'motion'; room: number; on: boolean };
 
 export interface Projectile {
   x0: number;
@@ -208,6 +224,8 @@ export class World {
   ghost = false;
   toys: number;
   roomDark: boolean[];
+  /** motion-sensor lamps: seconds left with the room lit, per room (0 = not lit by a sensor) */
+  motionT: number[];
   projectiles: Projectile[] = [];
   events: GameEvent[] = [];
   stats: Stats = { time: 0, spotted: 0, noises: 0, hides: 0, toysThrown: 0 };
@@ -241,11 +259,13 @@ export class World {
     this.toyPickupsTaken = level.toyPickups.map(() => false);
     this.toys = level.toys + (opts.extraToys ?? 0);
     this.roomDark = level.roomDark.slice();
+    this.motionT = level.roomDark.map(() => 0);
     this.passG = walkable(level, true);
     const jit = opts.jitter ?? 0;
     this.guards = level.guards.map((spec) => {
       const cfg = GUARD_CFG[spec.kind];
-      const p0 = spec.path[0];
+      // an alarm-clock sleeper starts in her bed (`rest`), not on her patrol
+      const p0 = spec.rest ?? spec.path[0];
       const g: Guard = {
         spec,
         kind: spec.kind,
@@ -274,6 +294,10 @@ export class World {
         delay: spec.cue ? Infinity : spec.delay + (jit ? this.rng() * jit : 0),
         cueState: 0,
         cueVisited: false,
+        dozing: false,
+        // first wake-up at doze[2] s
+        dozeT: spec.doze ? spec.doze[0] - spec.doze[2] : 0,
+        awake: false,
       };
       return g;
     });
@@ -307,6 +331,7 @@ export class World {
     this.throwCd -= dt;
     this.needT -= dt;
     this.updatePlayer(dt, input);
+    this.updateMotion(dt);
     this.updateProjectiles(dt);
     for (let i = 0; i < this.guards.length; i++) this.updateGuard(i, dt);
     this.updateCue();
@@ -476,6 +501,31 @@ export class World {
     }
   }
 
+  /** motion-sensor lamps: moving near one lights its room; it goes dark again MOTION_TIME s after the last movement */
+  private updateMotion(dt: number) {
+    const L = this.L;
+    if (!L.motion.length) return;
+    const p = this.player;
+    const moving = p.speed > 0.3;
+    for (const m of L.motion) {
+      if (!moving || L.room[this.cellIndex(p)] !== m.room || Math.hypot(m.x - p.x, m.z - p.z) > MOTION_R) continue;
+      if (this.roomDark[m.room]) {
+        this.roomDark[m.room] = false;
+        this.events.push({ type: 'motion', room: m.room, on: true });
+      }
+      this.motionT[m.room] = MOTION_TIME;
+    }
+    this.motionT.forEach((t, r) => {
+      if (t <= 0) return;
+      this.motionT[r] = t - dt;
+      if (this.motionT[r] <= 0) {
+        this.motionT[r] = 0;
+        this.roomDark[r] = true;
+        this.events.push({ type: 'motion', room: r, on: false });
+      }
+    });
+  }
+
   private updateProjectiles(dt: number) {
     for (const pr of this.projectiles) {
       pr.t += dt;
@@ -595,7 +645,7 @@ export class World {
   /** Is this awake adult guard standing still close to the hidden kid, watching the hiding spot? */
   campingNear(g: Guard): boolean {
     const p = this.player;
-    if (!p.hidden || !g.cfg.adult || g.state === 'sleep' || g.delay > 0 || g.moving > 0.1) return false;
+    if (!p.hidden || !g.cfg.adult || g.state === 'sleep' || g.dozing || g.delay > 0 || g.moving > 0.1) return false;
     if (Math.hypot(g.x - p.x, g.z - p.z) > CAMP_R) return false;
     return los(this.L, this.E, g, p);
   }
@@ -678,12 +728,42 @@ export class World {
     switch (g.state) {
       case 'sleep':
         g.moving = 0;
+        if (g.spec.wakeAt > 0 && !g.awake && this.t >= g.spec.wakeAt) {
+          // alarm clock: up, and patrolling for the rest of the night
+          g.awake = true;
+          g.state = 'patrol';
+          g.pathIdx = 0;
+          g.pathStep = 1;
+          g.route = this.route(g, g.spec.path[0]) ?? [{ ...g.spec.path[0] }];
+          g.alert = 0;
+          this.events.push({ type: 'alarm', g: gi });
+        } else if (g.spec.doze) {
+          g.dozeT += dt;
+          if (g.dozeT >= g.spec.doze[0]) {
+            // light sleeper: sits up and looks around for a while
+            g.state = 'wait';
+            g.dozing = true;
+            g.dozeT = 0;
+            g.timer = g.spec.doze[1];
+            g.lookBase = g.spec.face;
+            g.dir = g.spec.face;
+            this.events.push({ type: 'doze', g: gi, up: true });
+          }
+        }
         break;
       case 'patrol':
       case 'wait':
         // a teen on her phone break stands still
         if (this.phoneLevel(g) > 0) g.moving = Math.max(0, g.moving - dt * 6);
         else this.patrol(g, dt, g.cfg.walk * g.spec.speed);
+        if (g.dozing && g.state === 'wait' && g.timer <= 0) {
+          // the light sleeper lies down again
+          g.dozing = false;
+          g.state = 'sleep';
+          g.dir = g.spec.face;
+          g.alert = 0;
+          this.events.push({ type: 'doze', g: gi, up: false });
+        }
         break;
       case 'suspicious': {
         if (g.timer > 0) {
@@ -712,10 +792,12 @@ export class World {
         }
         const done = this.moveAlong(g, dt, g.cfg.walk * g.spec.speed);
         if (done) {
-          if (g.spec.sleep) {
+          if (g.spec.sleep && !g.awake) {
             g.state = 'sleep';
             g.dir = g.spec.face;
             g.alert = 0;
+            g.dozing = false;
+            g.dozeT = 0;
           } else {
             g.state = g.spec.path.length > 1 ? 'patrol' : 'wait';
             g.timer = g.spec.wait;
@@ -788,6 +870,14 @@ export class World {
   private goHome(g: Guard) {
     g.state = 'return';
     g.alert = Math.min(g.alert, 0.2);
+    g.dozing = false;
+    // an alarm-clock sleeper who was woken early goes back to bed
+    const rest = g.spec.rest && !g.awake ? g.spec.rest : null;
+    if (rest) {
+      g.route = this.route(g, rest) ?? [{ ...rest }];
+      if (!g.route.length) g.route.push({ ...rest });
+      return;
+    }
     const pts = g.spec.path;
     let best = 0,
       bd = Infinity;

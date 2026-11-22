@@ -4,9 +4,9 @@ import { APARTMENT } from './houses/apartment';
 import { importRetry } from '../app/lazy';
 
 /**
- * All 60 hand-designed levels (5 houses × 12 nights). The first house ships with the game; the other four are a
- * separate chunk, loaded in the background after level 1 is on screen (`loadHouses()`). Node scripts and tests
- * import `./all`, which registers every house synchronously.
+ * All 90 hand-designed levels: houses 1–5 have 12 nights each, houses 6–8 (v3.4) 10 nights each. The first house
+ * ships with the game; the others are a separate chunk, loaded in the background after level 1 is on screen
+ * (`loadHouses()`). Node scripts and tests import `./all`, which registers every house synchronously.
  */
 export const LEVEL_SRC: LevelSrc[][] = [APARTMENT];
 
@@ -47,12 +47,16 @@ export function getLevel(house: number, index: number): Level {
   if (!l) {
     const src = LEVEL_SRC[house]?.[index];
     if (!src) throw new Error(`level ${key} is not loaded yet`);
-    l = parseLevel(src, HOUSES[house], index);
+    l = parseLevel(src, HOUSES[house], index, index === nightsIn(house) - 1);
     cache.set(key, l);
   }
   return l;
 }
 
 export const levelId = (house: number, index: number) => `${HOUSES[house]}-${index + 1}`;
-export const HOUSE_COUNT = 5;
-export const LEVELS_PER_HOUSE = 12;
+/** nights per house, in play order (the last night of each house is its finale) */
+export const NIGHTS = [12, 12, 12, 12, 12, 10, 10, 10] as const;
+export const HOUSE_COUNT = NIGHTS.length;
+export const nightsIn = (house: number): number => NIGHTS[house] ?? 0;
+/** every level in play order: [house, night] */
+export const ALL_LEVELS: [number, number][] = NIGHTS.flatMap((n, h) => Array.from({ length: n }, (_, i) => [h, i] as [number, number]));

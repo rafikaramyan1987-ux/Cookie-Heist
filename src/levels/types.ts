@@ -1,6 +1,6 @@
 /** Data-driven level format. 1 world unit = 1 grid cell. x → east, z → south (towards camera). */
 
-export type HouseId = 'apartment' | 'family' | 'cottage' | 'chalet' | 'mansion';
+export type HouseId = 'apartment' | 'family' | 'cottage' | 'chalet' | 'mansion' | 'farmhouse' | 'beachhouse' | 'castle';
 
 export type FloorKind =
   | 'oak'

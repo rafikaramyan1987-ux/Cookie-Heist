@@ -1,6 +1,6 @@
 # Cookie Heist — GamePix submission
 
-- **Build:** `cookie-heist-gamepix-v4.zip` (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md)). `cookie-heist-gamepix-v3.zip` (v2 + the legacy `GamePix.soundOff / soundOn / pause / resume` handlers
+- **Build:** `cookie-heist-gamepix-v5.zip` (v3.4 of the game: 30 new nights in 3 new houses (Farmhouse, Beach House, Royal Castle) with light sleepers, alarm clocks and motion-sensor lamps; progress kept). `cookie-heist-gamepix-v4.zip` (Crash fixes (v3.3 of the game): lazy downloads retried, nothing uncaught when a download, WebGL or storage fails, GPU memory freed between nights (docs/crash-investigation.md)). `cookie-heist-gamepix-v3.zip` (v2 + the legacy `GamePix.soundOff / soundOn / pause / resume` handlers
   and `GamePix.lang()` read once at boot) — a single `index.html` at the root of the zip (all code, art and sounds
   inlined, relative paths only). `cookie-heist-gamepix-v2.zip` (v3 of the game: tutorial, daily calendar, 10
   languages, faster start) and `cookie-heist-gamepix-v1.zip` are the previous builds, kept for reference. The only external script is the GamePix SDK
@@ -24,7 +24,7 @@ Cookie Heist
 ## Short description
 Sneak out of bed, steal the cookies and get back under the covers before anyone notices! Tiptoe past flashlights,
 hide in laundry baskets, throw squeaky toys to lure grown-ups away and dodge the cat and the robot vacuum. 60 cosy
-stealth-puzzle nights in 5 houses.
+stealth-puzzle nights in 8 houses.
 
 ## Long description
 It's the middle of the night and the cookie jar is calling. Sneak out of bed, steal the cookies and get back under
@@ -33,7 +33,7 @@ from Mochi the cat (she meows!) and Dusty the robot vacuum (it beeps!). Hide in 
 behind curtains, throw squeaky toys to lure grown-ups away, switch off the lights, find keys and pillow decoys, then
 sneak back into bed before the bed check.
 
-60 hand-made nights in 5 cosy houses: a city apartment, a family house, grandma's cottage, a snowy chalet and a grand
+90 nights in 8 cosy houses: a city apartment, a family house, grandma's cottage, a snowy chalet, a grand
 mansion, each with a big finale. New ideas arrive one at a time with short animated tips, and if you get caught it's
 just "Back to bed!" and another try. Stuck? After a few tries a free hint shows a safe route. Earn stars and coins,
 claim daily rewards, finish daily missions and spend your coins in the shop on boosts, pyjamas, caps and cookie

@@ -1,9 +1,8 @@
 // Static checks: reachability of cookies, keys, bed from the start (with/without keys).
-import { getLevel } from '../../src/levels/all';
+import { getLevel, ALL_LEVELS } from '../../src/levels/all';
 import { distanceField, walkable } from '../../src/game/grid';
 const only = process.argv[2];
-for (let h = 0; h < 5; h++)
-  for (let i = 0; i < 12; i++) {
+for (const [h, i] of ALL_LEVELS) {
     if (only && only !== `${h}-${i}`) continue;
     const L = getLevel(h, i);
     const pass = walkable(L, false);

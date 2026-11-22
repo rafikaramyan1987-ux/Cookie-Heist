@@ -42,6 +42,16 @@ export interface GuardSrc {
    * back, and goes off-stage again. While she is near, the hidden kid stays put (a guaranteed near miss).
    */
   cue?: boolean;
+  /**
+   * light sleeper (needs `sleep`): [asleep s, awake s, first wake-up s (default = asleep s)]. Sleeps, then sits up
+   * on the spot and looks around for `awake` seconds (beam on), then sleeps again — a fixed, readable rhythm.
+   */
+  doze?: [number, number, number?];
+  /**
+   * alarm clock (needs `sleep`): asleep at the first point of `p` until this many seconds into the night, then gets
+   * up and patrols the other points for the rest of the night.
+   */
+  wakeAt?: number;
 }
 
 export type TipId =
@@ -61,7 +71,10 @@ export type TipId =
   | 'grandma'
   | 'dad'
   | 'pillow'
-  | 'finale';
+  | 'finale'
+  | 'doze'
+  | 'alarm'
+  | 'motion';
 
 export interface Vec2 {
   x: number;
@@ -83,6 +96,12 @@ export interface GuardSpec {
   sight: number;
   /** scripted tutorial guard, see GuardSrc.cue */
   cue: boolean;
+  /** light sleeper: [asleep, awake, first wake-up] seconds, or null */
+  doze: [number, number, number] | null;
+  /** alarm clock: wakes up at this time (s), 0 = never */
+  wakeAt: number;
+  /** alarm clock: where she sleeps until the alarm (the patrol is `path`) */
+  rest: Vec2 | null;
 }
 
 /** Runtime level, shared by game logic, bot and renderer. */
@@ -118,6 +137,8 @@ export interface Level {
   switches: (Vec2 & { room: number })[];
   pillows: Vec2[];
   toyPickups: Vec2[];
+  /** motion-sensor lamps: moving close to one lights its (dark) room for a few seconds */
+  motion: (Vec2 & { room: number })[];
   bed: { x0: number; z0: number; x1: number; z1: number };
   start: Vec2;
   guards: GuardSpec[];

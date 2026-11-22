@@ -1,7 +1,6 @@
-import { getLevel } from '../../src/levels/all';
+import { getLevel, ALL_LEVELS } from '../../src/levels/all';
 import { hiddenRequiredCookies, cookieOccluded } from '../../src/game/visibility';
-for (let h = 0; h < 5; h++)
-  for (let i = 0; i < 12; i++) {
+for (const [h, i] of ALL_LEVELS) {
     const L = getLevel(h, i);
     const bad = hiddenRequiredCookies(L);
     const west = L.cookies.map((_, k) => k).filter((k) => cookieOccluded(L, k, 'west'));

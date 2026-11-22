@@ -89,6 +89,43 @@ export const THEMES: Record<HouseId, HouseTheme> = {
     outside: 'estate',
     baseboard: 0xf2ece4,
   },
+  // v3.4 houses: the same diorama style, built from the existing outside sets and textures
+  farmhouse: {
+    id: 'farmhouse',
+    slabTop: 0x6a9a3e,
+    slabSide: 0x7a4a2c,
+    slabEdge: 0x86b452,
+    exterior: 0xc8584a,
+    cap: 0xfff3dc,
+    skyTop: 0x100c2c,
+    skyBottom: 0x4a3478,
+    outside: 'lawn',
+    baseboard: 0x7a4a2c,
+  },
+  beachhouse: {
+    id: 'beachhouse',
+    slabTop: 0xe6cf9a,
+    slabSide: 0x8a6a4a,
+    slabEdge: 0xf6e2b4,
+    exterior: 0x7fc4d8,
+    cap: 0xffffff,
+    skyTop: 0x081430,
+    skyBottom: 0x2a4e8a,
+    outside: 'garden',
+    baseboard: 0xf4f8ff,
+  },
+  castle: {
+    id: 'castle',
+    slabTop: 0x4a6a4a,
+    slabSide: 0x3e3a4e,
+    slabEdge: 0x9a96a8,
+    exterior: 0xb8b2c4,
+    cap: 0xe4e0ee,
+    skyTop: 0x0a0820,
+    skyBottom: 0x3a2458,
+    outside: 'estate',
+    baseboard: 0xd8d2e4,
+  },
 };
 
 const clone = (t: THREE.Texture, rx = 1, ry = 1) => {

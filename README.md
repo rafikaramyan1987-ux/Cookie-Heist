@@ -5,8 +5,10 @@ A kid in pyjamas sneaks out of bed at night, steals cookies from the kitchen and
 without being caught by mum, dad, grandma, the big sibling, the cat or the robot vacuum.
 Caught? Mum gasps *“Back to bed!”* and carries you back — child-friendly, no violence (PEGI 3–7).
 
-- 5 houses × 12 nights = **60 hand-designed levels** (20–60 s each), each house with its own look:
-  city apartment, family house, grandma's cottage, snowy chalet, grand mansion — with a finale per house.
+- **90 levels**: 5 houses × 12 nights (20–60 s each) — city apartment, family house, grandma's cottage, snowy chalet,
+  grand mansion — plus, since v3.4, 3 houses × 10 longer nights — farmhouse, beach house, royal castle — each night
+  with its own floorplan and a finale per house. v3.4 adds light sleepers (they sit up and look around now and then),
+  alarm clocks (a grown-up gets up mid-night) and motion-sensor lamps (moving close by lights a dark room).
 - Mechanics introduced gradually with animated tips: flashlight vision cones (orange = “Hein ?” at the beam’s edge, in the dark or after a noise; red = “!” spotted → back to bed, no foot race),
   noise (creaky boards, squeaky toys, running), hiding spots, thrown toys as distractions, light switches,
   keys & locked doors, sleeping guards, the meowing cat, the beeping robot vacuum, bed checks & pillow decoys.
@@ -56,7 +58,7 @@ npm run perf           # load time on a throttled mid-range phone (4G, 4x CPU): 
 npm run test:e2e       # Playwright smoke tests (desktop + 390×844 portrait), CrazyGames build
 npm run test:e2e:gd    # Playwright smoke tests of the GD build with a mocked gdsdk
 npm run test:e2e:crash # zero errors in the CrazyGames build: Chromium / WebKit / Firefox, desktop + phone (Firefox: xvfb-run on Linux); see docs/crash-investigation.md
-npm run playtest       # bot plays all 60 levels (strict audit) → docs/playtest.md
+npm run playtest       # bot plays all 90 levels (strict audit) → docs/playtest.md
 npm run check:audit    # static level audit: no parked guards, safe starts, every patrol cycle opens a path
 npm run check:levels   # static reachability checks
 ```
@@ -74,7 +76,7 @@ static meshes merged per material, one shadow-casting light, DPR capped at 2, ha
 - `src/render/` — toon materials, procedural characters/props/textures, house builder, vision cones, effects
 - `src/app/` — app flow, input, Web Audio synth, save, i18n, meta (shop/daily/missions)
 - `src/app/platform/` — portal layer: one `Platform` interface, CrazyGames / GameDistribution / GamePix / plain-web implementations
-- `src/levels/` — the 60 levels (see `docs/levels.md`); houses 2–5 and the midnight-snack nights are a lazy chunk
+- `src/levels/` — the 90 levels (see `docs/levels.md`); houses 2–8 and the midnight-snack nights are a lazy chunk
 - `src/locales/` — UI strings, one JSON per language
 - `scripts/playtest/` — headless playtest bot report; `scripts/submission/` — covers, trailers, zip
 

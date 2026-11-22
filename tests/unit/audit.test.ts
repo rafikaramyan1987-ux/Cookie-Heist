@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { getLevel } from '../../src/levels/all';
+import { getLevel, ALL_LEVELS } from '../../src/levels/all';
 import { closedTargets, startSightings, stationaryGuards, crossingWaits, MAX_CROSS_WAIT } from '../../src/game/audit';
 
+/** a long run of synchronous level tests starves the worker's event loop (vitest RPC timeouts): yield once per test */
+const yieldToWorker = () => new Promise((r) => setTimeout(r, 0));
+
 describe('level audit (real guard simulation)', () => {
-  for (let h = 0; h < 5; h++)
-    for (let i = 0; i < 12; i++) {
+  for (const [h, i] of ALL_LEVELS) {
       const L = getLevel(h, i);
-      it(`${L.id}: no stationary adult guard, safe start, every patrol cycle opens a path, readable only-route windows`, () => {
+      it(`${L.id}: no stationary adult guard, safe start, every patrol cycle opens a path, readable only-route windows`, async () => {
+        await yieldToWorker();
         // every awake adult walks a patrol (no guard parked forever)
         expect(stationaryGuards(L)).toEqual([]);
         // nobody sees the start or the first three steps during the first 3 s (any seed)

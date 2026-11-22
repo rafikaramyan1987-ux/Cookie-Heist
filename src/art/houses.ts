@@ -51,6 +51,18 @@ export function housesView(): View {
       { kind: 'vacuum', x: 2.5, z: 2.6, dir: Math.PI / 2, mode: 'walk', cone: [1.5, 0.45] },
       { kind: 'mum', x: 4.0, z: 2.8, dir: Math.PI * 0.85, mode: 'walk', cone: [3, 0.5] },
     ],
+    farmhouse: [
+      { kind: 'grandma', x: 1.4, z: 2.6, dir: 0.2, mode: 'idle', cone: [2.4, 0.75] },
+      { kind: 'cat', x: 4.0, z: 1.6, dir: Math.PI * 0.8 },
+    ],
+    beachhouse: [
+      { kind: 'teen', x: 3.8, z: 2.0, dir: Math.PI * 0.9, mode: 'phone', cone: [2.2, 0.45] },
+      { kind: 'kid', x: 1.4, z: 3.1, dir: -0.3, mode: 'tiptoe', skin: 3 },
+    ],
+    castle: [
+      { kind: 'dad', x: 1.8, z: 2.4, dir: 0.1, mode: 'walk', cone: [3.2, 0.48] },
+      { kind: 'kid', x: 4.0, z: 3.2, dir: Math.PI, mode: 'tiptoe', skin: 1 },
+    ],
   };
 
   for (const id of ids) {

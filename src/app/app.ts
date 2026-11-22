@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createStage, Stage } from '../render/stage';
-import { getLevel, levelId, HOUSE_COUNT, LEVELS_PER_HOUSE, loadHouses, housesLoaded, getSnackLevel } from '../levels/index';
+import { getLevel, levelId, HOUSE_COUNT, nightsIn, loadHouses, housesLoaded, getSnackLevel } from '../levels/index';
+import * as progress from './progress';
 import { World, GameEvent, Input } from '../game/world';
 import { Bot, PROFILES } from '../game/bot';
 import { GameScene, TrailId } from '../game3d/gameScene';
@@ -71,6 +72,8 @@ interface Run {
   /** near-miss tracking: a grown-up came close (s since), cooldown before the next "Phew!" */
   near: number;
   phewCd: number;
+  /** the "lights on!" toast of a motion-sensor lamp was shown this night */
+  lampToast?: boolean;
 }
 
 export interface OpenOpts {
@@ -242,17 +245,13 @@ export class App {
 
   // ------------------------------------------------------------------ progress helpers
   isDone(h: number, i: number) {
-    const id = levelId(h, i);
-    return this.save.stars[id] !== undefined || !!this.save.skipped[id];
+    return progress.isDone(this.save, h, i);
   }
   unlocked(h: number, i: number): boolean {
-    if (h === 0 && i === 0) return true;
-    if (i === 0) return this.isDone(h - 1, LEVELS_PER_HOUSE - 1);
-    return this.isDone(h, i - 1);
+    return progress.unlocked(this.save, h, i);
   }
   nextLevel(): [number, number] {
-    for (let h = 0; h < HOUSE_COUNT; h++) for (let i = 0; i < LEVELS_PER_HOUSE; i++) if (!this.isDone(h, i) && this.unlocked(h, i)) return [h, i];
-    return [HOUSE_COUNT - 1, LEVELS_PER_HOUSE - 1];
+    return progress.nextLevel(this.save);
   }
 
   // ------------------------------------------------------------------ title
@@ -941,6 +940,23 @@ export class App {
         case 'meow':
           audio.play('meow');
           break;
+        case 'alarm':
+          // an alarm clock rang: that grown-up is up and about for the rest of the night
+          audio.play('beep');
+          audio.play('hmm');
+          r.hud.toast(t('alarmRang'), ICONS.clock);
+          break;
+        case 'doze':
+          // a light sleeper sits up and looks around
+          if (e.up) audio.play('hmm');
+          break;
+        case 'motion':
+          if (e.on) {
+            audio.play('click');
+            if (!r.lampToast) r.hud.toast(t('lampOn'), ICONS.bulb);
+            r.lampToast = true;
+          }
+          break;
         case 'beep':
           audio.play('beep');
           break;
@@ -1000,7 +1016,7 @@ export class App {
 
   /** next-unlock teaser + tomorrow's daily reward, for the end screens */
   private strip() {
-    const tz = nextUnlock(this.save, (h, i) => this.isDone(h, i), HOUSE_COUNT, LEVELS_PER_HOUSE);
+    const tz = nextUnlock(this.save, (h, i) => this.isDone(h, i), HOUSE_COUNT, nightsIn);
     const prev = preview();
     let teaser: Parameters<typeof retentionStrip>[0]['teaser'] = null;
     if (tz?.kind === 'house') teaser = { img: prev?.houseThumb(HOUSES[tz.house], 192, 120) ?? '', name: t(`house_${HOUSES[tz.house]}`), line: t('nightsToUnlock', { n: tz.n }) };
@@ -1045,11 +1061,11 @@ export class App {
       if (w.stats.spotted === 0) progressMission(this.save, 'ghost', 1);
       progressMission(this.save, 'toys', w.stats.toysThrown);
       progressMission(this.save, 'hide', w.stats.hides);
-      const houseDone = r.i === LEVELS_PER_HOUSE - 1;
+      const houseDone = r.i === nightsIn(r.h) - 1;
       if (houseDone) sdk.happytime();
       else if (__PLATFORM__ === 'gamepix') sdk.happytime(); // GamePix: a happy moment for every level complete
       this.persist();
-      const last = r.h === HOUSE_COUNT - 1 && r.i === LEVELS_PER_HOUSE - 1;
+      const last = r.h === HOUSE_COUNT - 1 && r.i === nightsIn(r.h) - 1;
       const el = winScreen(
         { stars, coins, time: w.t, par: r.level.par, newBest: newBest && !first, houseDone, last, strip: this.strip(), ads: this.adsOn },
         async () => {
@@ -1149,14 +1165,9 @@ export class App {
   }
 
   private goNext(h: number, i: number) {
-    let nh = h,
-      ni = i + 1;
-    if (ni >= LEVELS_PER_HOUSE) {
-      nh++;
-      ni = 0;
-    }
-    if (nh >= HOUSE_COUNT) return this.showTitle();
-    this.between(() => this.openLevel(nh, ni));
+    const n = progress.nextNight(h, i);
+    if (!n) return this.showTitle();
+    this.between(() => this.openLevel(n[0], n[1]));
   }
 
   /**

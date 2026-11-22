@@ -150,11 +150,11 @@ export type Teaser = { kind: 'house'; house: number; n: number } | { kind: 'skin
  * What the player unlocks next: the next locked house (nights left to finish before it opens), else the cheapest
  * pyjama not yet owned and not yet affordable (coins left). null when nothing is left to unlock.
  */
-export function nextUnlock(save: SaveData, isDone: (h: number, i: number) => boolean, houses: number, perHouse: number): Teaser | null {
+export function nextUnlock(save: SaveData, isDone: (h: number, i: number) => boolean, houses: number, nights: (h: number) => number): Teaser | null {
   let left = 0;
   for (let h = 0; h < houses; h++) {
-    if (h > 0 && !isDone(h - 1, perHouse - 1)) return { kind: 'house', house: h, n: left };
-    for (let i = 0; i < perHouse; i++) if (!isDone(h, i)) left++;
+    if (h > 0 && !isDone(h - 1, nights(h - 1) - 1)) return { kind: 'house', house: h, n: left };
+    for (let i = 0; i < nights(h); i++) if (!isDone(h, i)) left++;
   }
   const skin = SHOP.filter((it) => it.kind === 'skin' && !save.owned.includes(it.id) && it.price > save.coins).sort((a, b) => a.price - b.price)[0];
   return skin ? { kind: 'skin', key: skin.key, n: skin.price - save.coins } : null;
